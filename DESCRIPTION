@@ -1,0 +1,23 @@
+Package: MethodEvaluation
+Type: Package
+Title: Package for evaluation of estimation methods
+Version: 0.0.1
+Date: 2015-03-16
+Author: Martijn J. Schuemie [aut, cre],
+Maintainer: Martijn J. Schuemie <schuemie@ohdsi.org>
+Description: This package contains resources for the evaluation of the performance of methods that aim to estimate 
+  the magnitude (relative risk) of the effect of a drug on an outcome. These resources include reference sets for evaluating
+  methods on real data, as well as functions for inserting simulated effects in real data based on negative control drug-outcome pairs.
+  Further included are functions for the computation of the minimum detectable relative risks and functions for computing performance 
+  statistics such as predictive accuracy, error and bias.
+License: Apache License 2.0
+Depends:
+    R (>= 3.1.0),
+    ffbase,
+    DatabaseConnector (>= 1.1.2),
+    CohortMethod (>= 1.0.3)
+Imports:     
+    RJDBC,
+    SqlRender (>= 1.1.0)
+Suggests:
+    testthat,
