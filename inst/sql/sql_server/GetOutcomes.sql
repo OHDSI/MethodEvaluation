@@ -25,11 +25,14 @@ limitations under the License.
 {DEFAULT @outcome_condition_type_concept_ids = '' }
 {DEFAULT @first_outcome_only = TRUE }
 
+USE @cdm_database;
+
 SELECT exposure.subject_id,
 	exposure.cohort_start_date,
 	exposure.cohort_definition_id AS exposure_concept_id,
 	outcome.outcome_concept_id,
-	COUNT(DISTINCT outcome_date) AS y
+	COUNT(DISTINCT outcome_date) AS y,
+	MIN(DATEDIFF(DAY, exposure.cohort_start_date, outcome_date)) AS time_to_event
 FROM #cohort_person exposure
 INNER JOIN (
 {@first_outcome_only} ? {

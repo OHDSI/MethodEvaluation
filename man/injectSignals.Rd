@@ -10,8 +10,8 @@ injectSignals(connectionDetails, cdmDatabaseSchema,
   outcomeDatabaseSchema = cdmDatabaseSchema, outcomeTable = "condition_era",
   outcomeConditionTypeConceptIds = c(),
   outputDatabaseSchema = cdmDatabaseSchema,
-  outputTable = "generated_outcomes", exposureOutcomePairs,
-  modelType = "poisson", buildOutcomeModel = TRUE,
+  outputTable = "generated_outcomes", createOutputTable = TRUE,
+  exposureOutcomePairs, modelType = "poisson", buildOutcomeModel = TRUE,
   firstExposureOnly = FALSE, washoutWindow = 183, riskWindowStart = 0,
   riskWindowEnd = 0, addExposureDaysToEnd = TRUE,
   firstOutcomeOnly = FALSE, effectSizes = c(1, 1.25, 1.5, 2, 4, 8))
@@ -25,19 +25,30 @@ injectSignals(connectionDetails, cdmDatabaseSchema,
 
 \item{exposureDatabaseSchema}{The name of the database schema that is the location where the exposure data used to define the exposure cohorts is available.  If exposureTable = DRUG_ERA, exposureDatabaseSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.}
 
-\item{exposureTable}{The tablename that contains the exposure cohorts.  If exposureTable <> DRUG_ERA, then expectation is exposureTable has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
+\item{exposureTable}{The table name that contains the exposure cohorts.  If exposureTable <> DRUG_ERA, then expectation is exposureTable has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
 
 \item{outcomeDatabaseSchema}{The name of the database schema that is the location where the data used to define the outcome cohorts is available.  If exposureTable = CONDITION_ERA, exposureDatabaseSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.}
 
-\item{outcomeTable}{The tablename that contains the outcome cohorts.  If outcomeTable <> CONDITION_OCCURRENCE, then expectation is outcomeTable has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
+\item{outcomeTable}{The table name that contains the outcome cohorts.  If outcomeTable <> CONDITION_OCCURRENCE, then expectation is outcomeTable has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
 
 \item{outcomeConditionTypeConceptIds}{A list of TYPE_CONCEPT_ID values that will restrict condition occurrences.  Only applicable if outcomeTable = CONDITION_OCCURRENCE.}
+
+\item{outputDatabaseSchema}{The name of the database schema that is the location of the table containing the new outcomesRequires write permissions to this database.}
+
+\item{outputTable}{The table name that contains the outcome cohorts generated during signal injection.}
+
+\item{createOutputTable}{Should the output table be created prior to inserting the outcomes? If TRUE and the table already exists, it will first be deleted.}
 
 \item{exposureOutcomePairs}{A data frame with at least two columns:
 \itemize{
   \item{"exposureConceptId" containing the drug_concept_ID or cohort_definition_id of the exposure variable}
   \item{"outcomeConceptId" containing the condition_concept_ID or cohort_definition_id of the outcome variable}
 }}
+
+\item{modelType}{Can be either "poisson" or "survival"}
+
+\item{buildOutcomeModel}{Should an outcome model be created to predict outcomes. New outcomes will be inserted based on the predicted probabilities according to this model, and
+this will help preserve the observed confounding when injecting signals.}
 }
 \description{
 Inject signals in database

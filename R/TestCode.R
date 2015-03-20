@@ -14,6 +14,8 @@
   user <- NULL
   server <- "RNDUSRDHIT07"
   cdmDatabaseSchema <- "cdm4_sim.dbo"
+  scratchDatabaseSchema <- "scratch.dbo"
+  outputTable <- "mschuemi_injected_signals"
   port <- NULL
   
   
@@ -32,5 +34,12 @@
   computeAuc(filteredData, omopReferenceSet)
   
   
-  x <- injectSignals(connectionDetails, cdmDatabaseSchema = cdmDatabaseSchema, exposureOutcomePairs = exposureOutcomePairs)
+  x <- injectSignals(connectionDetails, 
+                     cdmDatabaseSchema = cdmDatabaseSchema, 
+                     exposureOutcomePairs = exposureOutcomePairs,
+                     outputDatabaseSchema = scratchDatabaseSchema,
+                     outputTable = outputTable,
+                     createOutputTable = TRUE,
+                     firstExposureOnly = FALSE,
+                     modelType = "poisson" )
 }

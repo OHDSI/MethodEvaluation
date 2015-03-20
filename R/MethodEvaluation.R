@@ -85,6 +85,7 @@ NULL
 #'
 #' @export
 computeAuc <- function(methodResults, referenceSet, confidenceIntervals = TRUE){
+  #TODO: add stratification (e.g. by analysisId, outcomeConceptId)
   methodResults <- merge(methodResults, referenceSet[,c("exposureConceptId", "outcomeConceptId", "groundTruth")])
   roc <- pROC::roc.default(methodResults$groundTruth, methodResults$logRr, algorithm=3)
   if (confidenceIntervals){

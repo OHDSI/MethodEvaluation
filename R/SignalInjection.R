@@ -24,20 +24,28 @@
 #' before inserting any outcomes should be 1. There are several models for inserting the outcomes
 #' during the specified risk window of the drug.
 #' 
-#' @param connectionDetails  An R object of type \code{ConnectionDetails} created using the function \code{createConnectionDetails} in the \code{DatabaseConnector} package.
-#' @param cdmDatabaseSchema      Name of database schema that contains OMOP CDM and vocabulary.
-#' @param oracleTempSchema    For Oracle only: the name of the database schema where you want all temporary tables to be managed. Requires create/insert permissions to this database. 
-#' @param exposureOutcomePairs  A data frame with at least two columns:
+#' @param connectionDetails       An R object of type \code{ConnectionDetails} created using the function \code{createConnectionDetails} in the \code{DatabaseConnector} package.
+#' @param cdmDatabaseSchema       Name of database schema that contains OMOP CDM and vocabulary.
+#' @param oracleTempSchema        For Oracle only: the name of the database schema where you want all temporary tables to be managed. Requires create/insert permissions to this database. 
+#' @param exposureDatabaseSchema  The name of the database schema that is the location where the exposure data used to define the exposure cohorts is available.  If exposureTable = DRUG_ERA, exposureDatabaseSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.    
+#' @param exposureTable           The table name that contains the exposure cohorts.  If exposureTable <> DRUG_ERA, then expectation is exposureTable has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.  
+#' @param outcomeDatabaseSchema   The name of the database schema that is the location where the data used to define the outcome cohorts is available.  If exposureTable = CONDITION_ERA, exposureDatabaseSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.    
+#' @param outcomeTable            The table name that contains the outcome cohorts.  If outcomeTable <> CONDITION_OCCURRENCE, then expectation is outcomeTable has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.   
+#' @param outcomeConditionTypeConceptIds   A list of TYPE_CONCEPT_ID values that will restrict condition occurrences.  Only applicable if outcomeTable = CONDITION_OCCURRENCE.
+#' @param outputDatabaseSchema    The name of the database schema that is the location of the table containing the new outcomesRequires write permissions to this database.    
+#' @param outputTable             The table name that contains the outcome cohorts generated during signal injection.  
+#' @param createOutputTable       Should the output table be created prior to inserting the outcomes? If TRUE and the table already exists, it will first be deleted.
+#' @param exposureOutcomePairs    A data frame with at least two columns:
 #' \itemize{
 #'   \item{"exposureConceptId" containing the drug_concept_ID or cohort_definition_id of the exposure variable}
 #'   \item{"outcomeConceptId" containing the condition_concept_ID or cohort_definition_id of the outcome variable}
 #' }
-#' @param exposureDatabaseSchema     The name of the database schema that is the location where the exposure data used to define the exposure cohorts is available.  If exposureTable = DRUG_ERA, exposureDatabaseSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.    
-#' @param exposureTable   The tablename that contains the exposure cohorts.  If exposureTable <> DRUG_ERA, then expectation is exposureTable has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.  
-#' @param outcomeDatabaseSchema     The name of the database schema that is the location where the data used to define the outcome cohorts is available.  If exposureTable = CONDITION_ERA, exposureDatabaseSchema is not used by assumed to be cdmSchema.  Requires read permissions to this database.    
-#' @param outcomeTable   The tablename that contains the outcome cohorts.  If outcomeTable <> CONDITION_OCCURRENCE, then expectation is outcomeTable has format of COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.   
-#' @param outcomeConditionTypeConceptIds   A list of TYPE_CONCEPT_ID values that will restrict condition occurrences.  Only applicable if outcomeTable = CONDITION_OCCURRENCE.
-#' 
+#' @param modelType               Can be either "poisson" or "survival"
+#' @param buildOutcomeModel       Should an outcome model be created to predict outcomes. New outcomes will be inserted based on the predicted probabilities according to this model, and 
+#' this will help preserve the observed confounding when injecting signals.
+#' @param firstExposureOnly       Should signals be injected only for the first exposure? (ie. assuming an acute effect)
+#' @param washoutWindow           Number of days at the start of observation for which no signals will be injected, but will be used to determine whether
+#' exposure or outcome is the first one, and for extracting covariates to build the outcome model.
 #' @export
 injectSignals <- function(connectionDetails, 
                           cdmDatabaseSchema,
@@ -49,6 +57,7 @@ injectSignals <- function(connectionDetails,
                           outcomeConditionTypeConceptIds = c(),
                           outputDatabaseSchema = cdmDatabaseSchema,
                           outputTable = "generated_outcomes",
+                          createOutputTable = TRUE,
                           exposureOutcomePairs,
                           modelType = "poisson",
                           buildOutcomeModel = TRUE,
@@ -62,12 +71,30 @@ injectSignals <- function(connectionDetails,
   if (min(effectSizes) < 1)
     stop("Effect sizes smaller than 1 are currently not supported")
   
+  result <- data.frame(exposureConceptId = rep(exposureOutcomePairs$exposureConceptId, each = length(effectSizes)), 
+                       outcomeConceptId = rep(exposureOutcomePairs$outcomeConceptId, each = length(effectSizes)),
+                       effectSize = rep(effectSizes, nrow(exposureOutcomePairs)),
+                       newOutcomeConceptId= 0,
+                       trueEffectSize = 0,
+                       observedOutcomes = 0,
+                       injectedOutcomes = 0)
+  
+  
   cdmDatabase <- strsplit(cdmDatabaseSchema ,"\\.")[[1]][1]
   exposureConceptIds <- unique(exposureOutcomePairs$exposureConceptId)
   conn <- DatabaseConnector::connect(connectionDetails)
   
+  if (createOutputTable){
+    sql <- SqlRender::loadRenderTranslateSql("CreateSignalInjectionOutputTable.sql", 
+                                             packageName = "MethodEvaluation",
+                                             dbms = connectionDetails$dbms,
+                                             output_database_schema = outputDatabaseSchema,
+                                             output_table = outputTable)
+    DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
+  }
+  
   for (exposureConceptId in exposureConceptIds){
-    writeLines(paste("Processing drug", exposureConceptId))  
+    writeLines(paste("\nProcessing exposure", exposureConceptId))  
     outcomeConceptIds <- unique(exposureOutcomePairs$outcomeConceptId[exposureOutcomePairs$exposureConceptId == exposureConceptId])    
     renderedSql <- SqlRender::loadRenderTranslateSql("CreateExposedCohorts.sql",
                                                      packageName = "MethodEvaluation",
@@ -86,7 +113,7 @@ injectSignals <- function(connectionDetails,
     writeLines("\nCreating risk windows")
     DatabaseConnector::executeSql(conn,renderedSql)
     
-    writeLines("\nExtracting risk windows and outcome counts")
+    writeLines("Extracting risk windows and outcome counts")
     exposureSql <-"SELECT cohort_definition_id, subject_id, cohort_start_date, DATEDIFF(DAY, cohort_start_date, cohort_end_date) AS days_at_risk FROM #cohort_person"
     exposureSql <- SqlRender::translateSql(exposureSql, "sql server", connectionDetails$dbms, oracleTempSchema)$sql
     exposures <- DatabaseConnector::querySql.ffdf(conn, exposureSql)    
@@ -109,7 +136,7 @@ injectSignals <- function(connectionDetails,
     names(outcomeCounts)[names(outcomeCounts) == "subjectId"] <- "personId"
     
     if (buildOutcomeModel){
-      # Build an outcome model using all baseline covariates.
+      writeLines("Extracting covariates for the outcome model")
       covariates <- CohortMethod::getDbCovariates(connection = conn, 
                                                   oracleTempSchema = oracleTempSchema, 
                                                   cdmDatabaseSchema = cdmDatabaseSchema, 
@@ -153,58 +180,129 @@ injectSignals <- function(connectionDetails,
       covariates <- covariates$covariates       
       exposures$rowId <- ff(1:nrow(exposures))
       covariates <- merge(covariates, exposures, by=c("cohortStartDate", "personId"))
-      #TODO: sort covariates by rowId
+      covariates <- covariates[ff::ffdforder(covariates[c("rowId")]),]
       outcomeCounts <- merge(exposures, outcomeCounts, by=c("cohortStartDate", "personId"), all.x = TRUE)
       idx <- is.na(outcomeCounts$y)
-      idx <- ffwhich(idx, idx == TRUE) 
+      idx <- ffwhich(idx, idx == TRUE)
       outcomeCounts$y <- ffindexset(x=outcomeCounts$y, index=idx, value=ff(0, length=length(idx), vmode = "double")) 
       
       names(outcomeCounts)[names(outcomeCounts) == "daysAtRisk"] <- "time"
       outcomeCounts$time = outcomeCounts$time + 1
+      if (modelType == "survival") {
+        # For survival, time is the either the time to the end of the risk window, or the event
+        outcomeCounts$timeToEvent = outcomeCounts$timeToEvent + 1
+        idx <- outcomeCounts$y != 0
+        idx <- ffwhich(idx, idx == TRUE) 
+        outcomeCounts$y <- ffindexset(outcomeCounts$y, index=idx, value=ff(as.double(1), length=length(idx), vmode = "double")) 
+        outcomeCounts$time <- ffindexset(outcomeCounts$time, index = idx, value = outcomeCounts$timeToEvent[idx]) 
+      }
       for (outcomeConceptId in outcomeConceptIds){
+        writeLines(paste("\nProcessing outcome", outcomeConceptId))  
         outcomes <- subset(outcomeCounts, outcomeConceptId == outcomeConceptId | is.na(outcomeConceptId))
+        # Note: for survival, using Poisson regression with 1 outcome and censored time as equivalent of survival regression:
         cyclopsData <- convertToCyclopsData(outcomes, covariates, modelType = "pr")
         prior <- createPrior("laplace", exclude = 0, useCrossValidation = TRUE)
         control <- createControl(cvType = "auto", startingVariance = 0.1, noiseLevel = "quiet")
         fit <-fitCyclopsModel(cyclopsData, prior = prior, control = control)
+        time <- as.ram(outcomes$time)
         prediction <- predict(fit)
-        plotCalibration(prediction, as.ram(outcomes$y))
-        for (effectSize in effectSizes){
-          # When sampling, the expected RR size is the target RR, but the actual RR could be different due to random error. Not sure how
-          # important it is, but this code is redoing the sampling until actual RR is equal to the target RR.
-          precision <- .01
-          targetCount <- sum(outcomeCounts$y) * (effectSize - 1)
-          temp <- 0
-          while (abs(sum(temp)-targetCount) > precision*targetCount)
-            temp <- rpois(length(prediction), prediction*(effectSize-1))
+        if (modelType == "survival") {
+          # Convert Poisson-based prediction to rate for exponential distribution:
+          prediction <- prediction / time
           
-          idx <- which(temp != 0)
-          temp <- data.frame(personId = as.ram(outcomes$personId[idx]), 
-                                         cohortStartDate = as.ram(outcomes$cohortStartDate[idx]),
-                                         time = as.ram(outcomes$time[idx]),
-                                         nOutcomes = temp[idx])
-          outcomeRows <- sum(temp$nOutcomes)
-          newOutcomes <- data.frame(personId = rep(0,outcomeRows),
-                                 cohortStartDate = rep(as.Date("1900-01-01"), outcomeRows),
-                                 timeToEvent = rep(0,outcomeRows))
-          cursor <- 1
-          for (i in 1:nrow(temp)){
-            nOutcomes <- temp$nOutcomes[i]
-            if (nOutcomes != 0){
-              newOutcomes$personId[cursor:(cursor+nOutcomes-1)] <- temp$personId[i]
-              newOutcomes$cohortStartDate[cursor:(cursor+nOutcomes-1)] <- temp$cohortStartDate[i]
-              newOutcomes$timeToEvent[cursor:(cursor+nOutcomes-1)] <- sample.int(size=nOutcomes,temp$time[i])
-              cursor = cursor+nOutcomes
+        } 
+        #plotCalibration(prediction, as.ram(outcomes$y), as.ram(outcomes$time))
+        for (fxSizeIdx in 1:length(effectSizes)){
+          effectSize = effectSizes[fxSizeIdx]
+          if (effectSize != 1) {
+            # When sampling, the expected RR size is the target RR, but the actual RR could be different due to random error. Not sure how
+            # important it is, but this code is redoing the sampling until actual RR is equal to the target RR.
+            precision <- .01
+            targetCount <- sum(outcomeCounts$y) * (effectSize - 1)
+            temp <- 0
+            if (modelType == "poisson") {
+              while (abs(sum(temp)-targetCount) > min(precision*targetCount, 1)) {
+                temp <- rpois(length(prediction), prediction*(effectSize-1))
+                temp[temp > time] <- time[temp > time]
+              }
+              idx <- which(temp != 0)
+              temp <- data.frame(personId = as.ram(outcomes$personId[idx]), 
+                                 cohortStartDate = as.ram(outcomes$cohortStartDate[idx]),
+                                 time = as.ram(outcomes$time[idx]),
+                                 nOutcomes = temp[idx])
+              outcomeRows <- sum(temp$nOutcomes)
+              newOutcomes <- data.frame(personId = rep(0,outcomeRows),
+                                        cohortStartDate = rep(as.Date("1900-01-01"), outcomeRows),
+                                        timeToEvent = rep(0,outcomeRows))
+              cursor <- 1
+              for (i in 1:nrow(temp)){
+                nOutcomes <- temp$nOutcomes[i]
+                if (nOutcomes != 0){
+                  newOutcomes$personId[cursor:(cursor+nOutcomes-1)] <- temp$personId[i]
+                  newOutcomes$cohortStartDate[cursor:(cursor+nOutcomes-1)] <- temp$cohortStartDate[i]
+                  newOutcomes$timeToEvent[cursor:(cursor+nOutcomes-1)] <- sample.int(size=nOutcomes,temp$time[i])
+                  cursor = cursor+nOutcomes
+                }
+              }
+              
+            } else { # modelType == "survival"
+              idx <- outcomes$y == 0
+              idx <- as.ram(ffwhich(idx, idx == TRUE))
+              prediction <- prediction[idx]
+              while (abs(sum(temp)-targetCount) > min(precision*targetCount, 1)) {
+                timeToEvent <- round(rexp(length(prediction),prediction*(effectSize-1)))
+                temp <- timeToEvent <= time[idx]
+              }
+              newOutcomes <- data.frame(personId = outcomes$personId[idx[temp]],
+                                        cohortStartDate = outcomes$cohortStartDate[idx[temp]],
+                                        timeToEvent = timeToEvent[temp])
             }
+            
+            
+            writeLines(paste("Target RR =", effectSize, ", inserted RR =", 1+(nrow(newOutcomes) / sum(outcomeCounts$y))))                  
+          } else { # effectSize == 1
+            newOutcomes <- data.frame()
+            writeLines(paste("Target RR = 1 , inserted RR = 1 (no signal inserted)"))              
           }
-          writeLines(paste("Target RR =", effectSize, ", inserted RR =",1+(nrow(newOutcomes) / sum(outcomeCounts$y))))
+          newOutcomeConceptId = outcomeConceptId * 100 + fxSizeIdx
+          
+          writeLines("\nWriting outcome to table") 
+          # Copy outcomes to output table:
+          sql <- SqlRender::loadRenderTranslateSql("CopyOutcomes.sql", 
+                                                   packageName = "MethodEvaluation",
+                                                   dbms = connectionDetails$dbms,
+                                                   cdm_database = cdmDatabase,
+                                                   outcome_database_schema = outcomeDatabaseSchema,
+                                                   outcome_table = outcomeTable,
+                                                   outcome_condition_type_concept_ids = outcomeConditionTypeConceptIds,
+                                                   output_database_schema = outputDatabaseSchema,
+                                                   output_table = outputTable,
+                                                   source_concept_id = outcomeConceptId,
+                                                   target_concept_id = newOutcomeConceptId)
+          DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
+          
+          # Inject new outcomes:
+          if (nrow(newOutcomes) != 0){
+            newOutcomes$cohortStartDate <- newOutcomes$cohortStartDate + newOutcomes$timeToEvent
+            newOutcomes$timeToEvent <- NULL
+            newOutcomes$cohortConceptId <- newOutcomeConceptId
+            names(newOutcomes) <- SqlRender::camelCaseToSnakeCase(names(newOutcomes))
+            names(newOutcomes)[names(newOutcomes) == "person_id"] <- "subject_id"
+            tableName <-  paste(outputDatabaseSchema, outputTable, sep = ".")
+            DatabaseConnector::dbInsertTable(conn, tableName, newOutcomes, FALSE, FALSE, FALSE)
+          }
+          idx <- result$exposureConceptId == exposureConceptId & result$outcomeConceptId == outcomeConceptId  & result$effectSize == effectSize
+          result$newOutcomeConceptId[idx] <- newOutcomeConceptId
+          result$trueEffectSize[idx] <- 1+(nrow(newOutcomes) / sum(outcomeCounts$y))
+          result$observedOutcomes[idx] <- sum(outcomeCounts$y)
+          result$injectedOutcomes[idx] <- nrow(newOutcomes)
         }        
       }
     }
     # TODO: remove cohort_person temp table
   }
   dummy <- RJDBC::dbDisconnect(conn)
-  list(exposures, outcomeCounts, covariates)  
+  return(result)
 }
 
 plotCalibration <- function(prediction, y, time){
@@ -218,7 +316,7 @@ plotCalibration <- function(prediction, y, time){
   q <- quantile(data$cumTime, (1:(numberOfStrata-1))/numberOfStrata)
   data$strata <- cut(data$cumTime, breaks=c(0,q,max(data$cumTime)), labels = FALSE)
   strataData <- merge(aggregate(obs ~ strata, data = data, sum),
-                aggregate(time ~ strata, data = data, sum))
+                      aggregate(time ~ strata, data = data, sum))
   
   strataData$rate = strataData$obs / strataData$time
   temp <- aggregate(predRate ~ strata, data = data, min)
