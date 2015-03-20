@@ -57,14 +57,17 @@ injectSignals <- function(connectionDetails,
                           riskWindowStart = 0,
                           riskWindowEnd = 0, 
                           addExposureDaysToEnd = TRUE,
-                          firstOutcomeOnly = TRUE,
+                          firstOutcomeOnly = FALSE,
                           effectSizes = c(1, 1.25, 1.5, 2, 4, 8)){
+  if (min(effectSizes) < 1)
+    stop("Effect sizes smaller than 1 are currently not supported")
+  
   cdmDatabase <- strsplit(cdmDatabaseSchema ,"\\.")[[1]][1]
   exposureConceptIds <- unique(exposureOutcomePairs$exposureConceptId)
   conn <- DatabaseConnector::connect(connectionDetails)
   
   for (exposureConceptId in exposureConceptIds){
-    writeLines(paste("Processung drug", exposureConcept))  
+    writeLines(paste("Processing drug", exposureConceptId))  
     outcomeConceptIds <- unique(exposureOutcomePairs$outcomeConceptId[exposureOutcomePairs$exposureConceptId == exposureConceptId])    
     renderedSql <- SqlRender::loadRenderTranslateSql("CreateExposedCohorts.sql",
                                                      packageName = "MethodEvaluation",
@@ -86,7 +89,10 @@ injectSignals <- function(connectionDetails,
     writeLines("\nExtracting risk windows and outcome counts")
     exposureSql <-"SELECT cohort_definition_id, subject_id, cohort_start_date, DATEDIFF(DAY, cohort_start_date, cohort_end_date) AS days_at_risk FROM #cohort_person"
     exposureSql <- SqlRender::translateSql(exposureSql, "sql server", connectionDetails$dbms, oracleTempSchema)$sql
-    exposures <- DatabaseConnector::querySql.ffdf(conn, exposureSql)                                                   
+    exposures <- DatabaseConnector::querySql.ffdf(conn, exposureSql)    
+    names(exposures) <- SqlRender::snakeCaseToCamelCase(names(exposures))
+    names(exposures)[names(exposures) == "subjectId"] <- "personId"
+    
     exposure_outcome_pairs <- data.frame(exposure_concept_id = exposureOutcomePairs$exposureConceptId, outcome_concept_id = exposureOutcomePairs$outcomeConceptId)
     DatabaseConnector::dbInsertTable(conn, "#exposure_outcome_pairs", exposure_outcome_pairs, TRUE, TRUE, TRUE, oracleTempSchema)
     renderedSql <- SqlRender::loadRenderTranslateSql("GetOutcomes.sql",
@@ -98,9 +104,12 @@ injectSignals <- function(connectionDetails,
                                                      outcome_table = outcomeTable,
                                                      outcome_concept_ids = outcomeConceptIds,
                                                      outcome_condition_type_concept_ids = outcomeConditionTypeConceptIds)
-    outcomeCounts <- DatabaseConnector::querySql.ffdf(conn, renderedSql)                                                   
+    outcomeCounts <- DatabaseConnector::querySql.ffdf(conn, renderedSql) 
+    names(outcomeCounts) <- SqlRender::snakeCaseToCamelCase(names(outcomeCounts))
+    names(outcomeCounts)[names(outcomeCounts) == "subjectId"] <- "personId"
     
     if (buildOutcomeModel){
+      # Build an outcome model using all baseline covariates.
       covariates <- CohortMethod::getDbCovariates(connection = conn, 
                                                   oracleTempSchema = oracleTempSchema, 
                                                   cdmDatabaseSchema = cdmDatabaseSchema, 
@@ -108,43 +117,87 @@ injectSignals <- function(connectionDetails,
                                                   cohortConceptIds = exposureConceptId,
                                                   useCovariateDemographics = TRUE,
                                                   useCovariateConditionOccurrence = TRUE,
-                                                  useCovariateConditionOccurrence365d = TRUE,
-                                                  useCovariateConditionOccurrence30d = TRUE,
-                                                  useCovariateConditionOccurrenceInpt180d = TRUE,
-                                                  useCovariateConditionEra = TRUE,
-                                                  useCovariateConditionEraEver = TRUE,
-                                                  useCovariateConditionEraOverlap = TRUE,
-                                                  useCovariateConditionGroup = TRUE,
-                                                  useCovariateDrugExposure = TRUE,
-                                                  useCovariateDrugExposure365d = TRUE,
-                                                  useCovariateDrugExposure30d = TRUE,
-                                                  useCovariateDrugEra = TRUE,
-                                                  useCovariateDrugEra365d = TRUE,
-                                                  useCovariateDrugEra30d = TRUE,
-                                                  useCovariateDrugEraEver = TRUE,
-                                                  useCovariateDrugEraOverlap = TRUE,
-                                                  useCovariateDrugGroup = TRUE,
-                                                  useCovariateProcedureOccurrence = TRUE,
-                                                  useCovariateProcedureOccurrence365d = TRUE,
-                                                  useCovariateProcedureOccurrence30d = TRUE,
-                                                  useCovariateProcedureGroup = TRUE,
-                                                  useCovariateObservation = TRUE,
-                                                  useCovariateObservation365d = TRUE,
-                                                  useCovariateObservation30d = TRUE,
-                                                  useCovariateObservationBelow = TRUE,
-                                                  useCovariateObservationAbove = TRUE,
-                                                  useCovariateObservationCount365d = TRUE,
-                                                  useCovariateConceptCounts = TRUE,
-                                                  useCovariateRiskScores = TRUE,
-                                                  useCovariateInteractionYear = FALSE,
-                                                  useCovariateInteractionMonth = FALSE,
+                                                  #                                                   useCovariateConditionOccurrence365d = TRUE,
+                                                  #                                                   useCovariateConditionOccurrence30d = TRUE,
+                                                  #                                                   useCovariateConditionOccurrenceInpt180d = TRUE,
+                                                  #                                                   useCovariateConditionEra = TRUE,
+                                                  #                                                   useCovariateConditionEraEver = TRUE,
+                                                  #                                                   useCovariateConditionEraOverlap = TRUE,
+                                                  #                                                   useCovariateConditionGroup = TRUE,
+                                                  #                                                   useCovariateDrugExposure = TRUE,
+                                                  #                                                   useCovariateDrugExposure365d = TRUE,
+                                                  #                                                   useCovariateDrugExposure30d = TRUE,
+                                                  #                                                   useCovariateDrugEra = TRUE,
+                                                  #                                                   useCovariateDrugEra365d = TRUE,
+                                                  #                                                   useCovariateDrugEra30d = TRUE,
+                                                  #                                                   useCovariateDrugEraEver = TRUE,
+                                                  #                                                   useCovariateDrugEraOverlap = TRUE,
+                                                  #                                                   useCovariateDrugGroup = TRUE,
+                                                  #                                                   useCovariateProcedureOccurrence = TRUE,
+                                                  #                                                   useCovariateProcedureOccurrence365d = TRUE,
+                                                  #                                                   useCovariateProcedureOccurrence30d = TRUE,
+                                                  #                                                   useCovariateProcedureGroup = TRUE,
+                                                  #                                                   useCovariateObservation = TRUE,
+                                                  #                                                   useCovariateObservation365d = TRUE,
+                                                  #                                                   useCovariateObservation30d = TRUE,
+                                                  #                                                   useCovariateObservationBelow = TRUE,
+                                                  #                                                   useCovariateObservationAbove = TRUE,
+                                                  #                                                   useCovariateObservationCount365d = TRUE,
+                                                  #                                                   useCovariateConceptCounts = TRUE,
+                                                  #                                                   useCovariateRiskScores = TRUE,
+                                                  #                                                   useCovariateInteractionYear = FALSE,
+                                                  #                                                   useCovariateInteractionMonth = FALSE,
                                                   excludedCovariateConceptIds = c(), 
                                                   deleteCovariatesSmallCount = 100)
+      temp <- covariates # remove this
+      covariates <- covariates$covariates       
+      exposures$rowId <- ff(1:nrow(exposures))
+      covariates <- merge(covariates, exposures, by=c("cohortStartDate", "personId"))
+      #TODO: sort covariates by rowId
+      outcomeCounts <- merge(exposures, outcomeCounts, by=c("cohortStartDate", "personId"), all.x = TRUE)
+      idx <- is.na(outcomeCounts$y)
+      idx <- ffwhich(idx, idx == TRUE) 
+      outcomeCounts$y <- ffindexset(x=outcomeCounts$y, index=idx, value=ff(0, length=length(idx), vmode = "double")) 
       
-      for (outcomeConcept in outcomeConceptIds){
-        # Fit model
+      names(outcomeCounts)[names(outcomeCounts) == "daysAtRisk"] <- "time"
+      outcomeCounts$time = outcomeCounts$time + 1
+      for (outcomeConceptId in outcomeConceptIds){
+        outcomes <- subset(outcomeCounts, outcomeConceptId == outcomeConceptId | is.na(outcomeConceptId))
+        cyclopsData <- convertToCyclopsData(outcomes, covariates, modelType = "pr")
+        prior <- createPrior("laplace", exclude = 0, useCrossValidation = TRUE)
+        control <- createControl(cvType = "auto", startingVariance = 0.1, noiseLevel = "quiet")
+        fit <-fitCyclopsModel(cyclopsData, prior = prior, control = control)
+        prediction <- predict(fit)
+        plotCalibration(prediction, as.ram(outcomes$y))
         for (effectSize in effectSizes){
-          # Generate different effect sizes
+          # When sampling, the expected RR size is the target RR, but the actual RR could be different due to random error. Not sure how
+          # important it is, but this code is redoing the sampling until actual RR is equal to the target RR.
+          precision <- .01
+          targetCount <- sum(outcomeCounts$y) * (effectSize - 1)
+          temp <- 0
+          while (abs(sum(temp)-targetCount) > precision*targetCount)
+            temp <- rpois(length(prediction), prediction*(effectSize-1))
+          
+          idx <- which(temp != 0)
+          temp <- data.frame(personId = as.ram(outcomes$personId[idx]), 
+                                         cohortStartDate = as.ram(outcomes$cohortStartDate[idx]),
+                                         time = as.ram(outcomes$time[idx]),
+                                         nOutcomes = temp[idx])
+          outcomeRows <- sum(temp$nOutcomes)
+          newOutcomes <- data.frame(personId = rep(0,outcomeRows),
+                                 cohortStartDate = rep(as.Date("1900-01-01"), outcomeRows),
+                                 timeToEvent = rep(0,outcomeRows))
+          cursor <- 1
+          for (i in 1:nrow(temp)){
+            nOutcomes <- temp$nOutcomes[i]
+            if (nOutcomes != 0){
+              newOutcomes$personId[cursor:(cursor+nOutcomes-1)] <- temp$personId[i]
+              newOutcomes$cohortStartDate[cursor:(cursor+nOutcomes-1)] <- temp$cohortStartDate[i]
+              newOutcomes$timeToEvent[cursor:(cursor+nOutcomes-1)] <- sample.int(size=nOutcomes,temp$time[i])
+              cursor = cursor+nOutcomes
+            }
+          }
+          writeLines(paste("Target RR =", effectSize, ", inserted RR =",1+(nrow(newOutcomes) / sum(outcomeCounts$y))))
         }        
       }
     }
@@ -152,4 +205,35 @@ injectSignals <- function(connectionDetails,
   }
   dummy <- RJDBC::dbDisconnect(conn)
   list(exposures, outcomeCounts, covariates)  
+}
+
+plotCalibration <- function(prediction, y, time){
+  #time <- as.ram(outcomes$time)
+  #y <- as.ram(outcomes$y)
+  # This is quite complicated because it's a Poisson model. Creating equal sized bins based on days. 
+  numberOfStrata <- 5
+  data <- data.frame(predRate = prediction/time, obs = y, time = time)
+  data <- data[order(data$predRate), ]
+  data$cumTime <- cumsum(data$time)
+  q <- quantile(data$cumTime, (1:(numberOfStrata-1))/numberOfStrata)
+  data$strata <- cut(data$cumTime, breaks=c(0,q,max(data$cumTime)), labels = FALSE)
+  strataData <- merge(aggregate(obs ~ strata, data = data, sum),
+                aggregate(time ~ strata, data = data, sum))
+  
+  strataData$rate = strataData$obs / strataData$time
+  temp <- aggregate(predRate ~ strata, data = data, min)
+  names(temp)[names(temp) == "predRate"] <- "minx"
+  strataData <- merge(strataData, temp)
+  strataData$maxx <- c(strataData$minx[2:numberOfStrata], max(data$predRate)) 
+  
+  library(ggplot2)
+  #Do not show last percent of data (in days):
+  limx <- min(data$predRate[data$cumTime > 0.99*sum(data$time)])
+  ggplot(strataData, aes(xmin=minx, xmax=maxx, ymin = 0, ymax= rate)) + 
+    geom_abline() +
+    geom_rect(color = rgb(0,0,0.8, alpha=0.8), fill = rgb(0,0,0.8, alpha=0.5)) +
+    coord_cartesian(xlim = c(0,limx)) 
+  
+  
+  
 }

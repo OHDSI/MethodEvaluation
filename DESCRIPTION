@@ -18,6 +18,7 @@ Depends:
     CohortMethod (>= 1.0.3)
 Imports:     
     RJDBC,
-    SqlRender (>= 1.1.0)
+    SqlRender (>= 1.1.0),
+    pROC
 Suggests:
     testthat,

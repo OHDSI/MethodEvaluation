@@ -38,7 +38,6 @@ CREATE TABLE @cohort_table (
 	cohort_end_date DATE NULL,
 	subject_id BIGINT NOT NULL,
 	);
-
 }
 
 USE @cdm_database;
@@ -58,10 +57,10 @@ SELECT DISTINCT person_id,
 FROM condition_occurrence
 WHERE condition_concept_id IN (
 		SELECT descendant_concept_id
-		FROM vocabulary.concept_ancestor
+		FROM concept_ancestor
 		WHERE ancestor_concept_id IN (
 				SELECT target_concept_id
-				FROM vocabulary.source_to_concept_map
+				FROM source_to_concept_map
 				WHERE primary_map = 'Y'
 					AND (
 						invalid_reason IS NULL
@@ -99,10 +98,10 @@ SELECT DISTINCT person_id,
 FROM condition_occurrence
 WHERE condition_concept_id IN (
 		SELECT descendant_concept_id
-		FROM vocabulary.concept_ancestor
+		FROM concept_ancestor
 		WHERE ancestor_concept_id IN (
 				SELECT target_concept_id
-				FROM vocabulary.source_to_concept_map
+				FROM source_to_concept_map
 				WHERE primary_map = 'Y'
 					AND (
 						invalid_reason IS NULL
@@ -130,10 +129,10 @@ SELECT DISTINCT person_id,
 FROM condition_occurrence
 WHERE condition_concept_id IN (
 		SELECT descendant_concept_id
-		FROM vocabulary.concept_ancestor
+		FROM concept_ancestor
 		WHERE ancestor_concept_id IN (
 				SELECT target_concept_id
-				FROM vocabulary.source_to_concept_map
+				FROM source_to_concept_map
 				WHERE primary_map = 'Y'
 					AND (
 						invalid_reason IS NULL
@@ -164,10 +163,10 @@ INNER JOIN visit_occurrence v
 		AND v.place_of_service_concept_id IN (9203 /* ER */, 9201 /* Inpatient*/)
 WHERE o.condition_concept_id IN (
 		SELECT descendant_concept_id
-		FROM vocabulary.concept_ancestor
+		FROM concept_ancestor
 		WHERE ancestor_concept_id IN (
 				SELECT target_concept_id
-				FROM vocabulary.source_to_concept_map
+				FROM source_to_concept_map
 				WHERE primary_map = 'Y'
 					AND (
 						invalid_reason IS NULL
@@ -194,10 +193,10 @@ SELECT DISTINCT person_id,
 FROM condition_occurrence
 WHERE condition_concept_id IN (
 		SELECT descendant_concept_id
-		FROM vocabulary.concept_ancestor
+		FROM concept_ancestor
 		WHERE ancestor_concept_id IN (
 				SELECT target_concept_id
-				FROM vocabulary.source_to_concept_map
+				FROM source_to_concept_map
 				WHERE primary_map = 'Y'
 					AND (
 						invalid_reason IS NULL

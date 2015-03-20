@@ -29,7 +29,7 @@ SELECT exposure.subject_id,
 	exposure.cohort_start_date,
 	exposure.cohort_definition_id AS exposure_concept_id,
 	outcome.outcome_concept_id,
-	COUNT(DISTINCT outcome_date)
+	COUNT(DISTINCT outcome_date) AS y
 FROM #cohort_person exposure
 INNER JOIN (
 {@first_outcome_only} ? {

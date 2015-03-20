@@ -13,8 +13,8 @@ injectSignals(connectionDetails, cdmDatabaseSchema,
   outputTable = "generated_outcomes", exposureOutcomePairs,
   modelType = "poisson", buildOutcomeModel = TRUE,
   firstExposureOnly = FALSE, washoutWindow = 183, riskWindowStart = 0,
-  riskWindowEnd = 0, addExposureDaysToEnd = TRUE, firstOutcomeOnly = TRUE,
-  effectSizes = c(1, 1.25, 1.5, 2, 4, 8))
+  riskWindowEnd = 0, addExposureDaysToEnd = TRUE,
+  firstOutcomeOnly = FALSE, effectSizes = c(1, 1.25, 1.5, 2, 4, 8))
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{ConnectionDetails} created using the function \code{createConnectionDetails} in the \code{DatabaseConnector} package.}

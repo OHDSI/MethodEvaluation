@@ -80,3 +80,46 @@ NULL
 #' evaluation of methods for drug safety signal detection using electronic healthcare record 
 #' databases. Drug Safety 36(1):13-23, 2013
 NULL
+
+#' Compute the area under the ROC curve
+#'
+#' @export
+computeAuc <- function(methodResults, referenceSet, confidenceIntervals = TRUE){
+  methodResults <- merge(methodResults, referenceSet[,c("exposureConceptId", "outcomeConceptId", "groundTruth")])
+  roc <- pROC::roc.default(methodResults$groundTruth, methodResults$logRr, algorithm=3)
+  if (confidenceIntervals){
+    auc <- as.numeric(pROC::ci.auc.roc(roc, method="delong"))
+    return(data.frame(auc = auc[2], auc_lb95ci = auc[1], auc_lb95ci = auc[3]))  
+  } else {
+    auc <- pROC::auc.roc(roc)
+    return(auc[1])
+  }
+}
+
+#' Compute the mean squared error
+#'
+#' @export
+computeMse <- function(){
+  
+}
+
+#' Compute the bias (mean error)
+#'
+#' @export
+computeBias <- function(){
+  
+}
+
+#' Plot the error distribution
+#'
+#' @export
+plotBias <- function(){
+  
+}
+
+#' Plot the ROC curve
+#'
+#' @export
+plotRoc <- function(){
+  
+}

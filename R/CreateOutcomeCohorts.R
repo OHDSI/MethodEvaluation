@@ -31,6 +31,7 @@
 #' database and schema should be specified, e.g. 'cdm_schema.dbo'
 #' @param cohortTable 		      The name of the table where the outcomes will be stored.
 #'
+#' @export
 createOutcomeCohorts <- function(connectionDetails,
                                  cdmDatabaseSchema,
                                  createNewCohortTable = FALSE,
