@@ -21,8 +21,11 @@
 #' @details
 #' This function will insert additional outcomes for a given set of drug-outcome pairs. It is 
 #' assumed that these drug-outcome pairs represent negative controls, so the true relative risk 
-#' before inserting any outcomes should be 1. There are several models for inserting the outcomes
-#' during the specified risk window of the drug.
+#' before inserting any outcomes should be 1. There are two models for inserting the outcomes
+#' during the specified risk window of the drug: a Poisson model assuming multiple outcomes could occurr during a single exposure, and a 
+#' survival model considering only one outcome per exposure.
+#' 
+#' For each 
 #' 
 #' @param connectionDetails       An R object of type \code{ConnectionDetails} created using the function \code{createConnectionDetails} in the \code{DatabaseConnector} package.
 #' @param cdmDatabaseSchema       Name of database schema that contains OMOP CDM and vocabulary.
@@ -46,6 +49,16 @@
 #' @param firstExposureOnly       Should signals be injected only for the first exposure? (ie. assuming an acute effect)
 #' @param washoutWindow           Number of days at the start of observation for which no signals will be injected, but will be used to determine whether
 #' exposure or outcome is the first one, and for extracting covariates to build the outcome model.
+#' @param riskWindowStart         The start of the risk window relative to the start of the exposure (in days). When 0, risk is assumed to start on the first day of exposure.
+#' @param riskWindowEnd           The end of the risk window relative to the start of the exposure. Note that typically the length of exposure is added to this number (when 
+#' the \code{addExposureDaysToEnd} parameter is set to TRUE).
+#' @param addExposureDaysToEnd    Should length of exposure be added to the risk window?
+#' @param firstOutcomeOnly        Should only the first outcome per person be considered when modeling the outcome?
+#' @param effectSizes             A numeric vector of effect sizes that should be inserted. 
+#' 
+#' @return A data.frame listing all the drug-pairs in combination with effect sizes, the outcome concept IDs that were generated for each outcome-effect size combination,
+#' and, the real inserted effect size (might be different from the requested effect size because of sampling error).#' 
+#' 
 #' @export
 injectSignals <- function(connectionDetails, 
                           cdmDatabaseSchema,
