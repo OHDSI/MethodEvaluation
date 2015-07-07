@@ -191,7 +191,7 @@ injectSignals <- function(connectionDetails,
                                                   deleteCovariatesSmallCount = 100)
       temp <- covariates # remove this
       covariates <- covariates$covariates       
-      exposures$rowId <- ff(1:nrow(exposures))
+      exposures$rowId <- ff::ff(1:nrow(exposures))
       covariates <- merge(covariates, exposures, by=c("cohortStartDate", "personId"))
       covariates <- covariates[ff::ffdforder(covariates[c("rowId")]),]
       outcomeCounts <- merge(exposures, outcomeCounts, by=c("cohortStartDate", "personId"), all.x = TRUE)

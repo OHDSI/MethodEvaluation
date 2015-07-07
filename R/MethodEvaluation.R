@@ -53,7 +53,7 @@ NULL
 #' positive controls) and 50 drug-outcome pairs where we believe the drug does not cause the 
 #' outcome (negative controls). The controls involve 10 health outcomes of interest. Note that
 #' originally, there was an additional positive control (Nimesulide and acute liver injury), but
-#' but Nimesulide is not in RxNorm, and is not available in many countries).
+#' Nimesulide is not in RxNorm, and is not available in many countries.
 #'
 #' @docType data
 #' @keywords datasets
