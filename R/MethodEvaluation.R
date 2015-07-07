@@ -17,34 +17,29 @@
 # limitations under the License.
 
 #' The OMOP reference set
-#'
-#' A reference set of 165 drug-outcome pairs where we believe the drug causes the outcome (
-#' positive controls) and 234 drug-outcome pairs where we believe the drug does not cause the 
-#' outcome (negative controls). The controls involve 4 health outcomes of interest: acute
-#' liver injury, acute kidney injury, acute myocardial infarction, and GI bleeding.
+#' A reference set of 165 drug-outcome pairs where we believe the drug causes the outcome ( positive
+#' controls) and 234 drug-outcome pairs where we believe the drug does not cause the outcome (negative
+#' controls). The controls involve 4 health outcomes of interest: acute liver injury, acute kidney
+#' injury, acute myocardial infarction, and GI bleeding.
 #'
 #' @docType data
 #' @keywords datasets
 #' @name omopReferenceSet
-#' @usage data(omopReferenceSet)
-#' @format A data frame with 399 rows and 10 variables:
-#' \describe{
-#'   \item{exposureConceptId}{Concept ID identifying the exposure}
-#'   \item{exposureConceptName}{Name of the exposure}
-#'   \item{outcomeConceptId}{Concept ID identifying the outcome}
-#'   \item{outcomeConceptName}{Name of the outcome}
-#'   \item{groundTruth}{0 = negative control, 1 = positive control}
-#'   \item{indicationConceptId}{Concept Id identifying the (primary) indication of the drug. To be 
-#'   used when one wants to nest the analysis within the indication}
-#'   \item{indicationConceptName}{Name of the indication}
-#'   \item{comparatorDrugConceptId}{Concept ID identifying a comparator drug that can be used as a 
-#'   counterfactual}
-#'   \item{comparatorDrugConceptName}{Name of the comparator drug}
-#'   \item{comparatorType}{How the comparator was selected}
-#' }
+#' @usage
+#' data(omopReferenceSet)
+#' @format
+#' A data frame with 399 rows and 10 variables: \describe{ \item{exposureConceptId}{Concept ID
+#' identifying the exposure} \item{exposureConceptName}{Name of the exposure}
+#' \item{outcomeConceptId}{Concept ID identifying the outcome} \item{outcomeConceptName}{Name of the
+#' outcome} \item{groundTruth}{0 = negative control, 1 = positive control}
+#' \item{indicationConceptId}{Concept Id identifying the (primary) indication of the drug. To be used
+#' when one wants to nest the analysis within the indication} \item{indicationConceptName}{Name of the
+#' indication} \item{comparatorDrugConceptId}{Concept ID identifying a comparator drug that can be
+#' used as a counterfactual} \item{comparatorDrugConceptName}{Name of the comparator drug}
+#' \item{comparatorType}{How the comparator was selected} }
 #' @references
-#' Ryan PB, Schuemie MJ, Welebob E, Duke J, Valentine S, Hartzema AG. Defining a reference set to support 
-#' methodological research in drug safety. Drug Safety 36 Suppl 1:S33-47, 2013
+#' Ryan PB, Schuemie MJ, Welebob E, Duke J, Valentine S, Hartzema AG. Defining a reference set to
+#' support methodological research in drug safety. Drug Safety 36 Suppl 1:S33-47, 2013
 NULL
 
 #' The EU-ADR reference set
@@ -58,39 +53,37 @@ NULL
 #' @docType data
 #' @keywords datasets
 #' @name euadrReferenceSet
-#' @usage data(euadrReferenceSet)
-#' @format A data frame with 399 rows and 10 variables:
-#' \describe{
-#'   \item{exposureConceptId}{Concept ID identifying the exposure}
-#'   \item{exposureConceptName}{Name of the exposure}
-#'   \item{outcomeConceptId}{Concept ID identifying the outcome}
-#'   \item{outcomeConceptName}{Name of the outcome}
-#'   \item{groundTruth}{0 = negative control, 1 = positive control}
-#'   \item{indicationConceptId}{Concept Id identifying the (primary) indication of the drug. To be 
-#'   used when one wants to nest the analysis within the indication}
-#'   \item{indicationConceptName}{Name of the indication}
-#'   \item{comparatorDrugConceptId}{Concept ID identifying a comparator drug that can be used as a 
-#'   counterfactual}
-#'   \item{comparatorDrugConceptName}{Name of the comparator drug}
-#'   \item{comparatorType}{How the comparator was selected}
-#' }
+#' @usage
+#' data(euadrReferenceSet)
+#' @format
+#' A data frame with 399 rows and 10 variables: \describe{ \item{exposureConceptId}{Concept ID
+#' identifying the exposure} \item{exposureConceptName}{Name of the exposure}
+#' \item{outcomeConceptId}{Concept ID identifying the outcome} \item{outcomeConceptName}{Name of the
+#' outcome} \item{groundTruth}{0 = negative control, 1 = positive control}
+#' \item{indicationConceptId}{Concept Id identifying the (primary) indication of the drug. To be used
+#' when one wants to nest the analysis within the indication} \item{indicationConceptName}{Name of the
+#' indication} \item{comparatorDrugConceptId}{Concept ID identifying a comparator drug that can be
+#' used as a counterfactual} \item{comparatorDrugConceptName}{Name of the comparator drug}
+#' \item{comparatorType}{How the comparator was selected} }
 #' @references
-#' Coloma PM, Avillach P, Salvo F, Schuemie MJ, Ferrajolo C, Pariente A, Fourrier-Réglat A,
-#' Molokhia M, Patadia V, van der Lei J, Sturkenboom M, Trifirò G. A reference standard for 
-#' evaluation of methods for drug safety signal detection using electronic healthcare record 
-#' databases. Drug Safety 36(1):13-23, 2013
+#' Coloma PM, Avillach P, Salvo F, Schuemie MJ, Ferrajolo C, Pariente A, Fourrier-Réglat A, Molokhia
+#' M, Patadia V, van der Lei J, Sturkenboom M, Trifirò G. A reference standard for evaluation of
+#' methods for drug safety signal detection using electronic healthcare record databases. Drug Safety
+#' 36(1):13-23, 2013
 NULL
 
 #' Compute the area under the ROC curve
 #'
 #' @export
-computeAuc <- function(methodResults, referenceSet, confidenceIntervals = TRUE){
-  #TODO: add stratification (e.g. by analysisId, outcomeConceptId)
-  methodResults <- merge(methodResults, referenceSet[,c("exposureConceptId", "outcomeConceptId", "groundTruth")])
-  roc <- pROC::roc.default(methodResults$groundTruth, methodResults$logRr, algorithm=3)
-  if (confidenceIntervals){
-    auc <- as.numeric(pROC::ci.auc.roc(roc, method="delong"))
-    return(data.frame(auc = auc[2], auc_lb95ci = auc[1], auc_lb95ci = auc[3]))  
+computeAuc <- function(methodResults, referenceSet, confidenceIntervals = TRUE) {
+  # TODO: add stratification (e.g. by analysisId, outcomeConceptId)
+  methodResults <- merge(methodResults,
+                         referenceSet[,
+                         c("exposureConceptId", "outcomeConceptId", "groundTruth")])
+  roc <- pROC::roc.default(methodResults$groundTruth, methodResults$logRr, algorithm = 3)
+  if (confidenceIntervals) {
+    auc <- as.numeric(pROC::ci.auc.roc(roc, method = "delong"))
+    return(data.frame(auc = auc[2], auc_lb95ci = auc[1], auc_lb95ci = auc[3]))
   } else {
     auc <- pROC::auc.roc(roc)
     return(auc[1])
@@ -100,27 +93,27 @@ computeAuc <- function(methodResults, referenceSet, confidenceIntervals = TRUE){
 #' Compute the mean squared error
 #'
 #' @export
-computeMse <- function(){
-  
+computeMse <- function() {
+
 }
 
 #' Compute the bias (mean error)
 #'
 #' @export
-computeBias <- function(){
-  
+computeBias <- function() {
+
 }
 
 #' Plot the error distribution
 #'
 #' @export
-plotBias <- function(){
-  
+plotBias <- function() {
+
 }
 
 #' Plot the ROC curve
 #'
 #' @export
-plotRoc <- function(){
-  
+plotRoc <- function() {
+
 }

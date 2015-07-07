@@ -16,17 +16,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-.createManualAndVignettes <- function(){
+.formatAndCheckCode <- function() {
+  OhdsiRTools::formatRFolder()
+  OhdsiRTools::checkUsagePackage("MethodEvaluation")
+  OhdsiRTools::ohdsiLintrFolder()
+}
+
+.createManualAndVignettes <- function() {
   shell("rm man/MethodEvaluation.pdf")
   shell("R CMD Rd2pdf ./ --output=man/MethodEvaluation.pdf")
 }
 
-.loadReferenceSets <- function(){
+.loadReferenceSets <- function() {
   omopReferenceSet <- read.csv("C:/home/Research/Method eval/OmopRefSet.csv")
   names(omopReferenceSet) <- SqlRender::snakeCaseToCamelCase(names(omopReferenceSet))
   save(omopReferenceSet, file = "data/omopReferenceSet.rda", compress = "xz")
-  
+
   euadrReferenceSet <- read.csv("C:/home/Research/Method eval/EUADRRefSet.csv")
   names(euadrReferenceSet) <- SqlRender::snakeCaseToCamelCase(names(euadrReferenceSet))
-  save(euadrReferenceSet, file = "data/euadrReferenceSet.rda", compress = "xz") 
+  save(euadrReferenceSet, file = "data/euadrReferenceSet.rda", compress = "xz")
 }

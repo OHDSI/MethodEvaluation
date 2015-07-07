@@ -19,17 +19,22 @@
 #' Create outcomes of interest
 #'
 #' @details
-#' This function will create the outcomes of interest referenced in the various reference sets. 
-#' The outcomes of interest are derives using information like diagnoses, procedures, and drug prescriptions.
-#' The outcomes are stored in a table on the database server.
+#' This function will create the outcomes of interest referenced in the various reference sets. The
+#' outcomes of interest are derives using information like diagnoses, procedures, and drug
+#' prescriptions. The outcomes are stored in a table on the database server.
 #'
-#' @param connectionDetails  	  An R object of type \code{ConnectionDetails} created using the function \code{createConnectionDetails} in the \code{DatabaseConnector} package.
-#' @param cdmDatabaseSchema 		A database schema containing health care data in the OMOP Commond Data Model.
-#' Note that for SQL Server, botth the database and schema should be specified, e.g. 'cdm_schema.dbo'
-#' @param createNewCohortTable 	Should a new cohort table be created, or should the outcomes be inserted in a existing table?
-#' @param cohortDatabaseSchema 	The database schema where the target table is located. Note that for SQL Server, botth the 
-#' database and schema should be specified, e.g. 'cdm_schema.dbo'
-#' @param cohortTable 		      The name of the table where the outcomes will be stored.
+#' @param connectionDetails      An R object of type \code{ConnectionDetails} created using the
+#'                               function \code{createConnectionDetails} in the
+#'                               \code{DatabaseConnector} package.
+#' @param cdmDatabaseSchema      A database schema containing health care data in the OMOP Commond Data
+#'                               Model. Note that for SQL Server, botth the database and schema should
+#'                               be specified, e.g. 'cdm_schema.dbo'
+#' @param createNewCohortTable   Should a new cohort table be created, or should the outcomes be
+#'                               inserted in a existing table?
+#' @param cohortDatabaseSchema   The database schema where the target table is located. Note that for
+#'                               SQL Server, botth the database and schema should be specified, e.g.
+#'                               'cdm_schema.dbo'
+#' @param cohortTable            The name of the table where the outcomes will be stored.
 #'
 #' @export
 createOutcomeCohorts <- function(connectionDetails,
@@ -38,10 +43,10 @@ createOutcomeCohorts <- function(connectionDetails,
                                  cohortDatabaseSchema = cdmDatabaseSchema,
                                  cohortTable = "cohort",
                                  referenceSet = "omopReferenceSet") {
-  cohortDatabase <- strsplit(cohortDatabaseSchema ,"\\.")[[1]][1]
-  cdmDatabase <- strsplit(cdmDatabaseSchema ,"\\.")[[1]][1]
-  
-  if (referenceSet == "omopReferenceSet"){
+  cohortDatabase <- strsplit(cohortDatabaseSchema, "\\.")[[1]][1]
+  cdmDatabase <- strsplit(cdmDatabaseSchema, "\\.")[[1]][1]
+
+  if (referenceSet == "omopReferenceSet") {
     writeLines("Generating HOIs for the OMOP reference set")
     renderedSql <- SqlRender::loadRenderTranslateSql("CreateOmopHois.sql",
                                                      packageName = "MethodEvaluation",
@@ -51,14 +56,16 @@ createOutcomeCohorts <- function(connectionDetails,
                                                      cohort_database = cohortDatabase,
                                                      cohort_database_schema = cohortDatabaseSchema,
                                                      cohort_table = cohortTable)
-  } else if (referenceSet == "euadrReferenceSet"){
+  } else if (referenceSet == "euadrReferenceSet") {
     writeLines("Generating HOIs for the EU-ADR reference set")
     # TODO: add code for creating the EU-ADR HOIs
+  } else {
+    stop(paste("Unknow reference set:", referenceSet))
   }
   conn <- DatabaseConnector::connect(connectionDetails)
-  
+
   writeLines("Executing multiple queries. This could take a while")
-  DatabaseConnector::executeSql(conn,renderedSql)
+  DatabaseConnector::executeSql(conn, renderedSql)
   writeLines("Done")
   dummy <- RJDBC::dbDisconnect(conn)
 }
