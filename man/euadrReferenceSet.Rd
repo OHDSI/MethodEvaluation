@@ -3,12 +3,7 @@
 \docType{data}
 \name{euadrReferenceSet}
 \alias{euadrReferenceSet}
-\title{The EU-ADR reference set
-A reference set of 43 drug-outcome pairs where we believe the drug causes the outcome ( positive
-controls) and 50 drug-outcome pairs where we believe the drug does not cause the outcome (negative
-controls). The controls involve 10 health outcomes of interest. Note that originally, there was an
-additional positive control (Nimesulide and acute liver injury), but but Nimesulide is not in
-RxNorm, and is not available in many countries).}
+\title{The EU-ADR reference set}
 \format{A data frame with 399 rows and 10 variables: \describe{ \item{exposureConceptId}{Concept ID
 identifying the exposure} \item{exposureConceptName}{Name of the exposure}
 \item{outcomeConceptId}{Concept ID identifying the outcome} \item{outcomeConceptName}{Name of the
@@ -22,12 +17,11 @@ used as a counterfactual} \item{comparatorDrugConceptName}{Name of the comparato
 data(euadrReferenceSet)
 }
 \description{
-The EU-ADR reference set
-A reference set of 43 drug-outcome pairs where we believe the drug causes the outcome ( positive
-controls) and 50 drug-outcome pairs where we believe the drug does not cause the outcome (negative
-controls). The controls involve 10 health outcomes of interest. Note that originally, there was an
-additional positive control (Nimesulide and acute liver injury), but but Nimesulide is not in
-RxNorm, and is not available in many countries).
+A reference set of 43 drug-outcome pairs where we believe the drug causes the outcome (
+positive controls) and 50 drug-outcome pairs where we believe the drug does not cause the
+outcome (negative controls). The controls involve 10 health outcomes of interest. Note that
+originally, there was an additional positive control (Nimesulide and acute liver injury), but
+Nimesulide is not in RxNorm, and is not available in many countries.
 }
 \references{
 Coloma PM, Avillach P, Salvo F, Schuemie MJ, Ferrajolo C, Pariente A, Fourrier-Réglat A, Molokhia

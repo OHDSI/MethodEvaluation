@@ -8,13 +8,14 @@ injectSignals(connectionDetails, cdmDatabaseSchema,
   oracleTempSchema = cdmDatabaseSchema,
   exposureDatabaseSchema = cdmDatabaseSchema, exposureTable = "drug_era",
   outcomeDatabaseSchema = cdmDatabaseSchema, outcomeTable = "condition_era",
-  outcomeConditionTypeConceptIds = c(),
-  outputDatabaseSchema = cdmDatabaseSchema,
-  outputTable = "generated_outcomes", createOutputTable = TRUE,
+  outcomeConditionTypeConceptIds = c(), createOutputTables = TRUE,
   exposureOutcomePairs, modelType = "poisson", buildOutcomeModel = TRUE,
   firstExposureOnly = FALSE, washoutWindow = 183, riskWindowStart = 0,
   riskWindowEnd = 0, addExposureDaysToEnd = TRUE,
-  firstOutcomeOnly = FALSE, effectSizes = c(1, 1.25, 1.5, 2, 4, 8))
+  firstOutcomeOnly = FALSE, effectSizes = c(1, 1.25, 1.5, 2, 4, 8),
+  outputDatabaseSchema = cdmDatabaseSchema,
+  outputTables = c("inj_outcomes_1", "inj_outcomes_1_25", "inj_outcomes_1_5",
+  "inj_outcomes_2", "inj_outcomes_4", "inj_outcomes_8"))
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{ConnectionDetails} created using
@@ -55,15 +56,8 @@ COHORT_END_DATE.}
 condition occurrences.  Only applicable if outcomeTable =
 CONDITION_OCCURRENCE.}
 
-\item{outputDatabaseSchema}{The name of the database schema that is the location of the
-table containing the new outcomesRequires write permissions
-to this database.}
-
-\item{outputTable}{The table name that contains the outcome cohorts generated
-during signal injection.}
-
-\item{createOutputTable}{Should the output table be created prior to inserting the
-outcomes? If TRUE and the table already exists, it will
+\item{createOutputTables}{Should the output tablse be created prior to inserting the
+outcomes? If TRUE and the tables already exists, it will
 first be deleted.}
 
 \item{exposureOutcomePairs}{A data frame with at least two columns:
@@ -105,11 +99,17 @@ parameter is set to TRUE).}
 modeling the outcome?}
 
 \item{effectSizes}{A numeric vector of effect sizes that should be inserted.}
+
+\item{outputDatabaseSchema}{The name of the database schema that is the location of the
+tables containing the new outcomesRequires write permissions
+to this database.}
+
+\item{outputTables}{A vector of table names that will contain the generated outcome
+                                        cohorts. There should be one table name for each requested effect size.}
 }
 \value{
-A data.frame listing all the drug-pairs in combination with effect sizes, the outcome concept IDs
-that were generated for each outcome-effect size combination, and, the real inserted effect size
-(might be different from the requested effect size because of sampling error).#'
+A data.frame listing all the drug-pairs in combination with requested effect sizes and the real inserted effect size
+(might be different from the requested effect size because of sampling error).
 }
 \description{
 Inject signals in database
