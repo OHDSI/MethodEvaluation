@@ -41,7 +41,7 @@
 #'                                         cdmSchema.  Requires read permissions to this database.
 #' @param exposureTable                    The table name that contains the exposure cohorts.  If
 #'                                         exposureTable <> DRUG_ERA, then expectation is exposureTable
-#'                                         has format of COHORT table: COHORT_DEFINITION_ID,
+#'                                         has format of COHORT table: cohort_concept_id,
 #'                                         SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.
 #' @param outcomeDatabaseSchema            The name of the database schema that is the location where
 #'                                         the data used to define the outcome cohorts is available.
@@ -51,20 +51,20 @@
 #' @param outcomeTable                     The table name that contains the outcome cohorts.  If
 #'                                         outcomeTable <> CONDITION_OCCURRENCE, then expectation is
 #'                                         outcomeTable has format of COHORT table:
-#'                                         COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
+#'                                         cohort_concept_id, SUBJECT_ID, COHORT_START_DATE,
 #'                                         COHORT_END_DATE.
 #' @param outcomeConditionTypeConceptIds   A list of TYPE_CONCEPT_ID values that will restrict
 #'                                         condition occurrences.  Only applicable if outcomeTable =
 #'                                         CONDITION_OCCURRENCE.
-#' @param createOutputTables               Should the output tablse be created prior to inserting the
+#' @param createOutputTable               Should the output table be created prior to inserting the
 #'                                         outcomes? If TRUE and the tables already exists, it will
 #'                                         first be deleted.
 #' @param exposureOutcomePairs             A data frame with at least two columns:
 #'                                         \itemize{
 #'                                           \item {"exposureConceptId" containing the drug_concept_ID
-#'                                                 or cohort_definition_id of the exposure variable}
+#'                                                 or cohort_concept_id of the exposure variable}
 #'                                           \item {"outcomeConceptId" containing the
-#'                                                 condition_concept_ID or cohort_definition_id of the
+#'                                                 condition_concept_ID or cohort_concept_id of the
 #'                                                 outcome variable}
 #'                                         }
 #'
@@ -93,8 +93,8 @@
 #' @param outputDatabaseSchema             The name of the database schema that is the location of the
 #'                                         tables containing the new outcomesRequires write permissions
 #'                                         to this database.
-#' @param outputTables                      A vector of table names that will contain the generated outcome
-#'                                         cohorts. There should be one table name for each requested effect size.
+#' @param outputTable                      The name of the table names that will contain the generated outcome
+#'                                         cohorts. 
 #'
 #' @return
 #' A data.frame listing all the drug-pairs in combination with requested effect sizes and the real inserted effect size
@@ -109,10 +109,49 @@ injectSignals <- function(connectionDetails,
                           outcomeDatabaseSchema = cdmDatabaseSchema,
                           outcomeTable = "condition_era",
                           outcomeConditionTypeConceptIds = c(),
-                          createOutputTables = TRUE,
+                          createOutputTable = TRUE,
                           exposureOutcomePairs,
                           modelType = "poisson",
                           buildOutcomeModel = TRUE,
+                          covariateSettings = createCovariateSettings(useCovariateDemographics = TRUE,
+                                                                                              useCovariateConditionOccurrence = TRUE,
+                                                                                              useCovariateConditionOccurrence365d = TRUE,
+                                                                                              useCovariateConditionOccurrence30d = TRUE,
+                                                                                              useCovariateConditionOccurrenceInpt180d = TRUE,
+                                                                                              useCovariateConditionEra = TRUE,
+                                                                                              useCovariateConditionEraEver = TRUE,
+                                                                                              useCovariateConditionEraOverlap = TRUE,
+                                                                                              useCovariateConditionGroup = TRUE,
+                                                                                              useCovariateDrugExposure = TRUE,
+                                                                                              useCovariateDrugExposure365d = TRUE,
+                                                                                              useCovariateDrugExposure30d = TRUE,
+                                                                                              useCovariateDrugEra = TRUE,
+                                                                                              useCovariateDrugEra365d = TRUE,
+                                                                                              useCovariateDrugEra30d = TRUE,
+                                                                                              useCovariateDrugEraEver = TRUE,
+                                                                                              useCovariateDrugEraOverlap = TRUE,
+                                                                                              useCovariateDrugGroup = TRUE,
+                                                                                              useCovariateProcedureOccurrence = TRUE,
+                                                                                              useCovariateProcedureOccurrence365d = TRUE,
+                                                                                              useCovariateProcedureOccurrence30d = TRUE,
+                                                                                              useCovariateProcedureGroup = TRUE,
+                                                                                              useCovariateObservation = TRUE,
+                                                                                              useCovariateObservation365d = TRUE,
+                                                                                              useCovariateObservation30d = TRUE,
+                                                                                              useCovariateObservationCount365d = TRUE,
+                                                                                              useCovariateMeasurement365d = TRUE,
+                                                                                              useCovariateMeasurement30d = TRUE,
+                                                                                              useCovariateMeasurementCount365d = TRUE,
+                                                                                              useCovariateMeasurementBelow = TRUE,
+                                                                                              useCovariateMeasurementAbove = TRUE,
+                                                                                              useCovariateConceptCounts = TRUE,
+                                                                                              useCovariateRiskScores = TRUE,
+                                                                                              useCovariateInteractionYear = FALSE,
+                                                                                              useCovariateInteractionMonth = FALSE,
+                                                                                              excludedCovariateConceptIds = c(),
+                                                                                              deleteCovariatesSmallCount = 100),
+                          prior = createPrior("laplace", exclude = 0, useCrossValidation = TRUE),
+                          control = createControl(cvType = "auto", startingVariance = 0.1, noiseLevel = "quiet", threads = 10),
                           firstExposureOnly = FALSE,
                           washoutWindow = 183,
                           riskWindowStart = 0,
@@ -120,36 +159,34 @@ injectSignals <- function(connectionDetails,
                           addExposureDaysToEnd = TRUE,
                           firstOutcomeOnly = FALSE,
                           effectSizes = c(1, 1.25, 1.5, 2, 4, 8),
+                          precision = 0.01,
                           outputDatabaseSchema = cdmDatabaseSchema,
-                          outputTables = c("inj_outcomes_1", "inj_outcomes_1_25", "inj_outcomes_1_5", "inj_outcomes_2", "inj_outcomes_4", "inj_outcomes_8")) {
+                          outputTable = "injected_outcomes",
+                          outputConceptIdOffset = 1000) {
   if (min(effectSizes) < 1){
     stop("Effect sizes smaller than 1 are currently not supported")
   }
-  if (length(effectSizes) != length(outputTables)){
-    stop("Need one output table per effect size") 
-  }
+  
   
   result <- data.frame(exposureConceptId = rep(exposureOutcomePairs$exposureConceptId,
                                                each = length(effectSizes)),
                        outcomeConceptId = rep(exposureOutcomePairs$outcomeConceptId,
                                               each = length(effectSizes)),
-                       effectSize = rep(effectSizes, nrow(exposureOutcomePairs)),
-                       newOutcomeConceptId = 0,
+                       targetEffectSize = rep(effectSizes, nrow(exposureOutcomePairs)),
+                       newOutcomeConceptId = outputConceptIdOffset+(0:(nrow(exposureOutcomePairs)*length(effectSizes)-1)),
                        trueEffectSize = 0,
                        observedOutcomes = 0,
                        injectedOutcomes = 0)
   cdmDatabase <- strsplit(cdmDatabaseSchema, "\\.")[[1]][1]
   exposureConceptIds <- unique(exposureOutcomePairs$exposureConceptId)
   conn <- DatabaseConnector::connect(connectionDetails)
-  if (createOutputTables) {
-    for (outputTable in outputTables){
-      sql <- SqlRender::loadRenderTranslateSql("CreateSignalInjectionOutputTable.sql",
-                                               packageName = "MethodEvaluation",
-                                               dbms = connectionDetails$dbms,
-                                               output_database_schema = outputDatabaseSchema,
-                                               output_table = outputTable)
-      DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
-    }
+  if (createOutputTable) {
+    sql <- SqlRender::loadRenderTranslateSql("CreateSignalInjectionOutputTable.sql",
+                                             packageName = "MethodEvaluation",
+                                             dbms = connectionDetails$dbms,
+                                             output_database_schema = outputDatabaseSchema,
+                                             output_table = outputTable)
+    DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
   }
   for (exposureConceptId in exposureConceptIds) {
     writeLines(paste("\nProcessing exposure", exposureConceptId))
@@ -173,7 +210,7 @@ injectSignals <- function(connectionDetails,
     DatabaseConnector::executeSql(conn, renderedSql)
     
     writeLines("Extracting risk windows and outcome counts")
-    exposureSql <- "SELECT cohort_definition_id, subject_id, cohort_start_date, DATEDIFF(DAY, cohort_start_date, cohort_end_date) AS days_at_risk FROM #cohort_person"
+    exposureSql <- "SELECT cohort_concept_id, subject_id, cohort_start_date, DATEDIFF(DAY, cohort_start_date, cohort_end_date) AS days_at_risk FROM #cohort_person"
     exposureSql <- SqlRender::translateSql(exposureSql,
                                            "sql server",
                                            connectionDetails$dbms,
@@ -181,16 +218,6 @@ injectSignals <- function(connectionDetails,
     exposures <- DatabaseConnector::querySql.ffdf(conn, exposureSql)
     names(exposures) <- SqlRender::snakeCaseToCamelCase(names(exposures))
     names(exposures)[names(exposures) == "subjectId"] <- "personId"
-    
-    exposure_outcome_pairs <- data.frame(exposure_concept_id = exposureOutcomePairs$exposureConceptId,
-                                         outcome_concept_id = exposureOutcomePairs$outcomeConceptId)
-    DatabaseConnector::dbInsertTable(conn,
-                                     "#exposure_outcome_pairs",
-                                     exposure_outcome_pairs,
-                                     TRUE,
-                                     TRUE,
-                                     TRUE,
-                                     oracleTempSchema)
     #TODO: add option firstOutcomeOnly
     renderedSql <- SqlRender::loadRenderTranslateSql("GetOutcomes.sql",
                                                      packageName = "MethodEvaluation",
@@ -207,50 +234,16 @@ injectSignals <- function(connectionDetails,
     
     if (buildOutcomeModel) {
       writeLines("Extracting covariates for the outcome model")
-      covariateSettings <- PatientLevelPrediction::createCovariateSettings(useCovariateDemographics = TRUE,
-                                                                           useCovariateConditionOccurrence = TRUE,
-                                                                           useCovariateConditionOccurrence365d = TRUE,
-                                                                           useCovariateConditionOccurrence30d = TRUE,
-                                                                           useCovariateConditionOccurrenceInpt180d = TRUE,
-                                                                           useCovariateConditionEra = TRUE,
-                                                                           useCovariateConditionEraEver = TRUE,
-                                                                           useCovariateConditionEraOverlap = TRUE,
-                                                                           useCovariateConditionGroup = TRUE,
-                                                                           useCovariateDrugExposure = TRUE,
-                                                                           useCovariateDrugExposure365d = TRUE,
-                                                                           useCovariateDrugExposure30d = TRUE,
-                                                                           useCovariateDrugEra = TRUE,
-                                                                           useCovariateDrugEra365d = TRUE,
-                                                                           useCovariateDrugEra30d = TRUE,
-                                                                           useCovariateDrugEraEver = TRUE,
-                                                                           useCovariateDrugEraOverlap = TRUE,
-                                                                           useCovariateDrugGroup = TRUE,
-                                                                           useCovariateProcedureOccurrence = TRUE,
-                                                                           useCovariateProcedureOccurrence365d = TRUE,
-                                                                           useCovariateProcedureOccurrence30d = TRUE,
-                                                                           useCovariateProcedureGroup = TRUE,
-                                                                           useCovariateObservation = TRUE,
-                                                                           useCovariateObservation365d = TRUE,
-                                                                           useCovariateObservation30d = TRUE,
-                                                                           useCovariateObservationBelow = TRUE,
-                                                                           useCovariateObservationAbove = TRUE,
-                                                                           useCovariateObservationCount365d = TRUE,
-                                                                           useCovariateConceptCounts = TRUE,
-                                                                           useCovariateRiskScores = TRUE,
-                                                                           useCovariateInteractionYear = FALSE,
-                                                                           useCovariateInteractionMonth = FALSE,
-                                                                           excludedCovariateConceptIds = c(),
-                                                                           deleteCovariatesSmallCount = 100)
       covariates <- PatientLevelPrediction::getDbCovariateData(connection = conn,
                                                                oracleTempSchema = oracleTempSchema,
                                                                cdmDatabaseSchema = cdmDatabaseSchema,
                                                                useExistingCohortPerson = TRUE,
-                                                               cohortConceptIds = exposureConceptId,
+                                                               cohortIds = exposureConceptId,
                                                                covariateSettings = covariateSettings)
       covariates <- covariates$covariates
       exposures$rowId <- ff::ff(1:nrow(exposures))
       covariates <- merge(covariates, exposures, by = c("cohortStartDate", "personId"))
-      covariates <- covariates[ff::ffdforder(covariates[c("rowId")]), ]
+      #covariates <- covariates[ff::ffdforder(covariates[c("rowId")]), ]
       outcomeCounts <- merge(exposures, outcomeCounts, by = c("cohortStartDate",
                                                               "personId"), all.x = TRUE)
       idx <- ffbase::is.na.ff(outcomeCounts$y)
@@ -268,35 +261,33 @@ injectSignals <- function(connectionDetails,
         outcomeCounts$y <- ff::ffindexset(outcomeCounts$y, index = idx, value = ff::ff(as.double(1),
                                                                                        length = length(idx),
                                                                                        vmode = "double"))
-        outcomeCounts$time <- frf::ffindexset(outcomeCounts$time,
-                                              index = idx,
-                                              value = outcomeCounts$timeToEvent[idx])
+        outcomeCounts$time <- ff::ffindexset(outcomeCounts$time,
+                                             index = idx,
+                                             value = outcomeCounts$timeToEvent[idx])
       }
       for (outcomeConceptId in outcomeConceptIds) {
+        # outcomeConceptId = outcomeConceptIds[1]
         writeLines(paste("\nProcessing outcome", outcomeConceptId))
         outcomes <- subset(outcomeCounts,
                            outcomeConceptId == outcomeConceptId | is.na(outcomeConceptId))
         # Note: for survival, using Poisson regression with 1 outcome and censored time as equivalent of
         # survival regression:
-        cyclopsData <- convertToCyclopsData(outcomes, covariates, modelType = "pr")
-        prior <- createPrior("laplace", exclude = 0, useCrossValidation = TRUE)
-        control <- createControl(cvType = "auto", startingVariance = 0.1, noiseLevel = "quiet", threads = 10)
-        fit <- fitCyclopsModel(cyclopsData, prior = prior, control = control)
+        cyclopsData <- Cyclops::convertToCyclopsData(outcomes, covariates, modelType = "pr", quiet = TRUE)
+        fit <- Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
         time <- ff::as.ram(outcomes$time)
         prediction <- predict(fit)
         if (modelType == "survival") {
           # Convert Poisson-based prediction to rate for exponential distribution:
           prediction <- prediction/time
-          
         }
         # plotCalibration(prediction, ff::as.ram(outcomes$y), ff::as.ram(outcomes$time))
         for (fxSizeIdx in 1:length(effectSizes)) {
+          # fxSizeIdx <- 2
           effectSize <- effectSizes[fxSizeIdx]
           if (effectSize != 1) {
             # When sampling, the expected RR size is the target RR, but the actual RR could be different due to
             # random error. Not sure how important it is, but this code is redoing the sampling until actual RR
             # is equal to the target RR.
-            precision <- 0.01
             targetCount <- sum(outcomeCounts$y) * (effectSize - 1)
             temp <- 0
             if (modelType == "poisson") {
@@ -329,9 +320,9 @@ injectSignals <- function(connectionDetails,
               # modelType == 'survival'
               idx <- outcomes$y == 0
               idx <- ff::as.ram(ffbase::ffwhich(idx, idx == TRUE))
-              prediction <- prediction[idx]
+              predictionSubset <- prediction[idx]
               while (abs(sum(temp) - targetCount) > min(precision * targetCount, 1)) {
-                timeToEvent <- round(rexp(length(prediction), prediction * (effectSize - 1)))
+                timeToEvent <- round(rexp(length(predictionSubset), predictionSubset * (effectSize - 1)))
                 temp <- timeToEvent <= time[idx]
               }
               newOutcomes <- data.frame(personId = outcomes$personId[idx[temp]],
@@ -348,6 +339,7 @@ injectSignals <- function(connectionDetails,
             writeLines(paste("Target RR = 1 , inserted RR = 1 (no signal inserted)"))
           }
           writeLines("\nWriting outcome to table")
+          newOutcomeConceptId <- result$newOutcomeConceptId[result$targetEffectSize == effectSize & result$exposureConceptId == exposureConceptId & result$outcomeConceptId == outcomeConceptId]
           # Copy outcomes to output table:
           sql <- SqlRender::loadRenderTranslateSql("CopyOutcomes.sql",
                                                    packageName = "MethodEvaluation",
@@ -357,24 +349,23 @@ injectSignals <- function(connectionDetails,
                                                    outcome_table = outcomeTable,
                                                    outcome_condition_type_concept_ids = outcomeConditionTypeConceptIds,
                                                    output_database_schema = outputDatabaseSchema,
-                                                   output_table = outputTables[fxSizeIdx],
+                                                   output_table = outputTable,
                                                    source_concept_id = outcomeConceptId,
-                                                   target_concept_id = outcomeConceptId)
+                                                   target_concept_id = newOutcomeConceptId)
           DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
           
           # Inject new outcomes:
           if (nrow(newOutcomes) != 0) {
             newOutcomes$cohortStartDate <- newOutcomes$cohortStartDate + newOutcomes$timeToEvent
             newOutcomes$timeToEvent <- NULL
-            newOutcomes$cohortConceptId <- outcomeConceptId
+            newOutcomes$cohortConceptId <- newOutcomeConceptId
             names(newOutcomes) <- SqlRender::camelCaseToSnakeCase(names(newOutcomes))
             names(newOutcomes)[names(newOutcomes) == "person_id"] <- "subject_id"
-            tableName <- paste(outputDatabaseSchema, outputTables[fxSizeIdx], sep = ".")
-            DatabaseConnector::dbInsertTable(conn, tableName, newOutcomes, FALSE, FALSE, FALSE)
+            tableName <- paste(outputDatabaseSchema, outputTable, sep = ".")
+            DatabaseConnector::insertTable(conn, tableName, newOutcomes, FALSE, FALSE, FALSE)
           }
           idx <- result$exposureConceptId == exposureConceptId & result$outcomeConceptId == outcomeConceptId &
-            result$effectSize == effectSize
-          result$newOutcomeConceptId[idx] <- newOutcomeConceptId
+            result$targetEffectSize == effectSize
           result$trueEffectSize[idx] <- 1 + (nrow(newOutcomes)/sum(outcomeCounts$y))
           result$observedOutcomes[idx] <- sum(outcomeCounts$y)
           result$injectedOutcomes[idx] <- nrow(newOutcomes)

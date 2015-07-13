@@ -29,7 +29,7 @@ USE @cdm_database;
 
 SELECT exposure.subject_id,
 	exposure.cohort_start_date,
-	exposure.cohort_definition_id AS exposure_concept_id,
+	exposure.cohort_concept_id AS exposure_concept_id,
 	outcome.outcome_concept_id,
 	COUNT(DISTINCT outcome_date) AS y,
 	MIN(DATEDIFF(DAY, exposure.cohort_start_date, outcome_date)) AS time_to_event
@@ -54,12 +54,12 @@ INNER JOIN (
 	GROUP BY condition_concept_id,
 		person_id
 } : {
-	SELECT cohort_definition_id AS outcome_concept_id,
+	SELECT cohort_concept_id AS outcome_concept_id,
 	  subject_id AS person_id,
 	  MIN(cohort_start_date) AS outcome_date
 	FROM @outcome_database_schema.@outcome_table co1
-	WHERE cohort_definition_id IN (@outcome_concept_ids)
-	GROUP BY cohort_definition_id,
+	WHERE cohort_concept_id IN (@outcome_concept_ids)
+	GROUP BY cohort_concept_id,
 		subject_id
 }}
 } : {
@@ -77,21 +77,18 @@ INNER JOIN (
 	FROM condition_era
 	WHERE condition_concept_id IN (@outcome_concept_ids)
 } : {
-	SELECT cohort_definition_id AS outcome_concept_id,
+	SELECT cohort_concept_id AS outcome_concept_id,
 	  subject_id AS person_id,
 	  cohort_start_date AS outcome_date
 	FROM @outcome_database_schema.@outcome_table co1
-	WHERE cohort_definition_id IN (@outcome_concept_ids)
+	WHERE cohort_concept_id IN (@outcome_concept_ids)
 }}
 }
 ) outcome
 ON outcome.person_id = exposure.subject_id
 	AND outcome_date >= exposure.cohort_start_date
 	AND outcome_date <= exposure.cohort_end_date
-INNER JOIN #exposure_outcome_pairs exposure_outcome_pairs
-ON exposure_outcome_pairs.exposure_concept_id = exposure.cohort_definition_id
-AND exposure_outcome_pairs.outcome_concept_id = outcome.outcome_concept_id
 GROUP BY exposure.subject_id,
 	exposure.cohort_start_date,
-	exposure.cohort_definition_id,
+	exposure.cohort_concept_id,
 	outcome.outcome_concept_id;

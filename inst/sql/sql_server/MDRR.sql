@@ -112,7 +112,7 @@ FROM (
 		dc.person_count AS drug_person_count,
 		cc.person_count AS condition_person_count,
 		pc.person_count AS person_count,
-		(dc.person_count * cc.person_count / pc.person_count) AS expected_count
+		dc.person_count * (cc.person_count / CAST(pc.person_count AS FLOAT)) AS expected_count
 	FROM #condition_prev_count cc
 	INNER JOIN #prev_count pc
 		ON cc.age_group = pc.age_group

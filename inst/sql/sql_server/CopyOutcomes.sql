@@ -28,9 +28,9 @@ INSERT INTO @output_database_schema.@output_table (cohort_concept_id, cohort_sta
 } : {
 	SELECT @target_concept_id AS outcome_concept_id,
 		cohort_start_date,
-		cohort_end_date
-		subject_id,
+		cohort_end_date,
+		subject_id
 	FROM @outcome_database_schema.@outcome_table
 	WHERE cohort_concept_id = @source_concept_id
 
-}}
+}};

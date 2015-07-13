@@ -32,11 +32,10 @@ IF OBJECT_ID('@cohort_table', 'U') IS NOT NULL
 	DROP TABLE @cohort_table;
 
 CREATE TABLE @cohort_table (
-	cohort_id INT IDENTITY(1, 1) PRIMARY KEY,
 	cohort_concept_id INT NOT NULL,
 	cohort_start_date DATE NOT NULL,
 	cohort_end_date DATE NULL,
-	subject_id BIGINT NOT NULL,
+	subject_id BIGINT NOT NULL
 	);
 }
 

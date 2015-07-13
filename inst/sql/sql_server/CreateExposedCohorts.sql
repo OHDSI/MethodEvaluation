@@ -33,7 +33,7 @@ USE @cdm_database;
 IF OBJECT_ID('tempdb..#cohort_person', 'U') IS NOT NULL
 	DROP TABLE #cohort_person;
 
-SELECT cohort_definition_id,
+SELECT cohort_concept_id,
 	subject_id,
 	DATEADD(DAY, @risk_window_start, cohort_start_date) AS cohort_start_date,
     {@add_exposure_days_to_end} ? {
@@ -47,7 +47,7 @@ FROM
 {@exposure_table == 'drug_era' } ? {
  
 {@first_exposure_only} ? {
-SELECT drug_concept_id AS cohort_definition_id, 
+SELECT drug_concept_id AS cohort_concept_id, 
 	person_id AS subject_id,
 	MIN(drug_era_start_date) AS cohort_start_date, 
 	MIN(drug_era_end_date) AS cohort_end_date
@@ -56,7 +56,7 @@ WHERE drug_concept_id IN (@exposure_concept_ids)
 GROUP BY drug_concept_id, 
 	person_id
 } : {
-SELECT drug_concept_id AS cohort_definition_id, 
+SELECT drug_concept_id AS cohort_concept_id, 
 	person_id AS subject_id,
 	drug_era_start_date AS cohort_start_date, 
 	drug_era_end_date AS cohort_end_date
@@ -65,21 +65,21 @@ WHERE drug_concept_id IN (@exposure_concept_ids)
 }
 } : {
 {@first_exposure_only} ? {
-SELECT cohort_definition_id, 
+SELECT cohort_concept_id, 
 	subject_id,
 	MIN(cohort_start) AS cohort_start_date, 
 	MIN(cohort_end_date) AS cohort_end_date
 FROM @exposure_database_schema.@exposure_table exposure 
-WHERE cohort_definition_id IN (@exposure_concept_ids)
-GROUP BY cohort_definition_id, 
+WHERE cohort_concept_id IN (@exposure_concept_ids)
+GROUP BY cohort_concept_id, 
 	subject_id
 } : {
-SELECT cohort_definition_id, 
+SELECT cohort_concept_id, 
 	subject_id,
 	cohort_start_date, 
 	cohort_end_date
 FROM @exposure_database_schema.@exposure_table exposure
-WHERE cohort_definition_id IN (@exposure_concept_ids)
+WHERE cohort_concept_id IN (@exposure_concept_ids)
 }
 } 
 ) exposure

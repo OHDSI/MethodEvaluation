@@ -8,14 +8,35 @@ injectSignals(connectionDetails, cdmDatabaseSchema,
   oracleTempSchema = cdmDatabaseSchema,
   exposureDatabaseSchema = cdmDatabaseSchema, exposureTable = "drug_era",
   outcomeDatabaseSchema = cdmDatabaseSchema, outcomeTable = "condition_era",
-  outcomeConditionTypeConceptIds = c(), createOutputTables = TRUE,
+  outcomeConditionTypeConceptIds = c(), createOutputTable = TRUE,
   exposureOutcomePairs, modelType = "poisson", buildOutcomeModel = TRUE,
+  covariateSettings = createCovariateSettings(useCovariateDemographics = TRUE,
+  useCovariateConditionOccurrence = TRUE, useCovariateConditionOccurrence365d =
+  TRUE, useCovariateConditionOccurrence30d = TRUE,
+  useCovariateConditionOccurrenceInpt180d = TRUE, useCovariateConditionEra =
+  TRUE, useCovariateConditionEraEver = TRUE, useCovariateConditionEraOverlap =
+  TRUE, useCovariateConditionGroup = TRUE, useCovariateDrugExposure = TRUE,
+  useCovariateDrugExposure365d = TRUE, useCovariateDrugExposure30d = TRUE,
+  useCovariateDrugEra = TRUE,      useCovariateDrugEra365d = TRUE,
+  useCovariateDrugEra30d = TRUE, useCovariateDrugEraEver = TRUE,
+  useCovariateDrugEraOverlap = TRUE, useCovariateDrugGroup = TRUE,
+  useCovariateProcedureOccurrence = TRUE, useCovariateProcedureOccurrence365d =
+  TRUE, useCovariateProcedureOccurrence30d = TRUE, useCovariateProcedureGroup =
+  TRUE, useCovariateObservation = TRUE, useCovariateObservation365d = TRUE,
+  useCovariateObservation30d = TRUE, useCovariateObservationCount365d = TRUE,
+  useCovariateMeasurement365d = TRUE,      useCovariateMeasurement30d = TRUE,
+  useCovariateMeasurementCount365d = TRUE, useCovariateMeasurementBelow = TRUE,
+  useCovariateMeasurementAbove = TRUE, useCovariateConceptCounts = TRUE,
+  useCovariateRiskScores = TRUE, useCovariateInteractionYear = FALSE,
+  useCovariateInteractionMonth = FALSE, excludedCovariateConceptIds = c(),
+  deleteCovariatesSmallCount = 100), prior = createPrior("laplace", exclude =
+  0, useCrossValidation = TRUE), control = createControl(cvType = "auto",
+  startingVariance = 0.1, noiseLevel = "quiet", threads = 10),
   firstExposureOnly = FALSE, washoutWindow = 183, riskWindowStart = 0,
   riskWindowEnd = 0, addExposureDaysToEnd = TRUE,
   firstOutcomeOnly = FALSE, effectSizes = c(1, 1.25, 1.5, 2, 4, 8),
-  outputDatabaseSchema = cdmDatabaseSchema,
-  outputTables = c("inj_outcomes_1", "inj_outcomes_1_25", "inj_outcomes_1_5",
-  "inj_outcomes_2", "inj_outcomes_4", "inj_outcomes_8"))
+  precision = 0.01, outputDatabaseSchema = cdmDatabaseSchema,
+  outputTable = "injected_outcomes", outputConceptIdOffset = 1000)
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{ConnectionDetails} created using
@@ -37,7 +58,7 @@ cdmSchema.  Requires read permissions to this database.}
 
 \item{exposureTable}{The table name that contains the exposure cohorts.  If
 exposureTable <> DRUG_ERA, then expectation is exposureTable
-has format of COHORT table: COHORT_DEFINITION_ID,
+has format of COHORT table: cohort_concept_id,
 SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
 
 \item{outcomeDatabaseSchema}{The name of the database schema that is the location where
@@ -49,23 +70,23 @@ permissions to this database.}
 \item{outcomeTable}{The table name that contains the outcome cohorts.  If
 outcomeTable <> CONDITION_OCCURRENCE, then expectation is
 outcomeTable has format of COHORT table:
-COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
+cohort_concept_id, SUBJECT_ID, COHORT_START_DATE,
 COHORT_END_DATE.}
 
 \item{outcomeConditionTypeConceptIds}{A list of TYPE_CONCEPT_ID values that will restrict
 condition occurrences.  Only applicable if outcomeTable =
 CONDITION_OCCURRENCE.}
 
-\item{createOutputTables}{Should the output tablse be created prior to inserting the
+\item{createOutputTable}{Should the output table be created prior to inserting the
 outcomes? If TRUE and the tables already exists, it will
 first be deleted.}
 
 \item{exposureOutcomePairs}{A data frame with at least two columns:
                                         \itemize{
                                           \item {"exposureConceptId" containing the drug_concept_ID
-                                                or cohort_definition_id of the exposure variable}
+                                                or cohort_concept_id of the exposure variable}
                                           \item {"outcomeConceptId" containing the
-                                                condition_concept_ID or cohort_definition_id of the
+                                                condition_concept_ID or cohort_concept_id of the
                                                 outcome variable}
                                         }}
 
@@ -104,8 +125,8 @@ modeling the outcome?}
 tables containing the new outcomesRequires write permissions
 to this database.}
 
-\item{outputTables}{A vector of table names that will contain the generated outcome
-                                        cohorts. There should be one table name for each requested effect size.}
+\item{outputTable}{The name of the table names that will contain the generated outcome
+                                        cohorts.}
 }
 \value{
 A data.frame listing all the drug-pairs in combination with requested effect sizes and the real inserted effect size
