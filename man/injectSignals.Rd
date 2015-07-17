@@ -34,7 +34,7 @@ injectSignals(connectionDetails, cdmDatabaseSchema,
   startingVariance = 0.1, noiseLevel = "quiet", threads = 10),
   firstExposureOnly = FALSE, washoutWindow = 183, riskWindowStart = 0,
   riskWindowEnd = 0, addExposureDaysToEnd = TRUE,
-  firstOutcomeOnly = FALSE, effectSizes = c(1, 1.25, 1.5, 2, 4, 8),
+  firstOutcomeOnly = FALSE, effectSizes = c(1, 1.25, 1.5, 2, 4),
   precision = 0.01, outputDatabaseSchema = cdmDatabaseSchema,
   outputTable = "injected_outcomes", outputConceptIdOffset = 1000)
 }

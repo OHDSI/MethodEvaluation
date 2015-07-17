@@ -114,42 +114,42 @@ injectSignals <- function(connectionDetails,
                           modelType = "poisson",
                           buildOutcomeModel = TRUE,
                           covariateSettings = createCovariateSettings(useCovariateDemographics = TRUE,
-                                                                                              useCovariateConditionOccurrence = TRUE,
-                                                                                              useCovariateConditionOccurrence365d = TRUE,
-                                                                                              useCovariateConditionOccurrence30d = TRUE,
-                                                                                              useCovariateConditionOccurrenceInpt180d = TRUE,
-                                                                                              useCovariateConditionEra = TRUE,
-                                                                                              useCovariateConditionEraEver = TRUE,
-                                                                                              useCovariateConditionEraOverlap = TRUE,
-                                                                                              useCovariateConditionGroup = TRUE,
-                                                                                              useCovariateDrugExposure = TRUE,
-                                                                                              useCovariateDrugExposure365d = TRUE,
-                                                                                              useCovariateDrugExposure30d = TRUE,
-                                                                                              useCovariateDrugEra = TRUE,
-                                                                                              useCovariateDrugEra365d = TRUE,
-                                                                                              useCovariateDrugEra30d = TRUE,
-                                                                                              useCovariateDrugEraEver = TRUE,
-                                                                                              useCovariateDrugEraOverlap = TRUE,
-                                                                                              useCovariateDrugGroup = TRUE,
-                                                                                              useCovariateProcedureOccurrence = TRUE,
-                                                                                              useCovariateProcedureOccurrence365d = TRUE,
-                                                                                              useCovariateProcedureOccurrence30d = TRUE,
-                                                                                              useCovariateProcedureGroup = TRUE,
-                                                                                              useCovariateObservation = TRUE,
-                                                                                              useCovariateObservation365d = TRUE,
-                                                                                              useCovariateObservation30d = TRUE,
-                                                                                              useCovariateObservationCount365d = TRUE,
-                                                                                              useCovariateMeasurement365d = TRUE,
-                                                                                              useCovariateMeasurement30d = TRUE,
-                                                                                              useCovariateMeasurementCount365d = TRUE,
-                                                                                              useCovariateMeasurementBelow = TRUE,
-                                                                                              useCovariateMeasurementAbove = TRUE,
-                                                                                              useCovariateConceptCounts = TRUE,
-                                                                                              useCovariateRiskScores = TRUE,
-                                                                                              useCovariateInteractionYear = FALSE,
-                                                                                              useCovariateInteractionMonth = FALSE,
-                                                                                              excludedCovariateConceptIds = c(),
-                                                                                              deleteCovariatesSmallCount = 100),
+                                                                      useCovariateConditionOccurrence = TRUE,
+                                                                      useCovariateConditionOccurrence365d = TRUE,
+                                                                      useCovariateConditionOccurrence30d = TRUE,
+                                                                      useCovariateConditionOccurrenceInpt180d = TRUE,
+                                                                      useCovariateConditionEra = TRUE,
+                                                                      useCovariateConditionEraEver = TRUE,
+                                                                      useCovariateConditionEraOverlap = TRUE,
+                                                                      useCovariateConditionGroup = TRUE,
+                                                                      useCovariateDrugExposure = TRUE,
+                                                                      useCovariateDrugExposure365d = TRUE,
+                                                                      useCovariateDrugExposure30d = TRUE,
+                                                                      useCovariateDrugEra = TRUE,
+                                                                      useCovariateDrugEra365d = TRUE,
+                                                                      useCovariateDrugEra30d = TRUE,
+                                                                      useCovariateDrugEraEver = TRUE,
+                                                                      useCovariateDrugEraOverlap = TRUE,
+                                                                      useCovariateDrugGroup = TRUE,
+                                                                      useCovariateProcedureOccurrence = TRUE,
+                                                                      useCovariateProcedureOccurrence365d = TRUE,
+                                                                      useCovariateProcedureOccurrence30d = TRUE,
+                                                                      useCovariateProcedureGroup = TRUE,
+                                                                      useCovariateObservation = TRUE,
+                                                                      useCovariateObservation365d = TRUE,
+                                                                      useCovariateObservation30d = TRUE,
+                                                                      useCovariateObservationCount365d = TRUE,
+                                                                      useCovariateMeasurement365d = TRUE,
+                                                                      useCovariateMeasurement30d = TRUE,
+                                                                      useCovariateMeasurementCount365d = TRUE,
+                                                                      useCovariateMeasurementBelow = TRUE,
+                                                                      useCovariateMeasurementAbove = TRUE,
+                                                                      useCovariateConceptCounts = TRUE,
+                                                                      useCovariateRiskScores = TRUE,
+                                                                      useCovariateInteractionYear = FALSE,
+                                                                      useCovariateInteractionMonth = FALSE,
+                                                                      excludedCovariateConceptIds = c(),
+                                                                      deleteCovariatesSmallCount = 100),
                           prior = createPrior("laplace", exclude = 0, useCrossValidation = TRUE),
                           control = createControl(cvType = "auto", startingVariance = 0.1, noiseLevel = "quiet", threads = 10),
                           firstExposureOnly = FALSE,
@@ -158,7 +158,7 @@ injectSignals <- function(connectionDetails,
                           riskWindowEnd = 0,
                           addExposureDaysToEnd = TRUE,
                           firstOutcomeOnly = FALSE,
-                          effectSizes = c(1, 1.25, 1.5, 2, 4, 8),
+                          effectSizes = c(1, 1.25, 1.5, 2, 4),
                           precision = 0.01,
                           outputDatabaseSchema = cdmDatabaseSchema,
                           outputTable = "injected_outcomes",
@@ -177,18 +177,13 @@ injectSignals <- function(connectionDetails,
                        trueEffectSize = 0,
                        observedOutcomes = 0,
                        injectedOutcomes = 0)
+  outcomesToInject <- data.frame()
+  outcomesCopySql <- c()  
   cdmDatabase <- strsplit(cdmDatabaseSchema, "\\.")[[1]][1]
   exposureConceptIds <- unique(exposureOutcomePairs$exposureConceptId)
   conn <- DatabaseConnector::connect(connectionDetails)
-  if (createOutputTable) {
-    sql <- SqlRender::loadRenderTranslateSql("CreateSignalInjectionOutputTable.sql",
-                                             packageName = "MethodEvaluation",
-                                             dbms = connectionDetails$dbms,
-                                             output_database_schema = outputDatabaseSchema,
-                                             output_table = outputTable)
-    DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
-  }
   for (exposureConceptId in exposureConceptIds) {
+    # exposureConceptId = exposureConceptIds[1]
     writeLines(paste("\nProcessing exposure", exposureConceptId))
     outcomeConceptIds <- unique(exposureOutcomePairs$outcomeConceptId[exposureOutcomePairs$exposureConceptId ==
                                                                         exposureConceptId])
@@ -218,7 +213,6 @@ injectSignals <- function(connectionDetails,
     exposures <- DatabaseConnector::querySql.ffdf(conn, exposureSql)
     names(exposures) <- SqlRender::snakeCaseToCamelCase(names(exposures))
     names(exposures)[names(exposures) == "subjectId"] <- "personId"
-    #TODO: add option firstOutcomeOnly
     renderedSql <- SqlRender::loadRenderTranslateSql("GetOutcomes.sql",
                                                      packageName = "MethodEvaluation",
                                                      dbms = connectionDetails$dbms,
@@ -227,7 +221,8 @@ injectSignals <- function(connectionDetails,
                                                      outcome_database_schema = outcomeDatabaseSchema,
                                                      outcome_table = outcomeTable,
                                                      outcome_concept_ids = outcomeConceptIds,
-                                                     outcome_condition_type_concept_ids = outcomeConditionTypeConceptIds)
+                                                     outcome_condition_type_concept_ids = outcomeConditionTypeConceptIds,
+                                                     first_outcome_only = firstOutcomeOnly)
     outcomeCounts <- DatabaseConnector::querySql.ffdf(conn, renderedSql)
     names(outcomeCounts) <- SqlRender::snakeCaseToCamelCase(names(outcomeCounts))
     names(outcomeCounts)[names(outcomeCounts) == "subjectId"] <- "personId"
@@ -243,7 +238,6 @@ injectSignals <- function(connectionDetails,
       covariates <- covariates$covariates
       exposures$rowId <- ff::ff(1:nrow(exposures))
       covariates <- merge(covariates, exposures, by = c("cohortStartDate", "personId"))
-      #covariates <- covariates[ff::ffdforder(covariates[c("rowId")]), ]
       outcomeCounts <- merge(exposures, outcomeCounts, by = c("cohortStartDate",
                                                               "personId"), all.x = TRUE)
       idx <- ffbase::is.na.ff(outcomeCounts$y)
@@ -291,7 +285,7 @@ injectSignals <- function(connectionDetails,
             targetCount <- sum(outcomeCounts$y) * (effectSize - 1)
             temp <- 0
             if (modelType == "poisson") {
-              while (abs(sum(temp) - targetCount) > min(precision * targetCount, 1)) {
+              while (abs(sum(temp) - targetCount) > precision * targetCount){
                 temp <- rpois(length(prediction), prediction * (effectSize - 1))
                 temp[temp > time] <- time[temp > time]
               }
@@ -315,44 +309,44 @@ injectSignals <- function(connectionDetails,
                   cursor <- cursor + nOutcomes
                 }
               }
-              
+              injectedRr <- 1 + (nrow(newOutcomes)/sum(outcomeCounts$y))
             } else {
               # modelType == 'survival'
-              idx <- outcomes$y == 0
-              idx <- ff::as.ram(ffbase::ffwhich(idx, idx == TRUE))
-              predictionSubset <- prediction[idx]
-              while (abs(sum(temp) - targetCount) > min(precision * targetCount, 1)) {
-                timeToEvent <- round(rexp(length(predictionSubset), predictionSubset * (effectSize - 1)))
-                temp <- timeToEvent <= time[idx]
+              correctedTargetCount <- targetCount
+              while (abs(sum(temp) - correctedTargetCount) > precision * correctedTargetCount) {
+                timeToEvent <- round(rexp(length(prediction), prediction * (effectSize - 1)))
+                temp <- timeToEvent <= time
+                # Correct the target count for the fact that we're censoring after the first outcome:
+                correctedTargetCount <- targetCount * (1-sum(time[timeToEvent <= time]-timeToEvent[timeToEvent <= time]) / sum(time))
               }
-              newOutcomes <- data.frame(personId = outcomes$personId[idx[temp]],
-                                        cohortStartDate = outcomes$cohortStartDate[idx[temp]],
+              injectedRr <- effectSize*(sum(outcomeCounts$y) + sum(temp)) / (sum(outcomeCounts$y) + correctedTargetCount)
+              newOutcomes <- data.frame(personId = outcomes$personId[temp],
+                                        cohortStartDate = outcomes$cohortStartDate[temp],
                                         timeToEvent = timeToEvent[temp])
             }
             writeLines(paste("Target RR =",
                              effectSize,
-                             ", inserted RR =",
-                             1 + (nrow(newOutcomes)/sum(outcomeCounts$y))))
+                             ", injected RR =",
+                             injectedRr
+            ))
           } else {
             # effectSize == 1
             newOutcomes <- data.frame()
+            injectedRr <- 1
             writeLines(paste("Target RR = 1 , inserted RR = 1 (no signal inserted)"))
           }
-          writeLines("\nWriting outcome to table")
           newOutcomeConceptId <- result$newOutcomeConceptId[result$targetEffectSize == effectSize & result$exposureConceptId == exposureConceptId & result$outcomeConceptId == outcomeConceptId]
           # Copy outcomes to output table:
           sql <- SqlRender::loadRenderTranslateSql("CopyOutcomes.sql",
                                                    packageName = "MethodEvaluation",
                                                    dbms = connectionDetails$dbms,
-                                                   cdm_database = cdmDatabase,
+                                                   cdm_database_schema = cdmDatabaseSchema,
                                                    outcome_database_schema = outcomeDatabaseSchema,
                                                    outcome_table = outcomeTable,
                                                    outcome_condition_type_concept_ids = outcomeConditionTypeConceptIds,
-                                                   output_database_schema = outputDatabaseSchema,
-                                                   output_table = outputTable,
                                                    source_concept_id = outcomeConceptId,
                                                    target_concept_id = newOutcomeConceptId)
-          DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
+          outcomesCopySql <- c(outcomesCopySql, sql)
           
           # Inject new outcomes:
           if (nrow(newOutcomes) != 0) {
@@ -362,18 +356,41 @@ injectSignals <- function(connectionDetails,
             names(newOutcomes) <- SqlRender::camelCaseToSnakeCase(names(newOutcomes))
             names(newOutcomes)[names(newOutcomes) == "person_id"] <- "subject_id"
             tableName <- paste(outputDatabaseSchema, outputTable, sep = ".")
-            DatabaseConnector::insertTable(conn, tableName, newOutcomes, FALSE, FALSE, FALSE)
+            outcomesToInject <- rbind(outcomesToInject, newOutcomes)
           }
           idx <- result$exposureConceptId == exposureConceptId & result$outcomeConceptId == outcomeConceptId &
             result$targetEffectSize == effectSize
-          result$trueEffectSize[idx] <- 1 + (nrow(newOutcomes)/sum(outcomeCounts$y))
+          result$trueEffectSize[idx] <- injectedRr
           result$observedOutcomes[idx] <- sum(outcomeCounts$y)
           result$injectedOutcomes[idx] <- nrow(newOutcomes)
         }
       }
     }
-    # TODO: remove cohort_person temp table
   }
+  writeLines("Inserting outcomes into database")
+  DatabaseConnector::insertTable(conn, "#temp_outcomes", outcomesToInject, TRUE, TRUE, TRUE, oracleTempSchema)
+  
+  if (createOutputTable){
+    sql <- "IF OBJECT_ID('@output_database_schema.@output_table', 'U') IS NOT NULL\nDROP TABLE @output_database_schema.@output_table;\n"
+    sql <- paste(sql, "SELECT cohort_concept_id, cohort_start_date, cohort_end_date, subject_id INTO @output_database_schema.@output_table FROM (\n")
+  } else{
+    sql <- "INSERT INTO @output_database_schema.@output_table (cohort_concept_id, cohort_start_date, cohort_end_date, subject_id)\n";
+  }
+  sql <- paste(sql, "SELECT cohort_concept_id, cohort_start_date, NULL AS cohort_end_date, subject_id FROM #temp_outcomes UNION ALL\n")
+  sql <- paste(sql, paste(outcomesCopySql, collapse = " UNION ALL "))
+  if (createOutputTable){
+    sql <- paste(sql, ") temp;")
+  } else {
+    sql <- paste(sql, ";")
+  }
+  sql <- SqlRender::renderSql(sql, output_database_schema = outputDatabaseSchema, output_table = outputTable)$sql
+  sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+  DatabaseConnector::executeSql(conn, sql)
+  
+  sql <- "TRUNCATE TABLE #cohort_person; DROP TABLE #cohort_person; TRUNCATE TABLE #temp_outcomes; DROP TABLE #temp_outcomes;"
+  sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+  DatabaseConnector::executeSql(conn, sql)
+  
   RJDBC::dbDisconnect(conn)
   return(result)
 }
