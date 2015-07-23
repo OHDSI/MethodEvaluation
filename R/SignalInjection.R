@@ -95,6 +95,7 @@
 #'                                         to this database.
 #' @param outputTable                      The name of the table names that will contain the generated outcome
 #'                                         cohorts. 
+#' @param tempFolder                       Path to a folder where intermediate data will be stored.                                     
 #'
 #' @return
 #' A data.frame listing all the drug-pairs in combination with requested effect sizes and the real inserted effect size
@@ -146,6 +147,9 @@ injectSignals <- function(connectionDetails,
                                                                       useCovariateMeasurementAbove = TRUE,
                                                                       useCovariateConceptCounts = TRUE,
                                                                       useCovariateRiskScores = TRUE,
+                                                                      useCovariateRiskScoresCharlson = TRUE,
+                                                                      useCovariateRiskScoresDCSI = TRUE,
+                                                                      useCovariateRiskScoresCHADS2 = TRUE,
                                                                       useCovariateInteractionYear = FALSE,
                                                                       useCovariateInteractionMonth = FALSE,
                                                                       excludedCovariateConceptIds = c(),
@@ -162,7 +166,8 @@ injectSignals <- function(connectionDetails,
                           precision = 0.01,
                           outputDatabaseSchema = cdmDatabaseSchema,
                           outputTable = "injected_outcomes",
-                          outputConceptIdOffset = 1000) {
+                          outputConceptIdOffset = 1000,
+                          tempFolder = "./SignalInjectionTemp") {
   if (min(effectSizes) < 1){
     stop("Effect sizes smaller than 1 are currently not supported")
   }
@@ -177,6 +182,7 @@ injectSignals <- function(connectionDetails,
                        trueEffectSize = 0,
                        observedOutcomes = 0,
                        injectedOutcomes = 0)
+  models <- list()
   outcomesToInject <- data.frame()
   outcomesCopySql <- c()  
   cdmDatabase <- strsplit(cdmDatabaseSchema, "\\.")[[1]][1]
@@ -228,52 +234,82 @@ injectSignals <- function(connectionDetails,
     names(outcomeCounts)[names(outcomeCounts) == "subjectId"] <- "personId"
     
     if (buildOutcomeModel) {
-      writeLines("Extracting covariates for the outcome model")
-      covariates <- PatientLevelPrediction::getDbCovariateData(connection = conn,
-                                                               oracleTempSchema = oracleTempSchema,
-                                                               cdmDatabaseSchema = cdmDatabaseSchema,
-                                                               useExistingCohortPerson = TRUE,
-                                                               cohortIds = exposureConceptId,
-                                                               covariateSettings = covariateSettings)
-      covariates <- covariates$covariates
-      exposures$rowId <- ff::ff(1:nrow(exposures))
-      covariates <- merge(covariates, exposures, by = c("cohortStartDate", "personId"))
-      outcomeCounts <- merge(exposures, outcomeCounts, by = c("cohortStartDate",
-                                                              "personId"), all.x = TRUE)
-      idx <- ffbase::is.na.ff(outcomeCounts$y)
-      idx <- ffbase::ffwhich(idx, idx == TRUE)
-      outcomeCounts$y <- ff::ffindexset(x = outcomeCounts$y,
-                                        index = idx,
-                                        value = ff::ff(0, length = length(idx), vmode = "double"))
-      names(outcomeCounts)[names(outcomeCounts) == "daysAtRisk"] <- "time"
-      outcomeCounts$time <- outcomeCounts$time + 1
-      if (modelType == "survival") {
-        # For survival, time is either the time to the end of the risk window, or the event
-        outcomeCounts$timeToEvent <- outcomeCounts$timeToEvent + 1
-        idx <- outcomeCounts$y != 0
+      covarDataFolder <- .createCovarDataFileName(tempFolder, exposureConceptId)
+      if (file.exists(covarDataFolder)){
+        writeLines("Loading covariates for the outcome model")
+        ffbase::load.ffdf(covarDataFolder)
+      } else {
+        writeLines("Extracting covariates for the outcome model")
+        covariates <- PatientLevelPrediction::getDbCovariateData(connection = conn,
+                                                                 oracleTempSchema = oracleTempSchema,
+                                                                 cdmDatabaseSchema = cdmDatabaseSchema,
+                                                                 useExistingCohortPerson = TRUE,
+                                                                 cohortIds = exposureConceptId,
+                                                                 covariateSettings = covariateSettings)
+        covariateRef <- covariates$covariateRef
+        covariates <- covariates$covariates
+        exposures$rowId <- ff::ff(1:nrow(exposures))
+        covariates <- merge(covariates, exposures, by = c("cohortStartDate", "personId"))
+        outcomeCounts <- merge(exposures, outcomeCounts, by = c("cohortStartDate",
+                                                                "personId"), all.x = TRUE)
+        idx <- ffbase::is.na.ff(outcomeCounts$y)
         idx <- ffbase::ffwhich(idx, idx == TRUE)
-        outcomeCounts$y <- ff::ffindexset(outcomeCounts$y, index = idx, value = ff::ff(as.double(1),
-                                                                                       length = length(idx),
-                                                                                       vmode = "double"))
-        outcomeCounts$time <- ff::ffindexset(outcomeCounts$time,
-                                             index = idx,
-                                             value = outcomeCounts$timeToEvent[idx])
+        outcomeCounts$y <- ff::ffindexset(x = outcomeCounts$y,
+                                          index = idx,
+                                          value = ff::ff(0, length = length(idx), vmode = "double"))
+        names(outcomeCounts)[names(outcomeCounts) == "daysAtRisk"] <- "time"
+        outcomeCounts$time <- outcomeCounts$time + 1
+        if (modelType == "survival") {
+          # For survival, time is either the time to the end of the risk window, or the event
+          outcomeCounts$timeToEvent <- outcomeCounts$timeToEvent + 1
+          idx <- outcomeCounts$y != 0
+          idx <- ffbase::ffwhich(idx, idx == TRUE)
+          outcomeCounts$y <- ff::ffindexset(outcomeCounts$y, index = idx, value = ff::ff(as.double(1),
+                                                                                         length = length(idx),
+                                                                                         vmode = "double"))
+          outcomeCounts$time <- ff::ffindexset(outcomeCounts$time,
+                                               index = idx,
+                                               value = outcomeCounts$timeToEvent[idx])
+        }
+        ffbase::save.ffdf(covariates, covariateRef, outcomeCounts, dir = covarDataFolder)
       }
       for (outcomeConceptId in outcomeConceptIds) {
         # outcomeConceptId = outcomeConceptIds[1]
         writeLines(paste("\nProcessing outcome", outcomeConceptId))
         outcomes <- subset(outcomeCounts,
                            outcomeConceptId == outcomeConceptId | is.na(outcomeConceptId))
-        # Note: for survival, using Poisson regression with 1 outcome and censored time as equivalent of
-        # survival regression:
-        cyclopsData <- Cyclops::convertToCyclopsData(outcomes, covariates, modelType = "pr", quiet = TRUE)
-        fit <- Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
         time <- ff::as.ram(outcomes$time)
-        prediction <- predict(fit)
-        if (modelType == "survival") {
-          # Convert Poisson-based prediction to rate for exponential distribution:
-          prediction <- prediction/time
+        modelFolder <- .createModelFileName(tempFolder, exposureConceptId, outcomeConceptId)
+        if (file.exists(modelFolder)){
+          prediction <- readRDS(file.path(modelFolder, "prediction.rds"))
+          betas <- readRDS(file.path(modelFolder, "betas.rds"))
+        } else {
+          # Note: for survival, using Poisson regression with 1 outcome and censored time as equivalent of
+          # survival regression:
+          cyclopsData <- Cyclops::convertToCyclopsData(outcomes, covariates, modelType = "pr", quiet = TRUE)
+          fit <- Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
+          betas <- coef(fit)
+          intercept <- betas[1]
+          betas <- betas[2:length(betas)]
+          betas <- betas[betas != 0]
+          if (length(betas) > 0){
+            betas <- data.frame(beta = betas, id = as.numeric(attr(betas, "names")))
+            betas <- merge(ff::as.ffdf(betas), covariateRef, by.x = "id", by.y = "covariateId")
+            betas <- ff::as.ram(betas[, c("beta", "id", "covariateName")])
+            betas <- betas[order(-abs(betas$beta)), ]
+          }
+          betas <- rbind(data.frame(beta = intercept, id = 0, covariateName = "(Intercept)", row.names = NULL), betas)
+          prediction <- predict(fit)
+          if (modelType == "survival") {
+            # Convert Poisson-based prediction to rate for exponential distribution:
+            prediction <- prediction/time
+          }
+          dir.create(modelFolder)
+          saveRDS(prediction, file.path(modelFolder, "prediction.rds"))
+          saveRDS(betas, file.path(modelFolder, "betas.rds"))
         }
+        models[[length(models) + 1]] <- betas
+        names(models)[length(models)] <- paste(exposureConceptId,outcomeConceptId, sep="_")
         # plotCalibration(prediction, ff::as.ram(outcomes$y), ff::as.ram(outcomes$time))
         for (fxSizeIdx in 1:length(effectSizes)) {
           # fxSizeIdx <- 2
@@ -284,10 +320,16 @@ injectSignals <- function(connectionDetails,
             # is equal to the target RR.
             targetCount <- sum(outcomeCounts$y) * (effectSize - 1)
             temp <- 0
+            attempts <- 0
             if (modelType == "poisson") {
               while (abs(sum(temp) - targetCount) > precision * targetCount){
                 temp <- rpois(length(prediction), prediction * (effectSize - 1))
                 temp[temp > time] <- time[temp > time]
+                attempts <- attempts + 1
+                if (attempts == 100){
+                  writeLines("Failed to achieve target RR")
+                  break
+                }
               }
               idx <- which(temp != 0)
               temp <- data.frame(personId = ff::as.ram(outcomes$personId[idx]),
@@ -313,11 +355,17 @@ injectSignals <- function(connectionDetails,
             } else {
               # modelType == 'survival'
               correctedTargetCount <- targetCount
+              attempts <- 0
               while (abs(sum(temp) - correctedTargetCount) > precision * correctedTargetCount) {
                 timeToEvent <- round(rexp(length(prediction), prediction * (effectSize - 1)))
                 temp <- timeToEvent <= time
                 # Correct the target count for the fact that we're censoring after the first outcome:
                 correctedTargetCount <- targetCount * (1-sum(time[timeToEvent <= time]-timeToEvent[timeToEvent <= time]) / sum(time))
+                attempts <- attempts + 1
+                if (attempts == 100){
+                  writeLines("Failed to achieve target RR")
+                  break
+                }
               }
               injectedRr <- effectSize*(sum(outcomeCounts$y) + sum(temp)) / (sum(outcomeCounts$y) + correctedTargetCount)
               newOutcomes <- data.frame(personId = outcomes$personId[temp],
@@ -367,6 +415,11 @@ injectSignals <- function(connectionDetails,
       }
     }
   }
+  ### REMOVE THIS ###
+  #saveRDS(outcomesToInject, "s:/temp/outcomesToInject.rds")
+  #saveRDS(outcomesCopySql, "s:/temp/outcomesCopySql.rds")
+  ###
+  
   writeLines("Inserting outcomes into database")
   DatabaseConnector::insertTable(conn, "#temp_outcomes", outcomesToInject, TRUE, TRUE, TRUE, oracleTempSchema)
   
@@ -389,10 +442,13 @@ injectSignals <- function(connectionDetails,
   
   sql <- "TRUNCATE TABLE #cohort_person; DROP TABLE #cohort_person; TRUNCATE TABLE #temp_outcomes; DROP TABLE #temp_outcomes;"
   sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
-  DatabaseConnector::executeSql(conn, sql)
+  DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
   
   RJDBC::dbDisconnect(conn)
-  return(result)
+  resultList <- list(summary = result, models = models)
+  summaryFile <- .createSummaryFileName(tempFolder)
+  saveRDS(resultList, summaryFile)
+  return(resultList)
 }
 
 plotCalibration <- function(prediction, y, time) {
@@ -423,7 +479,24 @@ plotCalibration <- function(prediction, y, time) {
                                                                                                                   0,
                                                                                                                   0.8,
                                                                                                                   alpha = 0.5)) + ggplot2::coord_cartesian(xlim = c(0, limx))
-  
-  
-  
 }
+
+.createModelFileName <- function(folder,
+                                 exposureConceptId,
+                                 outcomeConceptId) {
+  name <- paste("model_e", exposureConceptId, "_o", outcomeConceptId, sep = "")
+  return(file.path(folder, name))
+}
+
+.createCovarDataFileName <- function(folder,
+                                     exposureConceptId) {
+  name <- paste("data_e", exposureConceptId, sep = "")
+  return(file.path(folder, name))
+}
+
+.createSummaryFileName <- function(folder) {
+  name <- "summary"
+  name <- paste(name, ".rds", sep = "")
+  return(file.path(folder, name))
+}
+

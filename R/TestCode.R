@@ -1,7 +1,7 @@
 #' @keywords internal
 .testCode <- function() {
   library(MethodEvaluation)
-  options(fftempdir = "s:/temp")
+  options(fftempdir = "s:/fftemp")
   
   pw <- pw
   dbms <- "postgresql"
@@ -109,7 +109,8 @@
                      createOutputTable = TRUE,
                      firstExposureOnly = FALSE,
                      firstOutcomeOnly = TRUE,
-                     modelType = "survival"
+                     modelType = "survival",
+                     tempFolder = "s:/temp/SignalInjectionTemp"
                      ,covariateSettings = covariateSettings
   )
   

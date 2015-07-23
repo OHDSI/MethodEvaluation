@@ -36,7 +36,8 @@ injectSignals(connectionDetails, cdmDatabaseSchema,
   riskWindowEnd = 0, addExposureDaysToEnd = TRUE,
   firstOutcomeOnly = FALSE, effectSizes = c(1, 1.25, 1.5, 2, 4),
   precision = 0.01, outputDatabaseSchema = cdmDatabaseSchema,
-  outputTable = "injected_outcomes", outputConceptIdOffset = 1000)
+  outputTable = "injected_outcomes", outputConceptIdOffset = 1000,
+  tempFolder = "./SignalInjectionTemp")
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{ConnectionDetails} created using
@@ -126,7 +127,9 @@ tables containing the new outcomesRequires write permissions
 to this database.}
 
 \item{outputTable}{The name of the table names that will contain the generated outcome
-                                        cohorts.}
+cohorts.}
+
+\item{tempFolder}{Path to a folder where intermediate data will be stored.}
 }
 \value{
 A data.frame listing all the drug-pairs in combination with requested effect sizes and the real inserted effect size
