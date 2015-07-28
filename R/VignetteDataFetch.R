@@ -19,7 +19,7 @@
 #' @keywords internal
 .signalInjectionVignetteDataFetch <- function() {
   # This function should be used to fetch the data that is used in the vignettes.
-  # library(SqlRender);library(DatabaseConnector) ;library(MethodEvaluation);library(CohortMethod); setwd('s:/temp');options('fftempdir' = 's:/temp')
+  # library(SqlRender);library(DatabaseConnector) ;library(MethodEvaluation);library(CohortMethod); setwd('s:/temp');options('fftempdir' = 's:/fftemp')
   
   pw <- NULL
   dbms <- "sql server"
@@ -70,13 +70,13 @@
   dbDisconnect(connection)
   
   #Diclofenac and all negative controls:
-  exposureOutcomePairs <- data.frame(exposureConceptId = 1124300,
-                                     outcomeConceptId = c(24609, 29735, 73754, 80004, 134718, 139099, 141932, 192367, 193739, 194997, 197236, 199074, 255573, 257007, 313459, 314658, 316084, 319843, 321596, 374366, 375292, 380094, 433753, 433811, 436665, 436676, 436940, 437784, 438134, 440358, 440374, 443617, 443800, 4084966, 4288310))
+  exposureOutcomePairs <- data.frame(exposureId = 1124300,
+                                     outcomeId = c(24609, 29735, 73754, 80004, 134718, 139099, 141932, 192367, 193739, 194997, 197236, 199074, 255573, 257007, 313459, 314658, 316084, 319843, 321596, 374366, 375292, 380094, 433753, 433811, 436665, 436676, 436940, 437784, 438134, 440358, 440374, 443617, 443800, 4084966, 4288310))
   
   prior = createPrior("laplace", exclude = 0, useCrossValidation = TRUE)
   
   control = createControl(cvType = "auto",
-                          startingVariance = 0.1, 
+                          startingVariance = 0.001, 
                           noiseLevel = "quiet", 
                           threads = 10)
   
@@ -99,4 +99,123 @@
                           addExposureDaysToEnd = TRUE,
                           effectSizes = c(1, 1.25, 1.5, 2, 4),
                           tempFolder = "s:/temp/SignalInjectionTemp")
+  
+  saveRDS(result, "s:/temp/SignalInjectionSummary.rds")
+
+  library(CohortMethod)
+  dcos <- createDrugComparatorOutcomes(targetDrugConceptId = 1124300, comparatorDrugConceptId = 1118084, outcomeConceptIds = result$summary$newOutcomeConceptId)
+  drugComparatorOutcomesList <- list(dcos)
+  
+  covarSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
+                                           useCovariateConditionOccurrence = TRUE,
+                                           useCovariateConditionOccurrence365d = TRUE,
+                                           useCovariateConditionOccurrence30d = TRUE,
+                                           useCovariateConditionOccurrenceInpt180d = TRUE,
+                                           useCovariateConditionEra = TRUE,
+                                           useCovariateConditionEraEver = TRUE,
+                                           useCovariateConditionEraOverlap = TRUE,
+                                           useCovariateConditionGroup = TRUE,
+                                           useCovariateDrugExposure = TRUE,
+                                           useCovariateDrugExposure365d = TRUE,
+                                           useCovariateDrugExposure30d = TRUE,
+                                           useCovariateDrugEra = TRUE,
+                                           useCovariateDrugEra365d = TRUE,
+                                           useCovariateDrugEra30d = TRUE,
+                                           useCovariateDrugEraEver = TRUE,
+                                           useCovariateDrugEraOverlap = TRUE,
+                                           useCovariateDrugGroup = TRUE,
+                                           useCovariateProcedureOccurrence = TRUE,
+                                           useCovariateProcedureOccurrence365d = TRUE,
+                                           useCovariateProcedureOccurrence30d = TRUE,
+                                           useCovariateProcedureGroup = TRUE,
+                                           useCovariateObservation = TRUE,
+                                           useCovariateObservation365d = TRUE,
+                                           useCovariateObservation30d = TRUE,
+                                           useCovariateObservationCount365d = TRUE,
+                                           useCovariateMeasurement365d = TRUE,
+                                           useCovariateMeasurement30d = TRUE,
+                                           useCovariateMeasurementCount365d = TRUE,
+                                           useCovariateMeasurementBelow = TRUE,
+                                           useCovariateMeasurementAbove = TRUE,
+                                           useCovariateConceptCounts = TRUE,
+                                           useCovariateRiskScores = TRUE,
+                                           useCovariateRiskScoresCharlson = TRUE,
+                                           useCovariateRiskScoresDCSI = TRUE,
+                                           useCovariateRiskScoresCHADS2 = TRUE,
+                                           useCovariateInteractionYear = FALSE,
+                                           useCovariateInteractionMonth = FALSE,
+                                           excludedCovariateConceptIds = c(),
+                                           deleteCovariatesSmallCount = 100)
+  getDbCmDataArgs <- createGetDbCohortMethodDataArgs(washoutWindow = 183,
+                                                     indicationLookbackWindow = 183,
+                                                     studyStartDate = "",
+                                                     studyEndDate = "",
+                                                     excludeDrugsFromCovariates = TRUE,
+                                                     covariateSettings = covarSettings)
+  fitOutcomeModelArgs1 <- createFitOutcomeModelArgs(riskWindowStart = 0,
+                                                    riskWindowEnd = 0,
+                                                    addExposureDaysToEnd = TRUE,
+                                                    useCovariates = FALSE,
+                                                    modelType = "cox",
+                                                    stratifiedCox = FALSE)
+ cmAnalysis1 <- createCmAnalysis(analysisId = 1,
+                                  description = "No matching, simple outcome model",
+                                  getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                  fitOutcomeModel = TRUE,
+                                  fitOutcomeModelArgs = fitOutcomeModelArgs1)
+  createPsArgs <- createCreatePsArgs() # Using only defaults
+  matchOnPsArgs <- createMatchOnPsArgs(maxRatio = 100)
+  fitOutcomeModelArgs2 <- createFitOutcomeModelArgs(riskWindowStart = 0,
+                                                    riskWindowEnd = 0,
+                                                    addExposureDaysToEnd = TRUE,
+                                                    useCovariates = FALSE,
+                                                    modelType = "cox",
+                                                    stratifiedCox = TRUE)
+  cmAnalysis2 <- createCmAnalysis(analysisId = 2,
+                                  description = "Matching plus stratified outcome model",
+                                  getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                  createPs = TRUE,
+                                  createPsArgs = createPsArgs,
+                                  matchOnPs = TRUE,
+                                  matchOnPsArgs = matchOnPsArgs,
+                                  computeCovariateBalance = TRUE,
+                                  fitOutcomeModel = TRUE,
+                                  fitOutcomeModelArgs = fitOutcomeModelArgs2)
+  fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(riskWindowStart = 0,
+                                                    riskWindowEnd = 0,
+                                                    addExposureDaysToEnd = TRUE,
+                                                    useCovariates = TRUE,
+                                                    modelType = "cox",
+                                                    stratifiedCox = TRUE)
+  cmAnalysis3 <- createCmAnalysis(analysisId = 3,
+                                  description = "Matching plus full outcome model",
+                                  getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                  createPs = TRUE,
+                                  createPsArgs = createPsArgs,
+                                  matchOnPs = TRUE,
+                                  matchOnPsArgs = matchOnPsArgs,
+                                  computeCovariateBalance = TRUE,
+                                  fitOutcomeModel = TRUE,
+                                  fitOutcomeModelArgs = fitOutcomeModelArgs3)
+  cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3)
+  
+  saveCmAnalysisList(cmAnalysisList, "s:/temp/SignalInjectionCmAnalysisList.txt")
+  saveDrugComparatorOutcomesList(drugComparatorOutcomesList, "s:/temp/SignalInjectionDrugComparatorOutcomesList.txt")
+  
+  result <- runCmAnalyses(connectionDetails = connectionDetails,
+                          cdmDatabaseSchema = cdmDatabaseSchema,
+                          exposureDatabaseSchema = cdmDatabaseSchema,
+                          exposureTable = "drug_era",
+                          outcomeDatabaseSchema = resultsDatabaseSchema,
+                          outcomeTable = outputTable,
+                          outputFolder = "./SignalInjectionCohortMethodOutput",
+                          cmAnalysisList = cmAnalysisList,
+                          drugComparatorOutcomesList = drugComparatorOutcomesList,
+                          getDbCohortMethodDataThreads = 1,
+                          createPsThreads = 1,
+                          psCvThreads = 10,
+                          computeCovarBalThreads = 10,
+                          trimMatchStratifyThreads = 10,
+                          fitOutcomeModelThreads = 4,
+                          outcomeCvThreads = 10)
 }

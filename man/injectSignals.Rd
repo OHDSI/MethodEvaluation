@@ -27,13 +27,14 @@ injectSignals(connectionDetails, cdmDatabaseSchema,
   useCovariateMeasurement365d = TRUE,      useCovariateMeasurement30d = TRUE,
   useCovariateMeasurementCount365d = TRUE, useCovariateMeasurementBelow = TRUE,
   useCovariateMeasurementAbove = TRUE, useCovariateConceptCounts = TRUE,
-  useCovariateRiskScores = TRUE, useCovariateInteractionYear = FALSE,
-  useCovariateInteractionMonth = FALSE, excludedCovariateConceptIds = c(),
-  deleteCovariatesSmallCount = 100), prior = createPrior("laplace", exclude =
-  0, useCrossValidation = TRUE), control = createControl(cvType = "auto",
-  startingVariance = 0.1, noiseLevel = "quiet", threads = 10),
-  firstExposureOnly = FALSE, washoutWindow = 183, riskWindowStart = 0,
-  riskWindowEnd = 0, addExposureDaysToEnd = TRUE,
+  useCovariateRiskScores = TRUE, useCovariateRiskScoresCharlson = TRUE,
+  useCovariateRiskScoresDCSI = TRUE, useCovariateRiskScoresCHADS2 = TRUE,
+  useCovariateInteractionYear = FALSE, useCovariateInteractionMonth = FALSE,
+  excludedCovariateConceptIds = c(), deleteCovariatesSmallCount = 100),
+  prior = createPrior("laplace", exclude = 0, useCrossValidation = TRUE),
+  control = createControl(cvType = "auto", startingVariance = 0.1, noiseLevel
+  = "quiet", threads = 10), firstExposureOnly = FALSE, washoutWindow = 183,
+  riskWindowStart = 0, riskWindowEnd = 0, addExposureDaysToEnd = TRUE,
   firstOutcomeOnly = FALSE, effectSizes = c(1, 1.25, 1.5, 2, 4),
   precision = 0.01, outputDatabaseSchema = cdmDatabaseSchema,
   outputTable = "injected_outcomes", outputConceptIdOffset = 1000,
@@ -84,9 +85,9 @@ first be deleted.}
 
 \item{exposureOutcomePairs}{A data frame with at least two columns:
                                         \itemize{
-                                          \item {"exposureConceptId" containing the drug_concept_ID
+                                          \item {"exposureId" containing the drug_concept_ID
                                                 or cohort_concept_id of the exposure variable}
-                                          \item {"outcomeConceptId" containing the
+                                          \item {"outcomeId" containing the
                                                 condition_concept_ID or cohort_concept_id of the
                                                 outcome variable}
                                         }}

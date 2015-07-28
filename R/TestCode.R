@@ -27,7 +27,7 @@
   server <- "JRDUSAPSCTL01"
   cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
   scratchDatabaseSchema <- "scratch.dbo"
-  outputTable <- "mschuemi_injected_signals"
+  outputTable <- "mschuemi_injected_signals2"
   port <- 17001
   
   
@@ -58,10 +58,12 @@
   nrow(negControls)
   saveRDS(negControls, "s:/temp/negControls.rds")
   negControls <- readRDS("s:/temp/negControls.rds")  
+  negControls$exposureId <- negControls$exposureConceptId
+  negControls$outcomeId <- negControls$outcomeConceptId
   
   covariateSettings <- PatientLevelPrediction::createCovariateSettings(useCovariateDemographics = TRUE,
                                                                        useCovariateConditionOccurrence = TRUE,
-                                                                       useCovariateConditionOccurrence365d = FALSE,
+                                                                       useCovariateConditionOccurrence365d = TRUE,
                                                                        useCovariateConditionOccurrence30d = FALSE,
                                                                        useCovariateConditionOccurrenceInpt180d = FALSE,
                                                                        useCovariateConditionEra = FALSE,
@@ -110,7 +112,7 @@
                      firstExposureOnly = FALSE,
                      firstOutcomeOnly = TRUE,
                      modelType = "survival",
-                     tempFolder = "s:/temp/SignalInjectionTemp"
+                     tempFolder = "s:/temp/SignalInjectionTemp2"
                      ,covariateSettings = covariateSettings
   )
   
@@ -137,7 +139,7 @@
   precision = 0.01
   prior = createPrior("laplace", exclude = 0, useCrossValidation = TRUE)
   control = createControl(cvType = "auto", startingVariance = 0.1, noiseLevel = "quiet", threads = 10)
-  
+  tempFolder <- "s:/temp/SignalInjectionTemp"
   
   
   # Test PDW performance issues:
