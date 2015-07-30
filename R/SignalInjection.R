@@ -254,8 +254,8 @@ injectSignals <- function(connectionDetails,
       for (outcomeId in outcomeIds) {
         # outcomeId = outcomeIds[1]
         writeLines(paste("\nProcessing outcome", outcomeId))
-        if (!ffbase::any.ff(outcomeCounts$outcomeConceptId == outcomeId)){
-          writeLines(paste("No outcomes found for outcome", outcomeId))
+        if (ffbase::sum.ff(outcomeCounts$outcomeConceptId == outcomeId) < 5){
+          writeLines(paste("Too few outcomes found for outcome", outcomeId))
         } else {
           outcomes <- ffbase::subset.ffdf(outcomeCounts, outcomeConceptId == outcomeId)
           outcomes <- merge(exposures, outcomes, by = c("cohortStartDate", "personId"), all.x = TRUE)
@@ -316,7 +316,7 @@ injectSignals <- function(connectionDetails,
             if (effectSize != 1) {
               # When sampling, the expected RR size is the target RR, but the actual RR could be different due to
               # random error.  this code is redoing the sampling until actual RR is equal to the target RR.
-              targetCount <- sum(outcomeCounts$y) * (effectSize - 1)
+              targetCount <- sum(outcomes$y) * (effectSize - 1)
               temp <- 0
               attempts <- 0
               if (modelType == "poisson") {
@@ -349,13 +349,14 @@ injectSignals <- function(connectionDetails,
                     cursor <- cursor + nOutcomes
                   }
                 }
-                injectedRr <- 1 + (nrow(newOutcomes)/sum(outcomeCounts$y))
+                injectedRr <- 1 + (nrow(newOutcomes)/sum(outcomes$y))
               } else {
                 # modelType == 'survival'
                 correctedTargetCount <- targetCount
                 ratios <- c()
                 multiplier <- 1
-                while (abs(sum(temp) - correctedTargetCount) > precision * correctedTargetCount) {
+                temp <- c()
+                while (round(abs(sum(temp) - correctedTargetCount)) > precision * correctedTargetCount) {
                   timeToEvent <- round(rexp(length(prediction), multiplier * prediction * (effectSize - 1)))
                   temp <- timeToEvent <= time
                   # Correct the target count for the fact that we're censoring after the first outcome:

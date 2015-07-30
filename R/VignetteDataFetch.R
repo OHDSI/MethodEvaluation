@@ -101,9 +101,11 @@
                           tempFolder = "s:/temp/SignalInjectionTemp")
   
   saveRDS(result, "s:/temp/SignalInjectionSummary.rds")
+  # result <- readRDS("s:/temp/SignalInjectionSummary.rds")
 
   library(CohortMethod)
-  dcos <- createDrugComparatorOutcomes(targetDrugConceptId = 1124300, comparatorDrugConceptId = 1118084, outcomeConceptIds = result$summary$newOutcomeConceptId)
+  resultSum <- result$summary[result$summary$trueEffectSize != 0,]
+  dcos <- createDrugComparatorOutcomes(targetId = 1124300, comparatorId = 1118084, outcomeIds = resultSum$newOutcomeId)
   drugComparatorOutcomesList <- list(dcos)
   
   covarSettings <- createCovariateSettings(useCovariateDemographics = TRUE,
@@ -178,7 +180,6 @@
                                   createPsArgs = createPsArgs,
                                   matchOnPs = TRUE,
                                   matchOnPsArgs = matchOnPsArgs,
-                                  computeCovariateBalance = TRUE,
                                   fitOutcomeModel = TRUE,
                                   fitOutcomeModelArgs = fitOutcomeModelArgs2)
   fitOutcomeModelArgs3 <- createFitOutcomeModelArgs(riskWindowStart = 0,
@@ -194,7 +195,6 @@
                                   createPsArgs = createPsArgs,
                                   matchOnPs = TRUE,
                                   matchOnPsArgs = matchOnPsArgs,
-                                  computeCovariateBalance = TRUE,
                                   fitOutcomeModel = TRUE,
                                   fitOutcomeModelArgs = fitOutcomeModelArgs3)
   cmAnalysisList <- list(cmAnalysis1, cmAnalysis2, cmAnalysis3)
@@ -202,20 +202,67 @@
   saveCmAnalysisList(cmAnalysisList, "s:/temp/SignalInjectionCmAnalysisList.txt")
   saveDrugComparatorOutcomesList(drugComparatorOutcomesList, "s:/temp/SignalInjectionDrugComparatorOutcomesList.txt")
   
-  result <- runCmAnalyses(connectionDetails = connectionDetails,
-                          cdmDatabaseSchema = cdmDatabaseSchema,
-                          exposureDatabaseSchema = cdmDatabaseSchema,
-                          exposureTable = "drug_era",
-                          outcomeDatabaseSchema = resultsDatabaseSchema,
-                          outcomeTable = outputTable,
-                          outputFolder = "./SignalInjectionCohortMethodOutput",
-                          cmAnalysisList = cmAnalysisList,
-                          drugComparatorOutcomesList = drugComparatorOutcomesList,
-                          getDbCohortMethodDataThreads = 1,
-                          createPsThreads = 1,
-                          psCvThreads = 10,
-                          computeCovarBalThreads = 10,
-                          trimMatchStratifyThreads = 10,
-                          fitOutcomeModelThreads = 4,
+  # cmAnalysisList <- loadCmAnalysisList("s:/temp/SignalInjectionCmAnalysisList.txt")
+  # drugComparatorOutcomesList <- loadDrugComparatorOutcomesList("s:/temp/SignalInjectionDrugComparatorOutcomesList.txt")
+    
+  cmResult <- runCmAnalyses(connectionDetails = connectionDetails, 
+                          cdmDatabaseSchema = cdmDatabaseSchema, 
+                          exposureTable = "drug_era", 
+                          outcomeDatabaseSchema = resultsDatabaseSchema, 
+                          outcomeTable = outputTable, 
+                          outputFolder = "s:/temp/SignalInjectionCohortMethodOutput", 
+                          cmAnalysisList = cmAnalysisList, 
+                          drugComparatorOutcomesList = drugComparatorOutcomesList, 
+                          getDbCohortMethodDataThreads = 1, 
+                          createPsThreads = 1, 
+                          psCvThreads = 10, 
+                          trimMatchStratifyThreads = 10, 
+                          computeCovarBalThreads = 2, 
+                          fitOutcomeModelThreads = 3, 
                           outcomeCvThreads = 10)
+
+  setwd("s:/temp")
+  signalInjSum <- readRDS("s:/temp/SignalInjectionSummary.rds")
+  signalInjResultSum <- signalInjSum$summary[signalInjSum$summary$trueEffectSize != 0,]
+  cmResult <- readRDS("s:/temp/SignalInjectionCohortMethodOutput/outcomeModelReference.rds")
+  cmAnalysisSum <- summarizeAnalyses(cmResult)
+  estimates <- cmAnalysisSum[!is.infinite(cmAnalysisSum$seLogRr) & !is.na(cmAnalysisSum$seLogRr),]
+  estimates <- merge(estimates, signalInjResultSum[,c("targetEffectSize","newOutcomeId")], by.x = "outcomeId", by.y = "newOutcomeId")
+  estimates$trueLogRr <- log(estimates$targetEffectSize)
+  library(EmpiricalCalibration)
+  
+  estimatesAnalysis <- estimates[estimates$analysisId == 1,]
+  plotTrueAndObserved(estimatesAnalysis$logRr, estimatesAnalysis$seLogRr, estimatesAnalysis$trueLogRr, "Hazard ratio", fileName = "s:/temp/signalInjectionResults/forest1.png")
+  plotCoverage(estimatesAnalysis$logRr, estimatesAnalysis$seLogRr, estimatesAnalysis$trueLogRr, fileName = "s:/temp/signalInjectionResults/cov1.png")
+
+  estimatesAnalysis <- estimates[estimates$analysisId == 2,]
+  plotTrueAndObserved(estimatesAnalysis$logRr, estimatesAnalysis$seLogRr, estimatesAnalysis$trueLogRr, "Hazard ratio", fileName = "s:/temp/signalInjectionResults/forest2.png")
+  plotCoverage(estimatesAnalysis$logRr, estimatesAnalysis$seLogRr, estimatesAnalysis$trueLogRr, fileName = "s:/temp/signalInjectionResults/cov2.png")
+  
+  estimatesAnalysis <- estimates[estimates$analysisId == 3,]
+  plotTrueAndObserved(estimatesAnalysis$logRr, estimatesAnalysis$seLogRr, estimatesAnalysis$trueLogRr, "Hazard ratio", fileName = "s:/temp/signalInjectionResults/forest3.png")
+  plotCoverage(estimatesAnalysis$logRr, estimatesAnalysis$seLogRr, estimatesAnalysis$trueLogRr, fileName = "s:/temp/signalInjectionResults/cov3.png")
+  
+  estimatesAnalysis <- estimates[estimates$analysisId == 1,]
+  model <- EmpiricalCalibration::fitSystematicErrorModel(estimatesAnalysis$logRr, estimatesAnalysis$seLogRr, estimatesAnalysis$trueLogRr)
+  calibratedCis <- calibrateConfidenceInterval(estimatesAnalysis$logRr, estimatesAnalysis$seLogRr, model)
+  calibratedCis$trueLogRr <- estimatesAnalysis$trueLogRr
+  plotTrueAndObserved(calibratedCis$logRr, calibratedCis$seLogRr, calibratedCis$trueLogRr, "Hazard ratio", fileName = "s:/temp/signalInjectionResults/forest1_cal.png")
+  plotCoverage(calibratedCis$logRr, calibratedCis$seLogRr, calibratedCis$trueLogRr, fileName = "s:/temp/signalInjectionResults/cov1_cal.png")
+  
+  estimatesAnalysis <- estimates[estimates$analysisId == 2,]
+  model <- EmpiricalCalibration::fitSystematicErrorModel(estimatesAnalysis$logRr, estimatesAnalysis$seLogRr, estimatesAnalysis$trueLogRr)
+  calibratedCis <- calibrateConfidenceInterval(estimatesAnalysis$logRr, estimatesAnalysis$seLogRr, model)
+  calibratedCis$trueLogRr <- estimatesAnalysis$trueLogRr
+  plotTrueAndObserved(calibratedCis$logRr, calibratedCis$seLogRr, calibratedCis$trueLogRr, "Hazard ratio", fileName = "s:/temp/signalInjectionResults/forest2_cal.png")
+  plotCoverage(calibratedCis$logRr, calibratedCis$seLogRr, calibratedCis$trueLogRr, fileName = "s:/temp/signalInjectionResults/cov2_cal.png")
+  
+  estimatesAnalysis <- estimates[estimates$analysisId == 3,]
+  model <- EmpiricalCalibration::fitSystematicErrorModel(estimatesAnalysis$logRr, estimatesAnalysis$seLogRr, estimatesAnalysis$trueLogRr)
+  calibratedCis <- calibrateConfidenceInterval(estimatesAnalysis$logRr, estimatesAnalysis$seLogRr, model)
+  calibratedCis$trueLogRr <- estimatesAnalysis$trueLogRr
+  plotTrueAndObserved(calibratedCis$logRr, calibratedCis$seLogRr, calibratedCis$trueLogRr, "Hazard ratio", fileName = "s:/temp/signalInjectionResults/forest3_cal.png")
+  plotCoverage(calibratedCis$logRr, calibratedCis$seLogRr, calibratedCis$trueLogRr, fileName = "s:/temp/signalInjectionResults/cov3_cal.png")
+  
 }
+
