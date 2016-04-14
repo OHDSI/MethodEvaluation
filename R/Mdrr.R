@@ -1,6 +1,6 @@
 # @file Mdrr.R
 #
-# Copyright 2015 Observational Health Data Sciences and Informatics
+# Copyright 2016 Observational Health Data Sciences and Informatics
 #
 # This file is part of MethodEvaluation
 # 
@@ -66,6 +66,7 @@
 #' @param outcomeConditionTypeConceptIds   A list of TYPE_CONCEPT_ID values that will restrict
 #'                                         condition occurrences.  Only applicable if outcomeTable =
 #'                                         CONDITION_OCCURRENCE.
+#' @param cdmVersion                   Define the OMOP CDM version used: currently support "4" and "5".
 #'
 #' @return
 #' A data frame containing the MDRRs for the given exposure-outcome pairs.
@@ -90,7 +91,8 @@ computeMdrr <- function(connectionDetails,
                         exposureTable = "drug_era",
                         outcomeDatabaseSchema = cdmDatabaseSchema,
                         outcomeTable = "condition_era",
-                        outcomeConditionTypeConceptIds = c()) {
+                        outcomeConditionTypeConceptIds = c(),
+                        cdmVersion = "4") {
   cdmDatabase <- strsplit(cdmDatabaseSchema, "\\.")[[1]][1]
   exposureTable <- tolower(exposureTable)
   outcomeTable <- tolower(outcomeTable)
@@ -102,10 +104,14 @@ computeMdrr <- function(connectionDetails,
   } else {
     exposureStartDate <- "cohort_start_date"
     exposureEndDate <- "cohort_end_date"
-    exposureConceptId <- "cohort_concept_id"
+    if (cdmVersion == "4"){
+      exposureConceptId <- "cohort_concept_id"
+    } else {
+      exposureConceptId <- "cohort_definition_id"
+    }
     exposurePersonId <- "subject_id"
   }
-
+  
   if (outcomeTable == "condition_era") {
     outcomeStartDate <- "condition_era_start_date"
     outcomeEndDate <- "condition_era_end_date"
@@ -119,13 +125,17 @@ computeMdrr <- function(connectionDetails,
   } else {
     outcomeStartDate <- "cohort_start_date"
     outcomeEndDate <- "cohort_end_date"
-    outcomeConceptId <- "cohort_concept_id"
+    if (cdmVersion == "4"){
+      outcomeConceptId <- "cohort_concept_id"
+    } else {
+      outcomeConceptId <- "cohort_definition_id"
+    }
     outcomePersonId <- "subject_id"
   }
-
+  
   conn <- connect(connectionDetails)
-
-
+  
+  
   renderedSql <- SqlRender::loadRenderTranslateSql("MDRR.sql",
                                                    packageName = "MethodEvaluation",
                                                    dbms = connectionDetails$dbms,
@@ -146,24 +156,24 @@ computeMdrr <- function(connectionDetails,
                                                    outcome_concept_id = outcomeConceptId,
                                                    outcome_person_id = outcomePersonId,
                                                    outcome_condition_type_concept_id_list = outcomeConditionTypeConceptIds)
-
+  
   writeLines("Computing minimumum detectable relative risks. This could take a while")
   DatabaseConnector::executeSql(conn, renderedSql)
-
+  
   sql <- "SELECT * FROM #mdrr"
   sql <- SqlRender::translateSql(sql,
                                  targetDialect = connectionDetails$dbms,
                                  oracleTempSchema = oracleTempSchema)$sql
   mdrr <- DatabaseConnector::querySql(conn, sql)
-
+  
   renderedSql <- SqlRender::loadRenderTranslateSql("MDRR_Drop_temp_tables.sql",
                                                    packageName = "MethodEvaluation",
                                                    dbms = connectionDetails$dbms,
                                                    oracleTempSchema = oracleTempSchema)
   DatabaseConnector::executeSql(conn, renderedSql, progressBar = FALSE, reportOverallTime = FALSE)
-
+  
   RJDBC::dbDisconnect(conn)
-
+  
   names(mdrr) <- toupper(names(mdrr))
   mdrr <- data.frame(exposureConceptId = mdrr$DRUG_CONCEPT_ID,
                      outcomeConceptId = mdrr$CONDITION_CONCEPT_ID,

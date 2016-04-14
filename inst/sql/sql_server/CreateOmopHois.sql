@@ -1,7 +1,7 @@
 /************************************************************************
 @file GetExposedCohorts.sql
 
-Copyright 2015 Observational Health Data Sciences and Informatics
+Copyright 2016 Observational Health Data Sciences and Informatics
 
 This file is part of CohortMethod
 
@@ -23,6 +23,7 @@ limitations under the License.
 {DEFAULT @cohort_database = 'scratch' } 
 {DEFAULT @cohort_database_schema = 'scratch.dbo' } 
 {DEFAULT @cohort_table = 'omop_hois' }
+{DEFAULT @cohort_definition_id = 'cohort_concept_id'}
 
 USE @cohort_database;
 
@@ -32,7 +33,7 @@ IF OBJECT_ID('@cohort_table', 'U') IS NOT NULL
 	DROP TABLE @cohort_table;
 
 CREATE TABLE @cohort_table (
-	cohort_concept_id INT NOT NULL,
+	@cohort_definition_id INT NOT NULL,
 	cohort_start_date DATE NOT NULL,
 	cohort_end_date DATE NULL,
 	subject_id BIGINT NOT NULL
@@ -47,7 +48,7 @@ INSERT INTO @cohort_database_schema.@cohort_table (
 	subject_id,
 	cohort_start_date,
 	cohort_end_date,
-	cohort_concept_id
+	@cohort_definition_id
 	)
 SELECT DISTINCT person_id,
 	condition_start_date,
@@ -88,7 +89,7 @@ INSERT INTO @cohort_database_schema.@cohort_table (
 	subject_id,
 	cohort_start_date,
 	cohort_end_date,
-	cohort_concept_id
+	@cohort_definition_id
 	)
 SELECT DISTINCT person_id,
 	condition_start_date,
@@ -118,7 +119,7 @@ INSERT INTO @cohort_database_schema.@cohort_table (
 	subject_id,
 	cohort_start_date,
 	cohort_end_date,
-	cohort_concept_id
+	@cohort_definition_id
 	)
 -- get cases with diagnostic code irrespective of hospitalization
 SELECT DISTINCT person_id,
@@ -183,7 +184,7 @@ INSERT INTO @cohort_database_schema.@cohort_table (
 	subject_id,
 	cohort_start_date,
 	cohort_end_date,
-	cohort_concept_id
+	@cohort_definition_id
 	)
 SELECT DISTINCT person_id,
 	condition_start_date,

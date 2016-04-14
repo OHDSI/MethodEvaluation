@@ -1,6 +1,6 @@
 # @file CreateOutcomeCohorts.R
 #
-# Copyright 2015 Observational Health Data Sciences and Informatics
+# Copyright 2016 Observational Health Data Sciences and Informatics
 #
 # This file is part of MethodEvaluation
 # 
@@ -35,6 +35,7 @@
 #'                               SQL Server, botth the database and schema should be specified, e.g.
 #'                               'cdm_schema.dbo'
 #' @param cohortTable            The name of the table where the outcomes will be stored.
+#' @param cdmVersion                   Define the OMOP CDM version used: currently support "4" and "5".
 #'
 #' @export
 createOutcomeCohorts <- function(connectionDetails,
@@ -42,9 +43,15 @@ createOutcomeCohorts <- function(connectionDetails,
                                  createNewCohortTable = FALSE,
                                  cohortDatabaseSchema = cdmDatabaseSchema,
                                  cohortTable = "cohort",
-                                 referenceSet = "omopReferenceSet") {
+                                 referenceSet = "omopReferenceSet",
+                                 cdmVersion = "4") {
   cohortDatabase <- strsplit(cohortDatabaseSchema, "\\.")[[1]][1]
   cdmDatabase <- strsplit(cdmDatabaseSchema, "\\.")[[1]][1]
+  if (cdmVersion == "4"){
+    cohortDefinitionId <- "cohort_concept_id"
+  } else { 
+    cohortDefinitionId <- "cohort_definition_id"
+  }
 
   if (referenceSet == "omopReferenceSet") {
     writeLines("Generating HOIs for the OMOP reference set")
@@ -55,7 +62,8 @@ createOutcomeCohorts <- function(connectionDetails,
                                                      create_new_cohort_table = createNewCohortTable,
                                                      cohort_database = cohortDatabase,
                                                      cohort_database_schema = cohortDatabaseSchema,
-                                                     cohort_table = cohortTable)
+                                                     cohort_table = cohortTable,
+                                                     cohort_definition_id = cohortDefinitionId)
   } else if (referenceSet == "euadrReferenceSet") {
     writeLines("Generating HOIs for the EU-ADR reference set")
     # TODO: add code for creating the EU-ADR HOIs

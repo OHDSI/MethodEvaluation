@@ -1,6 +1,6 @@
 # @file MethodEvaluation.R
 #
-# Copyright 2015 Observational Health Data Sciences and Informatics
+# Copyright 2016 Observational Health Data Sciences and Informatics
 #
 # This file is part of MethodEvaluation
 # 
@@ -90,6 +90,93 @@ computeAuc <- function(methodResults, referenceSet, confidenceIntervals = TRUE) 
   }
 }
 
+#' Plot the ROC curves for various injected signal sizes
+#'
+#' @param logRr       A vector containing the log of the relative risk as estimated by a method.
+#' @param trueLogRr   A vector containing the injected log(relative risk) for each estimate.
+#' @param showAucs    Should the AUCs be shown in the plot?
+#' @param fileName    Name of the file where the plot should be saved, for example 'plot.png'. See the
+#'                    function \code{ggsave} in the ggplot2 package for supported file formats.
+#' 
+#' @return
+#' A Ggplot object. Use the \code{ggsave} function to save to file.
+#' 
+#' @export
+plotRocsInjectedSignals <- function(logRr, trueLogRr, showAucs, fileName = NULL) {
+  trueLogRrLevels <- unique(trueLogRr)
+  if (all(trueLogRrLevels != 0))
+    stop("Requiring at least one true relative risk of 1")
+  
+  allData <- data.frame()
+  aucs <- c()
+  trueRrs <- c()
+  for (trueLogRrLevel in trueLogRrLevels){
+    if (trueLogRrLevel != 0 ) {
+      # trueLogRrLevel <- log(2)
+      data <- data.frame(logRr = logRr[trueLogRr == 0 | trueLogRr == trueLogRrLevel], 
+                         trueLogRr = trueLogRr[trueLogRr == 0 | trueLogRr == trueLogRrLevel])
+      data$truth <- data$trueLogRr != 0
+      
+      roc <- pROC::roc(data$truth, data$logRr, algorithm = 3)
+      if (showAucs) {
+        aucs <- c(aucs, pROC::auc(roc))
+        trueRrs <- c(trueRrs, exp(trueLogRrLevel))
+      }
+      data <- data.frame(sens = roc$sensitivities, fpRate = 1 - roc$specificities, trueRr = exp(trueLogRrLevel))
+      data <- data[order(data$sens, data$fpRate), ]
+      allData <- rbind(allData, data)
+    }
+  }
+  allData$trueRr <- as.factor(allData$trueRr)
+  plot <- ggplot2::ggplot(allData, ggplot2::aes(x = fpRate, y = sens, group = trueRr, color = trueRr, fill = trueRr)) +
+    ggplot2::geom_abline(intercept = 0, slope = 1) +
+    ggplot2::geom_line(alpha = 0.5, size = 1) +
+    ggplot2::scale_x_continuous("1 - specificity") +
+    ggplot2::scale_y_continuous("Sensitivity")
+  
+  if (showAucs) {
+    aucs <- data.frame(auc = aucs, trueRr = trueRrs) 
+    aucs <- aucs[order(-aucs$trueRr), ]
+    for (i in 1:nrow(aucs)) {
+      label <- paste0("True RR = ",format(round(aucs$trueRr[i], 2), nsmall = 2), ": AUC = ", format(round(aucs$auc[i], 2), nsmall = 2))
+      plot <- plot + ggplot2::geom_text(label = label, x = 1, y = (i-1)*0.1, hjust = 1, color = "#000000")
+    }
+  }
+  if (!is.null(fileName))
+    ggplot2::ggsave(fileName, plot, width = 5.5, height = 4.5, dpi = 400)
+  return(plot)
+}
+
+#' Compute the AUCs for various injected signal sizes
+#'
+#' @param logRr       A vector containing the log of the relative risk as estimated by a method.
+#' @param trueLogRr   A vector containing the injected log(relative risk) for each estimate.
+#' 
+#' @return
+#' A data frame with per injected signal size the AUC and the 95 percent confidence interval of the AUC.
+#' 
+#' @export
+computeAucsInjectedSignals <- function(logRr, trueLogRr) {
+  trueLogRrLevels <- unique(trueLogRr)
+  if (all(trueLogRrLevels != 0))
+    stop("Requiring at least one true relative risk of 1")
+  result <- data.frame(trueLogRr = trueLogRrLevels[trueLogRrLevels != 0], 
+                       auc = 0, 
+                       aucLb95Ci = 0, 
+                       aucUb95Ci = 0)
+  for (i in 1:nrow(result)) {
+    data <- data.frame(logRr = logRr[trueLogRr == 0 | trueLogRr == result$trueLogRr[i]], 
+                       trueLogRr = trueLogRr[trueLogRr == 0 | trueLogRr == result$trueLogRr[i]])
+    data$truth <- data$trueLogRr != 0
+    roc <- pROC::roc(data$truth, data$logRr, algorithm = 3)
+    auc <- pROC::ci.auc(roc, method = "delong")
+    result$auc[i] <- auc[1]
+    result$aucLb95Ci[i] <- auc[2]
+    result$aucUb95Ci[i] <- auc[3]
+  }
+  return(result)
+}
+
 #' Compute the mean squared error
 #'
 #' @export
@@ -111,9 +198,4 @@ plotBias <- function() {
 
 }
 
-#' Plot the ROC curve
-#'
-#' @export
-plotRoc <- function() {
 
-}
