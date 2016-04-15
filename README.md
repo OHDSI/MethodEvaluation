@@ -22,7 +22,7 @@ Dependencies
 ============
  * DatabaseConnector
  * SqlRender
- * CohortMethod
+ * FeatureExtraction
  * Cyclops
 
 Getting Started
@@ -38,7 +38,7 @@ Getting Started
   install_github("ohdsi/SqlRender") 
   install_github("ohdsi/DatabaseConnector") 
   install_github("ohdsi/Cyclops") 
-  install_github("ohdsi/CohortMethod") 
+  install_github("ohdsi/FeatureExtraction") 
   install_github("ohdsi/MethodEvaluation") 
   ```
 
