@@ -16,6 +16,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#' MethodEvaluation
+#'
+#' @docType package
+#' @name MethodEvaluation
+#' @importFrom SqlRender loadRenderTranslateSql translateSql
+#' @import Cyclops
+#' @import DatabaseConnector
+#' @import FeatureExtraction
+NULL
+
+
 #' The OMOP reference set
 #' A reference set of 165 drug-outcome pairs where we believe the drug causes the outcome ( positive
 #' controls) and 234 drug-outcome pairs where we believe the drug does not cause the outcome (negative
@@ -66,7 +77,7 @@ NULL
 #' used as a counterfactual} \item{comparatorDrugConceptName}{Name of the comparator drug}
 #' \item{comparatorType}{How the comparator was selected} }
 #' @references
-#' Coloma PM, Avillach P, Salvo F, Schuemie MJ, Ferrajolo C, Pariente A, Fourrier-Réglat A, Molokhia
+#' Coloma PM, Avillach P, Salvo F, Schuemie MJ, Ferrajolo C, Pariente A, Fourrier-Reglat A, Molokhia
 #' M, Patadia V, van der Lei J, Sturkenboom M, Trifirò G. A reference standard for evaluation of
 #' methods for drug safety signal detection using electronic healthcare record databases. Drug Safety
 #' 36(1):13-23, 2013

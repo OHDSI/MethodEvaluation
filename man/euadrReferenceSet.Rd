@@ -24,7 +24,7 @@ originally, there was an additional positive control (Nimesulide and acute liver
 Nimesulide is not in RxNorm, and is not available in many countries.
 }
 \references{
-Coloma PM, Avillach P, Salvo F, Schuemie MJ, Ferrajolo C, Pariente A, Fourrier-Réglat A, Molokhia
+Coloma PM, Avillach P, Salvo F, Schuemie MJ, Ferrajolo C, Pariente A, Fourrier-Reglat A, Molokhia
 M, Patadia V, van der Lei J, Sturkenboom M, Trifirò G. A reference standard for evaluation of
 methods for drug safety signal detection using electronic healthcare record databases. Drug Safety
 36(1):13-23, 2013

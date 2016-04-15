@@ -133,7 +133,7 @@ computeMdrr <- function(connectionDetails,
     outcomePersonId <- "subject_id"
   }
   
-  conn <- connect(connectionDetails)
+  conn <- DatabaseConnector::connect(connectionDetails)
   
   
   renderedSql <- SqlRender::loadRenderTranslateSql("MDRR.sql",

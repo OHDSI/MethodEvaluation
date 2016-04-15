@@ -20,15 +20,12 @@ Depends:
     FeatureExtraction,
     Cyclops
 Imports:
-    bit,
     ff,
     ffbase (>= 0.12.1),
     RJDBC,
     SqlRender (>= 1.1.2),
     pROC,
-    EmpiricalCalibration
+    ggplot2
 Suggests:
-    testthat,
-	CohortMethod,
-	SelfControlledCaseSeries
+    testthat
 RoxygenNote: 5.0.1

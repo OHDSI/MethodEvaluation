@@ -47,7 +47,7 @@ server <- "JRDUSAPSCTL01"
 cdmDatabaseSchema <- "CDM_Truven_MDCD_V5.dbo"
 oracleTempSchema <- NULL
 resultsDatabaseSchema <- "scratch.dbo"
-outcomesTable <- "mschuemie_outcomes"
+outcomeTable <- "mschuemie_outcomes"
 port <- 17001
 cdmVersion <- "5"
 
@@ -57,7 +57,7 @@ user <- NULL
 server <- "JRDUSAPSCTL01"
 cdmDatabaseSchema <- "CDM_Truven_ccae.dbo"
 resultsDatabaseSchema <- "scratch.dbo"
-outcomesTable <- "mschuemie_outcomes"
+outcomeTable <- "mschuemie_outcomes"
 port <- 17001
 cdmVersion <- "4"
 
@@ -74,7 +74,7 @@ sql <- loadRenderTranslateSql("VignetteOutcomes.sql",
                               dbms = dbms,
                               cdmDatabaseSchema = cdmDatabaseSchema,
                               resultsDatabaseSchema = resultsDatabaseSchema,
-                              outcomesTable = outcomesTable)
+                              outcomeTable = outcomeTable)
 if (cdmVersion == "4"){
   sql <- gsub("cohort_definition_id", "cohort_concept_id", sql)
   sql <- gsub("visit_concept_id", "place_of_service_concept_id", sql)
@@ -83,8 +83,8 @@ if (cdmVersion == "4"){
 DatabaseConnector::executeSql(connection, sql)
 
 # Check number of subjects per cohort:
-sql <- "SELECT cohort_concept_id, COUNT(*) AS count FROM @resultsDatabaseSchema.@outcomesTable GROUP BY cohort_concept_id"
-sql <- SqlRender::renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema, outcomesTable = outcomesTable)$sql
+sql <- "SELECT cohort_concept_id, COUNT(*) AS count FROM @resultsDatabaseSchema.@outcomeTable GROUP BY cohort_concept_id"
+sql <- SqlRender::renderSql(sql, resultsDatabaseSchema = resultsDatabaseSchema, outcomeTable = outcomeTable)$sql
 sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
 if (cdmVersion != "4"){
   sql <- gsub("cohort_definition_id", "cohort_concept_id", sql)
@@ -109,9 +109,9 @@ result <- injectSignals(connectionDetails,
                         exposureOutcomePairs = exposureOutcomePairs,
                         exposureTable = "drug_era",
                         outcomeDatabaseSchema = resultsDatabaseSchema,
-                        outcomeTable = outcomesTable,
+                        outcomeTable = outcomeTable,
                         outputDatabaseSchema = resultsDatabaseSchema,
-                        outputTable = outcomesTable,
+                        outputTable = outcomeTable,
                         createOutputTable = FALSE,
                         firstExposureOnly = FALSE,
                         firstOutcomeOnly = FALSE,
@@ -124,6 +124,4 @@ result <- injectSignals(connectionDetails,
                         effectSizes = c(1, 1.25, 1.5, 2, 4),
                         workFolder = "s:/temp/SignalInjection",
                         cdmVersion = "5")
-
-
 

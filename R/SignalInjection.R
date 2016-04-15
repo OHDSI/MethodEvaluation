@@ -58,6 +58,7 @@
 #'                                         first be deleted. If FALSE, the table is assumed to exist and the
 #'                                         outcomes will be inserted. Any existing outcomes with the same IDs
 #'                                         will first be deleted.
+#' @param outputIdOffset            What should be the first new outcome ID that is to be created?
 #' @param exposureOutcomePairs             A data frame with at least two columns:
 #'                                         \itemize{
 #'                                           \item {"exposureId" containing the drug_concept_ID
@@ -73,6 +74,15 @@
 #'                                         probabilities according to this model, and this will help
 #'                                         preserve the observed confounding when injecting signals.
 #' @param minOutcomeCount                  Minimum number of outcome events required to build a model and inject a signal.
+#' @param covariateSettings                An object of type \code{covariateSettings} as created using the
+#'                                         \code{createCovariateSettings} function in the
+#'                                         \code{FeatureExtraction} package.
+#' @param prior                 The prior used to fit the outcome model. See \code{\link[Cyclops]{createPrior}}
+#'                              for details.
+#' @param control               The control object used to control the cross-validation used to
+#'                              determine the hyperparameters of the prior (if applicable). See
+#'                              \code{\link[Cyclops]{createControl}} for details.
+#' @param precision                        The allowed ratio between target and injected signal size.
 #' @param firstExposureOnly                Should signals be injected only for the first exposure? (ie.
 #'                                         assuming an acute effect)
 #' @param washoutPeriod                    Number of days at the start of observation for which no
@@ -117,47 +127,47 @@ injectSignals <- function(connectionDetails,
                           modelType = "poisson",
                           buildOutcomeModel = TRUE,
                           minOutcomeCount = 100,
-                          covariateSettings = createCovariateSettings(useCovariateDemographics = TRUE,
-                                                                      useCovariateConditionOccurrence = TRUE,
-                                                                      useCovariateConditionOccurrence365d = TRUE,
-                                                                      useCovariateConditionOccurrence30d = TRUE,
-                                                                      useCovariateConditionOccurrenceInpt180d = TRUE,
-                                                                      useCovariateConditionEra = TRUE,
-                                                                      useCovariateConditionEraEver = TRUE,
-                                                                      useCovariateConditionEraOverlap = TRUE,
-                                                                      useCovariateConditionGroup = TRUE,
-                                                                      useCovariateDrugExposure = TRUE,
-                                                                      useCovariateDrugExposure365d = TRUE,
-                                                                      useCovariateDrugExposure30d = TRUE,
-                                                                      useCovariateDrugEra = TRUE,
-                                                                      useCovariateDrugEra365d = TRUE,
-                                                                      useCovariateDrugEra30d = TRUE,
-                                                                      useCovariateDrugEraEver = TRUE,
-                                                                      useCovariateDrugEraOverlap = TRUE,
-                                                                      useCovariateDrugGroup = TRUE,
-                                                                      useCovariateProcedureOccurrence = TRUE,
-                                                                      useCovariateProcedureOccurrence365d = TRUE,
-                                                                      useCovariateProcedureOccurrence30d = TRUE,
-                                                                      useCovariateProcedureGroup = TRUE,
-                                                                      useCovariateObservation = TRUE,
-                                                                      useCovariateObservation365d = TRUE,
-                                                                      useCovariateObservation30d = TRUE,
-                                                                      useCovariateObservationCount365d = TRUE,
-                                                                      useCovariateMeasurement365d = TRUE,
-                                                                      useCovariateMeasurement30d = TRUE,
-                                                                      useCovariateMeasurementCount365d = TRUE,
-                                                                      useCovariateMeasurementBelow = TRUE,
-                                                                      useCovariateMeasurementAbove = TRUE,
-                                                                      useCovariateConceptCounts = TRUE,
-                                                                      useCovariateRiskScores = TRUE,
-                                                                      useCovariateRiskScoresCharlson = TRUE,
-                                                                      useCovariateRiskScoresDCSI = TRUE,
-                                                                      useCovariateRiskScoresCHADS2 = TRUE,
-                                                                      useCovariateRiskScoresCHADS2VASc = TRUE,
-                                                                      useCovariateInteractionYear = FALSE,
-                                                                      useCovariateInteractionMonth = FALSE,
-                                                                      excludedCovariateConceptIds = c(),
-                                                                      deleteCovariatesSmallCount = 100),
+                          covariateSettings = FeatureExtraction::createCovariateSettings(useCovariateDemographics = TRUE,
+                                                                                         useCovariateConditionOccurrence = TRUE,
+                                                                                         useCovariateConditionOccurrence365d = TRUE,
+                                                                                         useCovariateConditionOccurrence30d = TRUE,
+                                                                                         useCovariateConditionOccurrenceInpt180d = TRUE,
+                                                                                         useCovariateConditionEra = TRUE,
+                                                                                         useCovariateConditionEraEver = TRUE,
+                                                                                         useCovariateConditionEraOverlap = TRUE,
+                                                                                         useCovariateConditionGroup = TRUE,
+                                                                                         useCovariateDrugExposure = TRUE,
+                                                                                         useCovariateDrugExposure365d = TRUE,
+                                                                                         useCovariateDrugExposure30d = TRUE,
+                                                                                         useCovariateDrugEra = TRUE,
+                                                                                         useCovariateDrugEra365d = TRUE,
+                                                                                         useCovariateDrugEra30d = TRUE,
+                                                                                         useCovariateDrugEraEver = TRUE,
+                                                                                         useCovariateDrugEraOverlap = TRUE,
+                                                                                         useCovariateDrugGroup = TRUE,
+                                                                                         useCovariateProcedureOccurrence = TRUE,
+                                                                                         useCovariateProcedureOccurrence365d = TRUE,
+                                                                                         useCovariateProcedureOccurrence30d = TRUE,
+                                                                                         useCovariateProcedureGroup = TRUE,
+                                                                                         useCovariateObservation = TRUE,
+                                                                                         useCovariateObservation365d = TRUE,
+                                                                                         useCovariateObservation30d = TRUE,
+                                                                                         useCovariateObservationCount365d = TRUE,
+                                                                                         useCovariateMeasurement365d = TRUE,
+                                                                                         useCovariateMeasurement30d = TRUE,
+                                                                                         useCovariateMeasurementCount365d = TRUE,
+                                                                                         useCovariateMeasurementBelow = TRUE,
+                                                                                         useCovariateMeasurementAbove = TRUE,
+                                                                                         useCovariateConceptCounts = TRUE,
+                                                                                         useCovariateRiskScores = TRUE,
+                                                                                         useCovariateRiskScoresCharlson = TRUE,
+                                                                                         useCovariateRiskScoresDCSI = TRUE,
+                                                                                         useCovariateRiskScoresCHADS2 = TRUE,
+                                                                                         useCovariateRiskScoresCHADS2VASc = TRUE,
+                                                                                         useCovariateInteractionYear = FALSE,
+                                                                                         useCovariateInteractionMonth = FALSE,
+                                                                                         excludedCovariateConceptIds = c(),
+                                                                                         deleteCovariatesSmallCount = 100),
                           prior = createPrior("laplace", exclude = 0, useCrossValidation = TRUE),
                           control = createControl(cvType = "auto", startingVariance = 0.1, noiseLevel = "quiet", threads = 10),
                           firstExposureOnly = FALSE,
@@ -168,7 +178,7 @@ injectSignals <- function(connectionDetails,
                           firstOutcomeOnly = FALSE,
                           effectSizes = c(1, 1.25, 1.5, 2, 4),
                           precision = 0.01,
-                          outputConceptIdOffset = 1000,
+                          outputIdOffset = 1000,
                           workFolder = "./SignalInjectionTemp",
                           cdmVersion = "4") {
   if (min(effectSizes) < 1)
@@ -187,7 +197,7 @@ injectSignals <- function(connectionDetails,
                        outcomeId = rep(exposureOutcomePairs$outcomeId,
                                        each = length(effectSizes)),
                        targetEffectSize = rep(effectSizes, nrow(exposureOutcomePairs)),
-                       newOutcomeId = outputConceptIdOffset+(0:(nrow(exposureOutcomePairs)*length(effectSizes)-1)),
+                       newOutcomeId = outputIdOffset+(0:(nrow(exposureOutcomePairs)*length(effectSizes)-1)),
                        trueEffectSize = 0,
                        trueEffectSizeFirstExposure = 0,
                        exposures = 0,

@@ -11,34 +11,34 @@ injectSignals(connectionDetails, cdmDatabaseSchema,
   outputDatabaseSchema = outcomeDatabaseSchema, outputTable = outcomeTable,
   createOutputTable = FALSE, exposureOutcomePairs, modelType = "poisson",
   buildOutcomeModel = TRUE, minOutcomeCount = 100,
-  covariateSettings = createCovariateSettings(useCovariateDemographics = TRUE,
-  useCovariateConditionOccurrence = TRUE, useCovariateConditionOccurrence365d =
-  TRUE, useCovariateConditionOccurrence30d = TRUE,
-  useCovariateConditionOccurrenceInpt180d = TRUE, useCovariateConditionEra =
-  TRUE, useCovariateConditionEraEver = TRUE, useCovariateConditionEraOverlap =
-  TRUE, useCovariateConditionGroup = TRUE, useCovariateDrugExposure = TRUE,
-  useCovariateDrugExposure365d = TRUE, useCovariateDrugExposure30d = TRUE,
-  useCovariateDrugEra = TRUE,      useCovariateDrugEra365d = TRUE,
-  useCovariateDrugEra30d = TRUE, useCovariateDrugEraEver = TRUE,
-  useCovariateDrugEraOverlap = TRUE, useCovariateDrugGroup = TRUE,
-  useCovariateProcedureOccurrence = TRUE, useCovariateProcedureOccurrence365d =
-  TRUE, useCovariateProcedureOccurrence30d = TRUE, useCovariateProcedureGroup =
-  TRUE, useCovariateObservation = TRUE, useCovariateObservation365d = TRUE,
-  useCovariateObservation30d = TRUE, useCovariateObservationCount365d = TRUE,
-  useCovariateMeasurement365d = TRUE,      useCovariateMeasurement30d = TRUE,
-  useCovariateMeasurementCount365d = TRUE, useCovariateMeasurementBelow = TRUE,
-  useCovariateMeasurementAbove = TRUE, useCovariateConceptCounts = TRUE,
-  useCovariateRiskScores = TRUE, useCovariateRiskScoresCharlson = TRUE,
-  useCovariateRiskScoresDCSI = TRUE, useCovariateRiskScoresCHADS2 = TRUE,
-  useCovariateRiskScoresCHADS2VASc = TRUE, useCovariateInteractionYear = FALSE,
-  useCovariateInteractionMonth = FALSE, excludedCovariateConceptIds = c(),
-  deleteCovariatesSmallCount = 100), prior = createPrior("laplace", exclude =
-  0, useCrossValidation = TRUE), control = createControl(cvType = "auto",
-  startingVariance = 0.1, noiseLevel = "quiet", threads = 10),
-  firstExposureOnly = FALSE, washoutPeriod = 183, riskWindowStart = 0,
-  riskWindowEnd = 0, addExposureDaysToEnd = TRUE,
+  covariateSettings = FeatureExtraction::createCovariateSettings(useCovariateDemographics
+  = TRUE, useCovariateConditionOccurrence = TRUE,
+  useCovariateConditionOccurrence365d = TRUE, useCovariateConditionOccurrence30d
+  = TRUE, useCovariateConditionOccurrenceInpt180d = TRUE,
+  useCovariateConditionEra = TRUE, useCovariateConditionEraEver = TRUE,
+  useCovariateConditionEraOverlap = TRUE, useCovariateConditionGroup = TRUE,
+  useCovariateDrugExposure = TRUE, useCovariateDrugExposure365d = TRUE,
+  useCovariateDrugExposure30d = TRUE,      useCovariateDrugEra = TRUE,
+  useCovariateDrugEra365d = TRUE, useCovariateDrugEra30d = TRUE,
+  useCovariateDrugEraEver = TRUE, useCovariateDrugEraOverlap = TRUE,
+  useCovariateDrugGroup = TRUE, useCovariateProcedureOccurrence = TRUE,
+  useCovariateProcedureOccurrence365d = TRUE, useCovariateProcedureOccurrence30d
+  = TRUE, useCovariateProcedureGroup = TRUE, useCovariateObservation = TRUE,
+  useCovariateObservation365d = TRUE, useCovariateObservation30d = TRUE,
+  useCovariateObservationCount365d = TRUE, useCovariateMeasurement365d = TRUE,  
+     useCovariateMeasurement30d = TRUE, useCovariateMeasurementCount365d = TRUE,
+  useCovariateMeasurementBelow = TRUE, useCovariateMeasurementAbove = TRUE,
+  useCovariateConceptCounts = TRUE, useCovariateRiskScores = TRUE,
+  useCovariateRiskScoresCharlson = TRUE, useCovariateRiskScoresDCSI = TRUE,
+  useCovariateRiskScoresCHADS2 = TRUE, useCovariateRiskScoresCHADS2VASc = TRUE,
+  useCovariateInteractionYear = FALSE, useCovariateInteractionMonth = FALSE,
+  excludedCovariateConceptIds = c(), deleteCovariatesSmallCount = 100),
+  prior = createPrior("laplace", exclude = 0, useCrossValidation = TRUE),
+  control = createControl(cvType = "auto", startingVariance = 0.1, noiseLevel
+  = "quiet", threads = 10), firstExposureOnly = FALSE, washoutPeriod = 183,
+  riskWindowStart = 0, riskWindowEnd = 0, addExposureDaysToEnd = TRUE,
   firstOutcomeOnly = FALSE, effectSizes = c(1, 1.25, 1.5, 2, 4),
-  precision = 0.01, outputConceptIdOffset = 1000,
+  precision = 0.01, outputIdOffset = 1000,
   workFolder = "./SignalInjectionTemp", cdmVersion = "4")
 }
 \arguments{
@@ -107,6 +107,17 @@ preserve the observed confounding when injecting signals.}
 
 \item{minOutcomeCount}{Minimum number of outcome events required to build a model and inject a signal.}
 
+\item{covariateSettings}{An object of type \code{covariateSettings} as created using the
+\code{createCovariateSettings} function in the
+\code{FeatureExtraction} package.}
+
+\item{prior}{The prior used to fit the outcome model. See \code{\link[Cyclops]{createPrior}}
+for details.}
+
+\item{control}{The control object used to control the cross-validation used to
+determine the hyperparameters of the prior (if applicable). See
+\code{\link[Cyclops]{createControl}} for details.}
+
 \item{firstExposureOnly}{Should signals be injected only for the first exposure? (ie.
 assuming an acute effect)}
 
@@ -130,6 +141,10 @@ parameter is set to TRUE).}
 modeling the outcome?}
 
 \item{effectSizes}{A numeric vector of effect sizes that should be inserted.}
+
+\item{precision}{The allowed ratio between target and injected signal size.}
+
+\item{outputIdOffset}{What should be the first new outcome ID that is to be created?}
 
 \item{workFolder}{Path to a folder where intermediate data will be stored.}
 
