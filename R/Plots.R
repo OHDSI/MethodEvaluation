@@ -93,10 +93,6 @@ plotRocsInjectedSignals <- function(logRr, trueLogRr, showAucs, fileName = NULL)
 #' @param fileName    Name of the file where the plot should be saved, for example 'plot.png'. See the
 #'                    function \code{ggsave} in the ggplot2 package for supported file formats.
 #'
-#' @examples
-#' data <- simulateControls(n = 50 * 3, mean = 0, sd = 0.15, trueLogRr = log(c(1, 2, 4)))
-#' plotCoverage(data$logRr, data$seLogRr, data$trueLogRr)
-#'
 #' @export
 plotCoverageInjectedSignals  <- function(logRr, seLogRr, trueLogRr, region = 0.95, fileName = NULL) {
   data <- data.frame(logRr = logRr,

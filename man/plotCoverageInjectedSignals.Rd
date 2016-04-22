@@ -28,9 +28,4 @@ Plot the coverage
 Plot the fractions of estimates where the true effect size is below, above or within the confidence
 interval, for one or more true effect sizes.
 }
-\examples{
-data <- simulateControls(n = 50 * 3, mean = 0, sd = 0.15, trueLogRr = log(c(1, 2, 4)))
-plotCoverage(data$logRr, data$seLogRr, data$trueLogRr)
-
-}
 
