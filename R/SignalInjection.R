@@ -234,31 +234,42 @@ injectSignals <- function(connectionDetails,
     DatabaseConnector::executeSql(conn, renderedSql)
     
     writeLines("Extracting risk windows and outcome counts")
-    exposureSql <- SqlRender::loadRenderTranslateSql("GetExposedCohorts.sql",
-                                                     packageName = "MethodEvaluation",
-                                                     dbms = connectionDetails$dbms,
-                                                     oracleTempSchema = oracleTempSchema,
-                                                     cohort_definition_id = cohortDefinitionId)
-    exposures <- DatabaseConnector::querySql(conn, exposureSql)
-    names(exposures) <- SqlRender::snakeCaseToCamelCase(names(exposures))
-    names(exposures)[names(exposures) == "subjectId"] <- "personId"
-    
+    exposuresFile <- .createExposuresFileName(workFolder, exposureId)
+    if (file.exists(exposuresFile)) {
+      exposures <- readRDS(exposuresFile)
+    } else {
+      exposureSql <- SqlRender::loadRenderTranslateSql("GetExposedCohorts.sql",
+                                                       packageName = "MethodEvaluation",
+                                                       dbms = connectionDetails$dbms,
+                                                       oracleTempSchema = oracleTempSchema,
+                                                       cohort_definition_id = cohortDefinitionId)
+      exposures <- DatabaseConnector::querySql(conn, exposureSql)
+      names(exposures) <- SqlRender::snakeCaseToCamelCase(names(exposures))
+      names(exposures)[names(exposures) == "subjectId"] <- "personId"
+      saveRDS(exposures, exposuresFile)
+    }
     result$exposures[result$exposureId == exposureId] <- nrow(exposures)
     result$firstExposures[result$exposureId == exposureId] <- sum(exposures$eraNumber == 1)
     
-    outcomeSql <- SqlRender::loadRenderTranslateSql("GetOutcomes.sql",
-                                                    packageName = "MethodEvaluation",
-                                                    dbms = connectionDetails$dbms,
-                                                    oracleTempSchema = oracleTempSchema,
-                                                    cdm_database = cdmDatabase,
-                                                    outcome_database_schema = outcomeDatabaseSchema,
-                                                    outcome_table = outcomeTable,
-                                                    outcome_concept_ids = outcomeIds,
-                                                    first_outcome_only = firstOutcomeOnly,
-                                                    cohort_definition_id = cohortDefinitionId)
-    outcomeCounts <- DatabaseConnector::querySql(conn, outcomeSql)
-    names(outcomeCounts) <- SqlRender::snakeCaseToCamelCase(names(outcomeCounts))
-    names(outcomeCounts)[names(outcomeCounts) == "subjectId"] <- "personId"
+    outcomesFile <- .createOutcomesFileName(workFolder, exposureId)
+    if (file.exists(outcomesFile)) {
+      outcomeCounts <- readRDS(outcomesFile)
+    } else {
+      outcomeSql <- SqlRender::loadRenderTranslateSql("GetOutcomes.sql",
+                                                      packageName = "MethodEvaluation",
+                                                      dbms = connectionDetails$dbms,
+                                                      oracleTempSchema = oracleTempSchema,
+                                                      cdm_database = cdmDatabase,
+                                                      outcome_database_schema = outcomeDatabaseSchema,
+                                                      outcome_table = outcomeTable,
+                                                      outcome_concept_ids = outcomeIds,
+                                                      first_outcome_only = firstOutcomeOnly,
+                                                      cohort_definition_id = cohortDefinitionId)
+      outcomeCounts <- DatabaseConnector::querySql(conn, outcomeSql)
+      names(outcomeCounts) <- SqlRender::snakeCaseToCamelCase(names(outcomeCounts))
+      names(outcomeCounts)[names(outcomeCounts) == "subjectId"] <- "personId"
+      saveRDS(outcomeCounts, outcomesFile)
+    }
     if (buildOutcomeModel) {
       covarDataFolder <- .createCovarDataFileName(workFolder, exposureId)
       if (file.exists(covarDataFolder)){
@@ -300,156 +311,175 @@ injectSignals <- function(connectionDetails,
           time <- outcomes$time
           firstExposureOutcomeCount <- sum(outcomes$y[outcomes$eraNumber == 1])
           modelFolder <- .createModelFileName(workFolder, exposureId, outcomeId)
+          haveModel <- FALSE
           if (file.exists(modelFolder)){
-            prediction <- readRDS(file.path(modelFolder, "prediction.rds"))
-            betas <- readRDS(file.path(modelFolder, "betas.rds"))
+            if (!file.exists(file.path(modelFolder, "Error.txt"))) {
+              prediction <- readRDS(file.path(modelFolder, "prediction.rds"))
+              betas <- readRDS(file.path(modelFolder, "betas.rds"))
+              haveModel <- TRUE
+            }
           } else {
             # Note: for survival, using Poisson regression with 1 outcome and censored time as equivalent of
             # survival regression:
             cyclopsData <- Cyclops::convertToCyclopsData(ff::as.ffdf(outcomes), covariates, modelType = "pr", quiet = TRUE)
-            fit <- Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
-            betas <- coef(fit)
-            intercept <- betas[1]
-            betas <- betas[2:length(betas)]
-            betas <- betas[betas != 0]
-            if (length(betas) > 0){
-              betas <- data.frame(beta = betas, id = as.numeric(attr(betas, "names")))
-              betas <- merge(ff::as.ffdf(betas), covariateRef, by.x = "id", by.y = "covariateId")
-              betas <- ff::as.ram(betas[, c("beta", "id", "covariateName")])
-              betas <- betas[order(-abs(betas$beta)), ]
+            fit <- tryCatch({
+              Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
+            }, error = function(e) {
+              e$message
+            })
+            if (fit$return_flag != "SUCCESS")
+              fit <- fit$return_flag
+            if (is.character(fit)) {
+              writeLines(paste("Unable to fit model for exposure", exposureId, "and outcome", outcomeId, ":", fit))
+              dir.create(modelFolder)
+              write.csv(fit, file.path(modelFolder, "Error.txt"))
+            } else {
+              betas <- coef(fit)
+              intercept <- betas[1]
+              betas <- betas[2:length(betas)]
+              betas <- betas[betas != 0]
+              if (length(betas) > 0){
+                betas <- data.frame(beta = betas, id = as.numeric(attr(betas, "names")))
+                betas <- merge(ff::as.ffdf(betas), covariateRef, by.x = "id", by.y = "covariateId")
+                betas <- ff::as.ram(betas[, c("beta", "id", "covariateName")])
+                betas <- betas[order(-abs(betas$beta)), ]
+              }
+              betas <- rbind(data.frame(beta = intercept, id = 0, covariateName = "(Intercept)", row.names = NULL), betas)
+              prediction <- predict(fit)
+              if (modelType == "survival") {
+                # Convert Poisson-based prediction to rate for exponential distribution:
+                prediction <- prediction/time
+              } 
+              dir.create(modelFolder)
+              saveRDS(prediction, file.path(modelFolder, "prediction.rds"))
+              saveRDS(betas, file.path(modelFolder, "betas.rds"))
+              haveModel <- TRUE
             }
-            betas <- rbind(data.frame(beta = intercept, id = 0, covariateName = "(Intercept)", row.names = NULL), betas)
-            prediction <- predict(fit)
-            if (modelType == "survival") {
-              # Convert Poisson-based prediction to rate for exponential distribution:
-              prediction <- prediction/time
-            } 
-            dir.create(modelFolder)
-            saveRDS(prediction, file.path(modelFolder, "prediction.rds"))
-            saveRDS(betas, file.path(modelFolder, "betas.rds"))
           }
-          result$modelFile[result$exposureId == exposureId & result$outcomeId == outcomeId] <- file.path(modelFolder, "betas.rds")
-          # plotCalibration(prediction, ff::as.ram(outcomes$y), ff::as.ram(outcomes$time))
-          for (fxSizeIdx in 1:length(effectSizes)) {
-            # fxSizeIdx <- 2
-            effectSize <- effectSizes[fxSizeIdx]
-            if (effectSize != 1) {
-              # When sampling, the expected RR size is the target RR, but the actual RR could be different due to
-              # random error.  this code is redoing the sampling until actual RR is equal to the target RR.
-              targetCount <- sum(outcomes$y) * (effectSize - 1)
-              newOutcomeCounts <- 0
-              if (modelType == "poisson") {
-                multiplier <- 1
-                ratios <- c()
-                while (round(abs(sum(newOutcomeCounts) - targetCount)) > precision * targetCount){
-                  newOutcomeCounts <- rpois(length(prediction), multiplier * prediction * (effectSize - 1))
-                  newOutcomeCounts[newOutcomeCounts > time] <- time[newOutcomeCounts > time]
-                  ratios <- c(ratios, sum(newOutcomeCounts) / targetCount)
-                  if (length(ratios) == 100){
-                    multiplier <- multiplier * 1/mean(ratios)
-                    ratios <- c()
-                    writeLines(paste("Unable to achieve target RR using model as is. Adding multiplier of", multiplier, "to force target"))
-                  } 
-                }
-                idx <- which(newOutcomeCounts != 0)
-                temp <- data.frame(personId = outcomes$personId[idx],
-                                   cohortStartDate = outcomes$cohortStartDate[idx],
-                                   time = outcomes$time[idx],
-                                   nOutcomes = newOutcomeCounts[idx])
-                outcomeRows <- sum(temp$nOutcomes)
-                newOutcomes <- data.frame(personId = rep(0, outcomeRows),
-                                          cohortStartDate = rep(as.Date("1900-01-01"), outcomeRows),
-                                          timeToEvent = rep(0, outcomeRows))
-                cursor <- 1
-                for (i in 1:nrow(temp)) {
-                  nOutcomes <- temp$nOutcomes[i]
-                  if (nOutcomes != 0) {
-                    newOutcomes$personId[cursor:(cursor + nOutcomes - 1)] <- temp$personId[i]
-                    newOutcomes$cohortStartDate[cursor:(cursor + nOutcomes - 1)] <- temp$cohortStartDate[i]
-                    newOutcomes$timeToEvent[cursor:(cursor + nOutcomes - 1)] <- sample.int(size = nOutcomes,
-                                                                                           temp$time[i])
-                    cursor <- cursor + nOutcomes
+          if (haveModel) {
+            result$modelFile[result$exposureId == exposureId & result$outcomeId == outcomeId] <- file.path(modelFolder, "betas.rds")
+            # plotCalibration(prediction, ff::as.ram(outcomes$y), ff::as.ram(outcomes$time))
+            for (fxSizeIdx in 1:length(effectSizes)) {
+              # fxSizeIdx <- 2
+              effectSize <- effectSizes[fxSizeIdx]
+              if (effectSize != 1) {
+                # When sampling, the expected RR size is the target RR, but the actual RR could be different due to
+                # random error.  this code is redoing the sampling until actual RR is equal to the target RR.
+                targetCount <- sum(outcomes$y) * (effectSize - 1)
+                newOutcomeCounts <- 0
+                if (modelType == "poisson") {
+                  multiplier <- 1
+                  ratios <- c()
+                  while (round(abs(sum(newOutcomeCounts) - targetCount)) > precision * targetCount){
+                    newOutcomeCounts <- rpois(length(prediction), multiplier * prediction * (effectSize - 1))
+                    newOutcomeCounts[newOutcomeCounts > time] <- time[newOutcomeCounts > time]
+                    ratios <- c(ratios, sum(newOutcomeCounts) / targetCount)
+                    if (length(ratios) == 100){
+                      multiplier <- multiplier * 1/mean(ratios)
+                      ratios <- c()
+                      writeLines(paste("Unable to achieve target RR using model as is. Adding multiplier of", multiplier, "to force target"))
+                    } 
+                  }
+                  idx <- which(newOutcomeCounts != 0)
+                  temp <- data.frame(personId = outcomes$personId[idx],
+                                     cohortStartDate = outcomes$cohortStartDate[idx],
+                                     time = outcomes$time[idx],
+                                     nOutcomes = newOutcomeCounts[idx])
+                  outcomeRows <- sum(temp$nOutcomes)
+                  newOutcomes <- data.frame(personId = rep(0, outcomeRows),
+                                            cohortStartDate = rep(as.Date("1900-01-01"), outcomeRows),
+                                            timeToEvent = rep(0, outcomeRows))
+                  cursor <- 1
+                  for (i in 1:nrow(temp)) {
+                    nOutcomes <- temp$nOutcomes[i]
+                    if (nOutcomes != 0) {
+                      newOutcomes$personId[cursor:(cursor + nOutcomes - 1)] <- temp$personId[i]
+                      newOutcomes$cohortStartDate[cursor:(cursor + nOutcomes - 1)] <- temp$cohortStartDate[i]
+                      newOutcomes$timeToEvent[cursor:(cursor + nOutcomes - 1)] <- sample.int(size = nOutcomes,
+                                                                                             temp$time[i]) - 1
+                      cursor <- cursor + nOutcomes
+                    }
+                  }
+                  injectedRr <- 1 + (nrow(newOutcomes)/sum(outcomes$y))
+                  
+                  # Count outcomes during first episodes:
+                  newOutcomeCountsFirstExposure <- sum(newOutcomeCounts[outcomes$eraNumber == 1])
+                  injectedRrFirstExposure <- 1 + (newOutcomeCountsFirstExposure/firstExposureOutcomeCount)
+                } else {
+                  # modelType == 'survival'
+                  correctedTargetCount <- targetCount
+                  ratios <- c()
+                  multiplier <- 1
+                  temp <- c()
+                  while (round(abs(sum(temp) - correctedTargetCount)) > precision * correctedTargetCount) {
+                    timeToEvent <- round(rexp(length(prediction), multiplier * prediction * (effectSize - 1)))
+                    temp <- timeToEvent <= time
+                    # Correct the target count for the fact that we're censoring after the first outcome:
+                    correctedTargetCount <- targetCount * (1-sum(time[timeToEvent <= time]-timeToEvent[timeToEvent <= time]) / sum(time))
+                    ratios <- c(ratios, sum(temp) / correctedTargetCount)
+                    if (length(ratios) == 100){
+                      multiplier <- multiplier * 1/mean(ratios)
+                      ratios <- c()
+                      writeLines(paste("Unable to achieve target RR using model as is. Adding multiplier of", multiplier, "to force target"))
+                    } 
+                  }
+                  injectedRr <- effectSize*(sum(outcomeCounts$y) + sum(temp)) / (sum(outcomeCounts$y) + correctedTargetCount)
+                  newOutcomes <- data.frame(personId = outcomes$personId[temp],
+                                            cohortStartDate = outcomes$cohortStartDate[temp],
+                                            timeToEvent = timeToEvent[temp])
+                  # Count outcomes during first episodes:
+                  if (firstExposureOnly){
+                    injectedRrFirstExposure <- injectedRr
+                  } else {
+                    injectedRrFirstExposure <- injectedRr
+                    warning("Computing injected rate during first exposure only is not yet implemented for survival models")
                   }
                 }
-                injectedRr <- 1 + (nrow(newOutcomes)/sum(outcomes$y))
-                
-                # Count outcomes during first episodes:
-                newOutcomeCountsFirstExposure <- sum(newOutcomeCounts[outcomes$eraNumber == 1])
-                injectedRrFirstExposure <- 1 + (newOutcomeCountsFirstExposure/firstExposureOutcomeCount)
               } else {
-                # modelType == 'survival'
-                correctedTargetCount <- targetCount
-                ratios <- c()
-                multiplier <- 1
-                temp <- c()
-                while (round(abs(sum(temp) - correctedTargetCount)) > precision * correctedTargetCount) {
-                  timeToEvent <- round(rexp(length(prediction), multiplier * prediction * (effectSize - 1)))
-                  temp <- timeToEvent <= time
-                  # Correct the target count for the fact that we're censoring after the first outcome:
-                  correctedTargetCount <- targetCount * (1-sum(time[timeToEvent <= time]-timeToEvent[timeToEvent <= time]) / sum(time))
-                  ratios <- c(ratios, sum(temp) / correctedTargetCount)
-                  if (length(ratios) == 100){
-                    multiplier <- multiplier * 1/mean(ratios)
-                    ratios <- c()
-                    writeLines(paste("Unable to achieve target RR using model as is. Adding multiplier of", multiplier, "to force target"))
-                  } 
-                }
-                injectedRr <- effectSize*(sum(outcomeCounts$y) + sum(temp)) / (sum(outcomeCounts$y) + correctedTargetCount)
-                newOutcomes <- data.frame(personId = outcomes$personId[temp],
-                                          cohortStartDate = outcomes$cohortStartDate[temp],
-                                          timeToEvent = timeToEvent[temp])
-                # Count outcomes during first episodes:
-                if (firstExposureOnly){
-                  injectedRrFirstExposure <- injectedRr
+                newOutcomes <- data.frame()
+                injectedRr <- 1
+                injectedRrFirstExposure <- 1
+              }
+              writeLines(paste("Target RR =",
+                               effectSize,
+                               ", injected RR =",
+                               injectedRr,
+                               ", injected RR during first exposure only =",
+                               injectedRrFirstExposure))
+              
+              newOutcomeId <- result$newOutcomeId[result$targetEffectSize == effectSize & result$exposureId == exposureId & result$outcomeId == outcomeId]
+              # Copy outcomes to output table:
+              sql <- SqlRender::loadRenderTranslateSql("CopyOutcomes.sql",
+                                                       packageName = "MethodEvaluation",
+                                                       dbms = connectionDetails$dbms,
+                                                       cdm_database_schema = cdmDatabaseSchema,
+                                                       outcome_database_schema = outcomeDatabaseSchema,
+                                                       outcome_table = outcomeTable,
+                                                       source_concept_id = outcomeId,
+                                                       target_concept_id = newOutcomeId,
+                                                       cohort_definition_id = cohortDefinitionId)
+              outcomesCopySql <- c(outcomesCopySql, sql)
+              
+              # Inject new outcomes:
+              if (nrow(newOutcomes) != 0) {
+                newOutcomes$cohortStartDate <- newOutcomes$cohortStartDate + newOutcomes$timeToEvent
+                newOutcomes$timeToEvent <- NULL
+                if (cdmVersion == "4") {
+                  newOutcomes$cohortConceptId <- newOutcomeId
                 } else {
-                  injectedRrFirstExposure <- injectedRr
-                  warning("Computing injected rate during first exposure only is not yet implemented for survival models")
+                  newOutcomes$cohortDefinitionId <- newOutcomeId
                 }
+                names(newOutcomes) <- SqlRender::camelCaseToSnakeCase(names(newOutcomes))
+                names(newOutcomes)[names(newOutcomes) == "person_id"] <- "subject_id"
+                outcomesToInject <- rbind(outcomesToInject, newOutcomes)
               }
-            } else {
-              newOutcomes <- data.frame()
-              injectedRr <- 1
-              injectedRrFirstExposure <- 1
+              idx <- result$exposureId == exposureId & result$outcomeId == outcomeId &
+                result$targetEffectSize == effectSize
+              result$trueEffectSize[idx] <- injectedRr
+              result$trueEffectSizeFirstExposure[idx] <- injectedRrFirstExposure
+              result$observedOutcomes[idx] <- sum(outcomes$y)
+              result$injectedOutcomes[idx] <- nrow(newOutcomes)
             }
-            writeLines(paste("Target RR =",
-                             effectSize,
-                             ", injected RR =",
-                             injectedRr,
-                             ", injected RR during first exposure only =",
-                             injectedRrFirstExposure))
-            
-            newOutcomeId <- result$newOutcomeId[result$targetEffectSize == effectSize & result$exposureId == exposureId & result$outcomeId == outcomeId]
-            # Copy outcomes to output table:
-            sql <- SqlRender::loadRenderTranslateSql("CopyOutcomes.sql",
-                                                     packageName = "MethodEvaluation",
-                                                     dbms = connectionDetails$dbms,
-                                                     cdm_database_schema = cdmDatabaseSchema,
-                                                     outcome_database_schema = outcomeDatabaseSchema,
-                                                     outcome_table = outcomeTable,
-                                                     source_concept_id = outcomeId,
-                                                     target_concept_id = newOutcomeId,
-                                                     cohort_definition_id = cohortDefinitionId)
-            outcomesCopySql <- c(outcomesCopySql, sql)
-            
-            # Inject new outcomes:
-            if (nrow(newOutcomes) != 0) {
-              newOutcomes$cohortStartDate <- newOutcomes$cohortStartDate + newOutcomes$timeToEvent
-              newOutcomes$timeToEvent <- NULL
-              if (cdmVersion == "4") {
-                newOutcomes$cohortConceptId <- newOutcomeId
-              } else {
-                newOutcomes$cohortDefinitionId <- newOutcomeId
-              }
-              names(newOutcomes) <- SqlRender::camelCaseToSnakeCase(names(newOutcomes))
-              names(newOutcomes)[names(newOutcomes) == "person_id"] <- "subject_id"
-              outcomesToInject <- rbind(outcomesToInject, newOutcomes)
-            }
-            idx <- result$exposureId == exposureId & result$outcomeId == outcomeId &
-              result$targetEffectSize == effectSize
-            result$trueEffectSize[idx] <- injectedRr
-            result$trueEffectSizeFirstExposure[idx] <- injectedRrFirstExposure
-            result$observedOutcomes[idx] <- sum(outcomes$y)
-            result$injectedOutcomes[idx] <- nrow(newOutcomes)
           }
         }
       }
@@ -529,6 +559,18 @@ plotCalibration <- function(prediction, y, time) {
                                  exposureId,
                                  outcomeId) {
   name <- paste("model_e", exposureId, "_o", outcomeId, sep = "")
+  return(file.path(folder, name))
+}
+
+.createExposuresFileName <- function(folder,
+                                     exposureId) {
+  name <- paste0("exposures_e", exposureId, ".rds")
+  return(file.path(folder, name))
+}
+
+.createOutcomesFileName <- function(folder,
+                                    exposureId) {
+  name <- paste0("outcomes_e", exposureId, ".rds")
   return(file.path(folder, name))
 }
 

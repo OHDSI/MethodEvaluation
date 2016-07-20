@@ -68,7 +68,7 @@ WHERE @cohort_definition_id IN (@exposure_concept_ids)
 INNER JOIN observation_period
 	ON observation_period.person_id = exposure.subject_id
 WHERE cohort_start_date >= DATEADD(DAY, @washout_period, observation_period_start_date)
-	AND cohort_end_date <= observation_period_end_date
+	AND cohort_start_date <= observation_period_end_date
 	AND DATEADD(DAY, @risk_window_start, cohort_start_date) <= observation_period_end_date
 {@first_exposure_only} ? {
 	AND era_number = 1
