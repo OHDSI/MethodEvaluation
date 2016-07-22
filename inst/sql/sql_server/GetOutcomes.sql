@@ -18,14 +18,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ************************************************************************/
 
-{DEFAULT @cdm_database = 'CDM4_SIM' } 
+{DEFAULT @cdm_database_schema = 'CDM4_SIM' } 
 {DEFAULT @outcome_database_schema = 'CDM4_SIM' } 
 {DEFAULT @outcome_table = 'condition_occurrence' }
 {DEFAULT @outcome_concept_ids = '' }
 {DEFAULT @first_outcome_only = TRUE }
 {DEFAULT @cohort_definition_id = 'cohort_concept_id'}
-
-USE @cdm_database;
 
 SELECT exposure.subject_id,
 	exposure.cohort_start_date,
@@ -40,7 +38,7 @@ INNER JOIN (
 	SELECT condition_concept_id AS outcome_concept_id,
 	  person_id,
 	  MIN(condition_era_start_date) AS outcome_date
-	FROM condition_era
+	FROM @cdm_database_schema.condition_era
 	WHERE condition_concept_id IN (@outcome_concept_ids)
 	GROUP BY condition_concept_id,
 		person_id
@@ -58,7 +56,7 @@ INNER JOIN (
 	SELECT condition_concept_id AS outcome_concept_id,
 	  person_id,
 	  condition_era_start_date AS outcome_date
-	FROM condition_era
+	FROM @cdm_database_schema.condition_era
 	WHERE condition_concept_id IN (@outcome_concept_ids)
 } : {
 	SELECT @cohort_definition_id AS outcome_concept_id,

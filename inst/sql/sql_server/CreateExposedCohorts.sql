@@ -18,7 +18,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ************************************************************************/
 
-{DEFAULT @cdm_database = 'CDM4_SIM'} 
+{DEFAULT @cdm_database_schema = 'CDM4_SIM.dbo'} 
 {DEFAULT @exposure_concept_ids = ''} 
 {DEFAULT @washout_period = 183} 
 {DEFAULT @exposure_database_schema = 'CDM4_SIM'} 
@@ -29,7 +29,6 @@ limitations under the License.
 {DEFAULT @add_exposure_days_to_end = TRUE}
 {DEFAULT @cohort_definition_id = 'cohort_concept_id'}
 
-USE @cdm_database;
 
 IF OBJECT_ID('tempdb..#cohort_person', 'U') IS NOT NULL
 	DROP TABLE #cohort_person;
@@ -53,7 +52,7 @@ SELECT drug_concept_id AS @cohort_definition_id,
 	drug_era_start_date AS cohort_start_date, 
 	drug_era_end_date AS cohort_end_date,
 	ROW_NUMBER () OVER (PARTITION BY drug_concept_id, person_id ORDER BY drug_era_start_date) AS era_number
-FROM drug_era 
+FROM @cdm_database_schema.drug_era 
 WHERE drug_concept_id IN (@exposure_concept_ids)
 } : {
 SELECT @cohort_definition_id, 
@@ -65,7 +64,7 @@ FROM @exposure_database_schema.@exposure_table exposure
 WHERE @cohort_definition_id IN (@exposure_concept_ids)
 } 
 ) exposure
-INNER JOIN observation_period
+INNER JOIN @cdm_database_schema.observation_period
 	ON observation_period.person_id = exposure.subject_id
 WHERE cohort_start_date >= DATEADD(DAY, @washout_period, observation_period_start_date)
 	AND cohort_start_date <= observation_period_end_date

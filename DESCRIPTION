@@ -1,7 +1,7 @@
 Package: MethodEvaluation
 Type: Package
 Title: Package for evaluation of estimation methods
-Version: 0.0.2
+Version: 0.0.3
 Date: 2016-04-12
 Author: Martijn J. Schuemie [aut, cre],
 Maintainer: Martijn J. Schuemie <schuemie@ohdsi.org>
@@ -25,7 +25,8 @@ Imports:
     RJDBC,
     SqlRender (>= 1.1.2),
     pROC,
-    ggplot2
+    ggplot2,
+    OhdsiRTools
 Suggests:
     testthat
 RoxygenNote: 5.0.1

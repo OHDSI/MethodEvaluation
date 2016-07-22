@@ -39,7 +39,8 @@ injectSignals(connectionDetails, cdmDatabaseSchema,
   riskWindowStart = 0, riskWindowEnd = 0, addExposureDaysToEnd = TRUE,
   firstOutcomeOnly = FALSE, effectSizes = c(1, 1.25, 1.5, 2, 4),
   precision = 0.01, outputIdOffset = 1000,
-  workFolder = "./SignalInjectionTemp", cdmVersion = "4")
+  workFolder = "./SignalInjectionTemp", cdmVersion = "4",
+  outcomeThreads = 1)
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{ConnectionDetails} created using
@@ -70,7 +71,7 @@ If exposureTable = CONDITION_ERA, exposureDatabaseSchema is
 not used by assumed to be cdmSchema.  Requires read
 permissions to this database.}
 
-\item{outcomeTable}{The table name that contains the outcome cohorts. When the table name is 
+\item{outcomeTable}{The table name that contains the outcome cohorts. When the table name is
 not CONDITION_ERA This table is expected
 to have the same format as the COHORT table:
 SUBJECT_ID, COHORT_START_DATE,
