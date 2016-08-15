@@ -73,6 +73,8 @@
 #'                                         outcomes will be inserted based on the predicted
 #'                                         probabilities according to this model, and this will help
 #'                                         preserve the observed confounding when injecting signals.
+#' @param buildModelPerExposure            If TRUE, an outcome model will be created for each exposure ID. IF false,
+#'                                         outcome models will be created across all exposures. 
 #' @param minOutcomeCount                  Minimum number of outcome events required to build a model and inject a signal.
 #' @param covariateSettings                An object of type \code{covariateSettings} as created using the
 #'                                         \code{createCovariateSettings} function in the
@@ -126,6 +128,7 @@ injectSignals <- function(connectionDetails,
                           exposureOutcomePairs,
                           modelType = "poisson",
                           buildOutcomeModel = TRUE,
+                          buildModelPerExposure = FALSE,
                           minOutcomeCount = 100,
                           covariateSettings = FeatureExtraction::createCovariateSettings(useCovariateDemographics = TRUE,
                                                                                          useCovariateConditionOccurrence = TRUE,
@@ -193,162 +196,186 @@ injectSignals <- function(connectionDetails,
   }
   if (!file.exists(workFolder))
     dir.create(workFolder)
-
+  
   exposureIds <- unique(exposureOutcomePairs$exposureId)
   conn <- DatabaseConnector::connect(connectionDetails)
+  
+  ### Create all exposure cohorts ###
+  writeLines("\nCreating risk windows")
+  renderedSql <- SqlRender::loadRenderTranslateSql("CreateExposedCohorts.sql",
+                                                   packageName = "MethodEvaluation",
+                                                   dbms = connectionDetails$dbms,
+                                                   oracleTempSchema = oracleTempSchema,
+                                                   cdm_database_schema = cdmDatabaseSchema,
+                                                   exposure_ids = exposureId,
+                                                   washout_period = washoutPeriod,
+                                                   exposure_database_schema = exposureDatabaseSchema,
+                                                   exposure_table = exposureTable,
+                                                   first_exposure_only = firstExposureOnly,
+                                                   risk_window_start = riskWindowStart,
+                                                   risk_window_end = riskWindowEnd,
+                                                   add_exposure_days_to_end = addExposureDaysToEnd,
+                                                   cohort_definition_id = cohortDefinitionId)
+  
+  DatabaseConnector::executeSql(conn, renderedSql)
+  exposuresFile <- file.path(workFolder, "exposures.rds")
+  if (!file.exists(exposuresFile)) {
+    exposureSql <- SqlRender::loadRenderTranslateSql("GetExposedCohorts.sql",
+                                                     packageName = "MethodEvaluation",
+                                                     dbms = connectionDetails$dbms,
+                                                     oracleTempSchema = oracleTempSchema,
+                                                     cohort_definition_id = cohortDefinitionId)
+    exposures <- DatabaseConnector::querySql(conn, exposureSql)
+    names(exposures) <- SqlRender::snakeCaseToCamelCase(names(exposures))
+    names(exposures)[names(exposures) == "subjectId"] <- "personId"
+    saveRDS(exposures, exposuresFile)
+  }
+  
+  writeLines("Extracting outcome counts")
+  outcomesFile <- file.path(workFolder, "outcomes.rds")
+  if (!file.exists(outcomesFile)) {
+    table <- exposureOutcomePairs
+    colnames(table) <- SqlRender::camelCaseToSnakeCase(colnames(table))
+    DatabaseConnector::insertTable(connection = conn,
+                                   tableName = "#exposure_outcome",
+                                   data = table,
+                                   dropTableIfExists = TRUE,
+                                   createTable = TRUE,
+                                   tempTable = TRUE,
+                                   oracleTempSchema = oracleTempSchema)
+    outcomeSql <- SqlRender::loadRenderTranslateSql("GetOutcomes.sql",
+                                                    packageName = "MethodEvaluation",
+                                                    dbms = connectionDetails$dbms,
+                                                    oracleTempSchema = oracleTempSchema,
+                                                    cdm_database_schema = cdmDatabaseSchema,
+                                                    outcome_database_schema = outcomeDatabaseSchema,
+                                                    outcome_table = outcomeTable,
+                                                    first_outcome_only = firstOutcomeOnly,
+                                                    cohort_definition_id = cohortDefinitionId)
+    outcomeCounts <- DatabaseConnector::querySql(conn, outcomeSql)
+    names(outcomeCounts) <- SqlRender::snakeCaseToCamelCase(names(outcomeCounts))
+    names(outcomeCounts)[names(outcomeCounts) == "subjectId"] <- "personId"
+    sql <- "TRUNCATE TABLE #exposure_outcome; DROP TABLE #exposure_outcome;"
+    sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+    DatabaseConnector::executeSql(conn, sql)
+    saveRDS(outcomeCounts, outcomesFile)
+  }
+  
+  if (buildOutcomeModel) {
+    covarDataFolder <- file.path(workFolder, "covariates")
+    if (!file.exists(covarDataFolder)) {
+      writeLines("Extracting covariates for the outcome model")
+      covariates <- FeatureExtraction::getDbCovariateData(connection = conn,
+                                                          oracleTempSchema = oracleTempSchema,
+                                                          cdmDatabaseSchema = cdmDatabaseSchema,
+                                                          cohortTable = "#cohort_person",
+                                                          cohortTableIsTemp = TRUE,
+                                                          cohortIds = exposureId,
+                                                          rowIdField = "row_id",
+                                                          covariateSettings = covariateSettings,
+                                                          cdmVersion = cdmVersion)
+      covariateRef <- covariates$covariateRef
+      covariates <- covariates$covariates
+      ffbase::save.ffdf(covariates, covariateRef, dir = covarDataFolder)
+    }
+    if (buildModelPerExposure) {
+      ## This is where I stopped
+    } else {
+      
+    }
+  }  
+
   for (exposureId in exposureIds) {
     # exposureId = exposureIds[1]
     writeLines(paste("\nProcessing exposure", exposureId))
     outcomeIds <- unique(exposureOutcomePairs$outcomeId[exposureOutcomePairs$exposureId == exposureId])
-    renderedSql <- SqlRender::loadRenderTranslateSql("CreateExposedCohorts.sql",
-                                                     packageName = "MethodEvaluation",
-                                                     dbms = connectionDetails$dbms,
-                                                     oracleTempSchema = oracleTempSchema,
-                                                     cdm_database_schema = cdmDatabaseSchema,
-                                                     exposure_concept_ids = exposureId,
-                                                     washout_period = washoutPeriod,
-                                                     exposure_database_schema = exposureDatabaseSchema,
-                                                     exposure_table = exposureTable,
-                                                     first_exposure_only = firstExposureOnly,
-                                                     risk_window_start = riskWindowStart,
-                                                     risk_window_end = riskWindowEnd,
-                                                     add_exposure_days_to_end = addExposureDaysToEnd,
-                                                     cohort_definition_id = cohortDefinitionId)
-
-    writeLines("\nCreating risk windows")
-    DatabaseConnector::executeSql(conn, renderedSql)
-
-    writeLines("Extracting risk windows and outcome counts")
-    exposuresFile <- file.path(workFolder, paste0("exposures_e", exposureId, ".rds"))
-    if (!file.exists(exposuresFile)) {
-      exposureSql <- SqlRender::loadRenderTranslateSql("GetExposedCohorts.sql",
-                                                       packageName = "MethodEvaluation",
-                                                       dbms = connectionDetails$dbms,
-                                                       oracleTempSchema = oracleTempSchema,
-                                                       cohort_definition_id = cohortDefinitionId)
-      exposures <- DatabaseConnector::querySql(conn, exposureSql)
-      names(exposures) <- SqlRender::snakeCaseToCamelCase(names(exposures))
-      names(exposures)[names(exposures) == "subjectId"] <- "personId"
-      saveRDS(exposures, exposuresFile)
-    }
-    outcomesFile <- file.path(workFolder, paste0("outcomes_e", exposureId, ".rds"))
-    if (!file.exists(outcomesFile)) {
-      outcomeSql <- SqlRender::loadRenderTranslateSql("GetOutcomes.sql",
-                                                      packageName = "MethodEvaluation",
-                                                      dbms = connectionDetails$dbms,
-                                                      oracleTempSchema = oracleTempSchema,
-                                                      cdm_database_schema = cdmDatabaseSchema,
-                                                      outcome_database_schema = outcomeDatabaseSchema,
-                                                      outcome_table = outcomeTable,
-                                                      outcome_concept_ids = outcomeIds,
-                                                      first_outcome_only = firstOutcomeOnly,
-                                                      cohort_definition_id = cohortDefinitionId)
-      outcomeCounts <- DatabaseConnector::querySql(conn, outcomeSql)
-      names(outcomeCounts) <- SqlRender::snakeCaseToCamelCase(names(outcomeCounts))
-      names(outcomeCounts)[names(outcomeCounts) == "subjectId"] <- "personId"
-      saveRDS(outcomeCounts, outcomesFile)
-    }
-    if (buildOutcomeModel) {
-      covarDataFolder <- file.path(workFolder, paste0("covariates_e", exposureId))
-      if (!file.exists(covarDataFolder)){
-        writeLines("Extracting covariates for the outcome model")
-        covariates <- FeatureExtraction::getDbCovariateData(connection = conn,
-                                                            oracleTempSchema = oracleTempSchema,
-                                                            cdmDatabaseSchema = cdmDatabaseSchema,
-                                                            cohortTable = "#cohort_person",
-                                                            cohortTableIsTemp = TRUE,
-                                                            cohortIds = exposureId,
-                                                            rowIdField = "row_id",
-                                                            covariateSettings = covariateSettings,
-                                                            cdmVersion = cdmVersion)
-        covariateRef <- covariates$covariateRef
-        covariates <- covariates$covariates
-        ffbase::save.ffdf(covariates, covariateRef, dir = covarDataFolder)
-      }
-      writeLines("Fitting outcome models and generating outcomes")
-      tasks <- list()
-      for (i in 1:length(outcomeIds)) {
-        task <- list(outcomeId = outcomeIds[i],
-                     newOutcomeIdOffet = outputIdOffset + ((i-1)*length(effectSizes)))
-        tasks[[length(tasks)+1]] <- task
-      }
-      cluster <- OhdsiRTools::makeCluster(outcomeThreads)
-      results <- OhdsiRTools::clusterApply(cluster,
-                                           tasks,
-                                           fitModelAndGenerateOutcomes,
-                                           exposureId,
-                                           effectSizes,
-                                           minOutcomeCount,
-                                           modelType,
-                                           precision,
-                                           prior,
-                                           control,
-                                           workFolder)
-      OhdsiRTools::stopCluster(cluster)
-      result <- do.call("rbind", results)
-    }
-  }
-
-  writeLines("Inserting outcomes into database")
-  outcomesToInject <- data.frame()
-  for (i in 1:nrow(result)) {
-    if (result$outcomesToInjectFile[i] != "") {
-      outcomesToInject <- rbind(outcomesToInject, readRDS(result$outcomesToInjectFile[i]))
-    }
-  }
-  if (cdmVersion == "4") {
-      colnames(outcomesToInject)[colnames(outcomesToInject) == "cohortDefinitionId"] <- "cohortConceptId"
-  }
-  colnames(outcomesToInject) <- SqlRender::camelCaseToSnakeCase(colnames(outcomesToInject))
-  DatabaseConnector::insertTable(conn, "#temp_outcomes", outcomesToInject, TRUE, TRUE, TRUE, oracleTempSchema)
-
-  if (createOutputTable){
-    sql <- "IF OBJECT_ID('@output_database_schema.@output_table', 'U') IS NOT NULL\nDROP TABLE @output_database_schema.@output_table;\n"
-    sql <- paste(sql, "SELECT @cohort_definition_id, cohort_start_date, cohort_end_date, subject_id INTO @output_database_schema.@output_table FROM (\n")
-  } else{
-    sql <- "DELETE FROM @output_database_schema.@output_table WHERE @cohort_definition_id IN (@new_outcome_ids);\n"
-    sql <- paste(sql, "INSERT INTO @output_database_schema.@output_table (@cohort_definition_id, cohort_start_date, cohort_end_date, subject_id)\n")
-  }
-  sql <- paste(sql, "SELECT @cohort_definition_id, cohort_start_date, NULL AS cohort_end_date, subject_id FROM #temp_outcomes UNION ALL\n")
-  sql <- SqlRender::renderSql(sql,
-                              output_database_schema = outputDatabaseSchema,
-                              output_table = outputTable,
-                              new_outcome_ids = result$newOutcomeId,
-                              cohort_definition_id = cohortDefinitionId)$sql
-  sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
-  # Copy outcomes to output table:
-  outcomesCopySql <- c()
-  for (i in 1:nrow(result)) {
-    if (result$modelFile[i] != "") {
-      copySql <- SqlRender::loadRenderTranslateSql("CopyOutcomes.sql",
-                                                   packageName = "MethodEvaluation",
-                                                   dbms = connectionDetails$dbms,
-                                                   cdm_database_schema = cdmDatabaseSchema,
-                                                   outcome_database_schema = outcomeDatabaseSchema,
-                                                   outcome_table = outcomeTable,
-                                                   source_concept_id = result$outcomeId[i],
-                                                   target_concept_id =  result$newOutcomeId[i],
-                                                   cohort_definition_id = cohortDefinitionId)
-      outcomesCopySql <- c(outcomesCopySql, copySql)
-    }
-  }
-  sql <- paste(sql, paste(outcomesCopySql, collapse = " UNION ALL "))
-  if (createOutputTable){
-    sql <- paste(sql, ") temp;")
-  } else {
-    sql <- paste(sql, ";")
-  }
+    
  
-  DatabaseConnector::executeSql(conn, sql)
+    
+    writeLines("Fitting outcome models and generating outcomes")
+    tasks <- list()
+    for (i in 1:length(outcomeIds)) {
+      task <- list(outcomeId = outcomeIds[i],
+                   newOutcomeIdOffet = outputIdOffset + ((i-1)*length(effectSizes)))
+      tasks[[length(tasks)+1]] <- task
+    }
+    cluster <- OhdsiRTools::makeCluster(outcomeThreads)
+    results <- OhdsiRTools::clusterApply(cluster,
+                                         tasks,
+                                         fitModelAndGenerateOutcomes,
+                                         exposureId,
+                                         effectSizes,
+                                         minOutcomeCount,
+                                         modelType,
+                                         precision,
+                                         prior,
+                                         control,
+                                         workFolder)
+    OhdsiRTools::stopCluster(cluster)
+    result <- do.call("rbind", results)
+  }
+}
 
-  sql <- "TRUNCATE TABLE #cohort_person; DROP TABLE #cohort_person; TRUNCATE TABLE #temp_outcomes; DROP TABLE #temp_outcomes;"
-  sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
-  DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
+writeLines("Inserting outcomes into database")
+outcomesToInject <- data.frame()
+for (i in 1:nrow(result)) {
+  if (result$outcomesToInjectFile[i] != "") {
+    outcomesToInject <- rbind(outcomesToInject, readRDS(result$outcomesToInjectFile[i]))
+  }
+}
+if (cdmVersion == "4") {
+  colnames(outcomesToInject)[colnames(outcomesToInject) == "cohortDefinitionId"] <- "cohortConceptId"
+}
+colnames(outcomesToInject) <- SqlRender::camelCaseToSnakeCase(colnames(outcomesToInject))
+DatabaseConnector::insertTable(conn, "#temp_outcomes", outcomesToInject, TRUE, TRUE, TRUE, oracleTempSchema)
 
-  RJDBC::dbDisconnect(conn)
-  summaryFile <- .createSummaryFileName(workFolder)
-  saveRDS(result, summaryFile)
-  return(result)
+if (createOutputTable){
+  sql <- "IF OBJECT_ID('@output_database_schema.@output_table', 'U') IS NOT NULL\nDROP TABLE @output_database_schema.@output_table;\n"
+  sql <- paste(sql, "SELECT @cohort_definition_id, cohort_start_date, cohort_end_date, subject_id INTO @output_database_schema.@output_table FROM (\n")
+} else{
+  sql <- "DELETE FROM @output_database_schema.@output_table WHERE @cohort_definition_id IN (@new_outcome_ids);\n"
+  sql <- paste(sql, "INSERT INTO @output_database_schema.@output_table (@cohort_definition_id, cohort_start_date, cohort_end_date, subject_id)\n")
+}
+sql <- paste(sql, "SELECT @cohort_definition_id, cohort_start_date, NULL AS cohort_end_date, subject_id FROM #temp_outcomes UNION ALL\n")
+sql <- SqlRender::renderSql(sql,
+                            output_database_schema = outputDatabaseSchema,
+                            output_table = outputTable,
+                            new_outcome_ids = result$newOutcomeId,
+                            cohort_definition_id = cohortDefinitionId)$sql
+sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+# Copy outcomes to output table:
+outcomesCopySql <- c()
+for (i in 1:nrow(result)) {
+  if (result$modelFile[i] != "") {
+    copySql <- SqlRender::loadRenderTranslateSql("CopyOutcomes.sql",
+                                                 packageName = "MethodEvaluation",
+                                                 dbms = connectionDetails$dbms,
+                                                 cdm_database_schema = cdmDatabaseSchema,
+                                                 outcome_database_schema = outcomeDatabaseSchema,
+                                                 outcome_table = outcomeTable,
+                                                 source_concept_id = result$outcomeId[i],
+                                                 target_concept_id =  result$newOutcomeId[i],
+                                                 cohort_definition_id = cohortDefinitionId)
+    outcomesCopySql <- c(outcomesCopySql, copySql)
+  }
+}
+sql <- paste(sql, paste(outcomesCopySql, collapse = " UNION ALL "))
+if (createOutputTable){
+  sql <- paste(sql, ") temp;")
+} else {
+  sql <- paste(sql, ";")
+}
+
+DatabaseConnector::executeSql(conn, sql)
+
+sql <- "TRUNCATE TABLE #cohort_person; DROP TABLE #cohort_person; TRUNCATE TABLE #temp_outcomes; DROP TABLE #temp_outcomes;"
+sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
+
+RJDBC::dbDisconnect(conn)
+summaryFile <- .createSummaryFileName(workFolder)
+saveRDS(result, summaryFile)
+return(result)
 }
 
 fitModelAndGenerateOutcomes <- function(task,
@@ -366,13 +393,13 @@ fitModelAndGenerateOutcomes <- function(task,
   ffbase::load.ffdf(covarDataFolder)
   open(covariates, readOnly = TRUE)
   open(covariateRef, readOnly = TRUE)
-
+  
   outcomesFile <- file.path(workFolder, paste0("outcomes_e", exposureId, ".rds"))
   outcomeCounts <- readRDS(outcomesFile)
-
+  
   exposuresFile <- file.path(workFolder, paste0("exposures_e", exposureId, ".rds"))
   exposures <- readRDS(exposuresFile)
-
+  
   result <- data.frame(exposureId = exposureId,
                        outcomeId = outcomeId,
                        targetEffectSize = effectSizes,
@@ -386,7 +413,7 @@ fitModelAndGenerateOutcomes <- function(task,
                        modelFile = "",
                        outcomesToInjectFile = "",
                        stringsAsFactors = FALSE)
-
+  
   if (sum(outcomeCounts$outcomeConceptId == outcomeId) < minOutcomeCount){
     writeLines(paste("Too few outcomes found for outcome", outcomeId))
     result$observedOutcomes <- sum(outcomeCounts$outcomeConceptId == outcomeId)
@@ -492,7 +519,7 @@ fitModelAndGenerateOutcomes <- function(task,
               }
             }
             injectedRr <- 1 + (nrow(newOutcomes)/sum(outcomes$y))
-
+            
             # Count outcomes during first episodes:
             newOutcomeCountsFirstExposure <- sum(newOutcomeCounts[outcomes$eraNumber == 1])
             injectedRrFirstExposure <- 1 + (newOutcomeCountsFirstExposure/firstExposureOutcomeCount)
@@ -536,7 +563,7 @@ fitModelAndGenerateOutcomes <- function(task,
                          injectedRr,
                          ", injected RR during first exposure only =",
                          injectedRrFirstExposure))
-
+        
         newOutcomeId <- result$newOutcomeId[result$targetEffectSize == effectSize]
         # Inject new outcomes:
         if (nrow(newOutcomes) != 0) {
@@ -571,13 +598,13 @@ plotCalibration <- function(prediction, y, time) {
   data$strata <- cut(data$cumTime, breaks = c(0, q, max(data$cumTime)), labels = FALSE)
   strataData <- merge(aggregate(obs ~ strata, data = data, sum),
                       aggregate(time ~ strata, data = data, sum))
-
+  
   strataData$rate <- strataData$obs/strataData$time
   temp <- aggregate(predRate ~ strata, data = data, min)
   names(temp)[names(temp) == "predRate"] <- "minx"
   strataData <- merge(strataData, temp)
   strataData$maxx <- c(strataData$minx[2:numberOfStrata], max(data$predRate))
-
+  
   # Do not show last percent of data (in days):
   limx <- min(data$predRate[data$cumTime > 0.99 * sum(data$time)])
   ggplot2::ggplot(strataData, ggplot2::aes(xmin = minx,

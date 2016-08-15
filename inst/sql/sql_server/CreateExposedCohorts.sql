@@ -19,7 +19,7 @@ limitations under the License.
 ************************************************************************/
 
 {DEFAULT @cdm_database_schema = 'CDM4_SIM.dbo'} 
-{DEFAULT @exposure_concept_ids = ''} 
+{DEFAULT @exposure_ids = ''} 
 {DEFAULT @washout_period = 183} 
 {DEFAULT @exposure_database_schema = 'CDM4_SIM'} 
 {DEFAULT @exposure_table = 'drug_era'}
@@ -53,7 +53,7 @@ SELECT drug_concept_id AS @cohort_definition_id,
 	drug_era_end_date AS cohort_end_date,
 	ROW_NUMBER () OVER (PARTITION BY drug_concept_id, person_id ORDER BY drug_era_start_date) AS era_number
 FROM @cdm_database_schema.drug_era 
-WHERE drug_concept_id IN (@exposure_concept_ids)
+WHERE drug_concept_id IN (@exposure_ids)
 } : {
 SELECT @cohort_definition_id, 
 	subject_id,
@@ -61,7 +61,7 @@ SELECT @cohort_definition_id,
 	cohort_end_date,
 	ROW_NUMBER () OVER (PARTITION BY @cohort_definition_id, subject_id ORDER BY cohort_start_date) AS era_number
 FROM @exposure_database_schema.@exposure_table exposure
-WHERE @cohort_definition_id IN (@exposure_concept_ids)
+WHERE @cohort_definition_id IN (@exposure_ids)
 } 
 ) exposure
 INNER JOIN @cdm_database_schema.observation_period
