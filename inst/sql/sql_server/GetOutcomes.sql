@@ -25,9 +25,6 @@ limitations under the License.
 {DEFAULT @cohort_definition_id = 'cohort_definition_id'}
 
 SELECT exposure.row_id,
-	exposure.subject_id,
-	exposure.cohort_start_date,
-	exposure.@cohort_definition_id AS exposure_id,
 	outcome.outcome_id,
 	COUNT(DISTINCT outcome_date) AS y,
 	MIN(DATEDIFF(DAY, exposure.cohort_start_date, outcome_date)) AS time_to_event
@@ -41,7 +38,6 @@ INNER JOIN (
 	  person_id,
 	  MIN(condition_era_start_date) AS outcome_date
 	FROM @cdm_database_schema.condition_era
-	WHERE condition_concept_id IN (@outcome_ids)
 	GROUP BY condition_concept_id,
 		person_id
 } : {
@@ -49,7 +45,6 @@ INNER JOIN (
 	  subject_id AS person_id,
 	  MIN(cohort_start_date) AS outcome_date
 	FROM @outcome_database_schema.@outcome_table co1
-	WHERE @cohort_definition_id IN (@outcome_ids)
 	GROUP BY @cohort_definition_id,
 		subject_id
 }
@@ -59,13 +54,11 @@ INNER JOIN (
 	  person_id,
 	  condition_era_start_date AS outcome_date
 	FROM @cdm_database_schema.condition_era
-	WHERE condition_concept_id IN (@outcome_ids)
 } : {
 	SELECT @cohort_definition_id AS outcome_id,
 	  subject_id AS person_id,
 	  cohort_start_date AS outcome_date
 	FROM @outcome_database_schema.@outcome_table co1
-	WHERE @cohort_definition_id IN (@outcome_ids)
 }
 }
 ) outcome

@@ -10,7 +10,8 @@ injectSignals(connectionDetails, cdmDatabaseSchema,
   outcomeDatabaseSchema = cdmDatabaseSchema, outcomeTable = "cohort",
   outputDatabaseSchema = outcomeDatabaseSchema, outputTable = outcomeTable,
   createOutputTable = FALSE, exposureOutcomePairs, modelType = "poisson",
-  buildOutcomeModel = TRUE, minOutcomeCount = 100,
+  buildOutcomeModel = TRUE, buildModelPerExposure = FALSE,
+  minOutcomeCount = 100,
   covariateSettings = FeatureExtraction::createCovariateSettings(useCovariateDemographics
   = TRUE, useCovariateConditionOccurrence = TRUE,
   useCovariateConditionOccurrence365d = TRUE, useCovariateConditionOccurrence30d
@@ -40,7 +41,7 @@ injectSignals(connectionDetails, cdmDatabaseSchema,
   firstOutcomeOnly = FALSE, effectSizes = c(1, 1.25, 1.5, 2, 4),
   precision = 0.01, outputIdOffset = 1000,
   workFolder = "./SignalInjectionTemp", cdmVersion = "4",
-  outcomeThreads = 1)
+  modelThreads = 1, generationThreads = 1)
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{ConnectionDetails} created using
@@ -106,6 +107,9 @@ outcomes will be inserted based on the predicted
 probabilities according to this model, and this will help
 preserve the observed confounding when injecting signals.}
 
+\item{buildModelPerExposure}{If TRUE, an outcome model will be created for each exposure ID. IF false,
+outcome models will be created across all exposures.}
+
 \item{minOutcomeCount}{Minimum number of outcome events required to build a model and inject a signal.}
 
 \item{covariateSettings}{An object of type \code{covariateSettings} as created using the
@@ -150,6 +154,10 @@ modeling the outcome?}
 \item{workFolder}{Path to a folder where intermediate data will be stored.}
 
 \item{cdmVersion}{Define the OMOP CDM version used: currently support "4" and "5".}
+
+\item{modelThreads}{Number of parallel threads to use when fitting outcome models.}
+
+\item{generationThreads}{Number of parallel threads to use when generating outcomes.}
 }
 \value{
 A data.frame listing all the drug-pairs in combination with requested effect sizes and the real inserted effect size

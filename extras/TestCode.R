@@ -1,6 +1,87 @@
 library(MethodEvaluation)
 options(fftempdir = "s:/fftemp")
 
+
+pw <- NULL
+dbms <- "pdw"
+user <- NULL
+server <- "JRDUSAPSCTL01"
+cdmDatabaseSchema <- "CDM_Truven_MDCD_V432.dbo"
+oracleTempSchema <- NULL
+outcomeDatabaseSchema <- "scratch.dbo"
+outcomeTable <- "mschuemie_outcomes"
+nestingCohortDatabaseSchema <- "scratch.dbo"
+nestingCohortTable <- "mschuemi_nesting_cohorts"
+port <- 17001
+cdmVersion <- "5"
+
+connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
+                                                                server = server,
+                                                                user = user,
+                                                                password = pw,
+                                                                port = port)
+
+exposureOutcomePairs <- data.frame(exposureId = 1124300,
+                                   outcomeId = c(24609, 29735, 73754, 80004, 134718, 139099, 141932, 192367, 193739, 194997, 197236, 199074, 255573, 257007, 313459, 314658, 316084, 319843, 321596, 374366, 375292, 380094, 433753, 433811, 436665, 436676, 436940, 437784, 438134, 440358, 440374, 443617, 443800, 4084966, 4288310))
+
+covariateSettings <- FeatureExtraction::createCovariateSettings(useCovariateDemographics = TRUE,
+                                                               useCovariateDemographicsGender = TRUE,
+                                                               useCovariateDemographicsAge = TRUE,
+                                                               useCovariateConditionEra = TRUE,
+                                                               useCovariateConditionEraEver = TRUE,
+                                                               useCovariateConditionEraOverlap = TRUE,
+                                                               useCovariateConditionGroup = TRUE)
+
+x <- injectSignals(connectionDetails,
+                   cdmDatabaseSchema = cdmDatabaseSchema,
+                   exposureOutcomePairs = exposureOutcomePairs,
+                   exposureTable = "drug_era",
+                   outcomeDatabaseSchema = outcomeDatabaseSchema,
+                   outcomeTable = outcomeTable,
+                   outputDatabaseSchema = outcomeDatabaseSchema,
+                   outputTable = "mschuemi_test_injection",
+                   createOutputTable = TRUE,
+                   firstExposureOnly = FALSE,
+                   firstOutcomeOnly = FALSE,
+                   modelType = "poisson",
+                   prior = createPrior("laplace", exclude = 0, useCrossValidation = TRUE),
+                   control = createControl(cvType = "auto", startingVariance = 0.1, noiseLevel = "quiet", threads = 5),
+                   workFolder = "s:/temp/SignalInjectionTemp",
+                   cdmVersion = cdmVersion,
+                   covariateSettings = covariateSettings,
+                   modelThreads = 10,
+                   generationThreads = 10)
+
+
+exposureDatabaseSchema = cdmDatabaseSchema
+exposureTable = "drug_era"
+outcomeDatabaseSchema = outcomeDatabaseSchema
+outcomeTable = outcomeTable
+outputDatabaseSchema = outcomeDatabaseSchema
+outputTable = "mschuemi_test_injection"
+createOutputTable = TRUE
+firstExposureOnly = FALSE
+modelType = "poisson"
+buildOutcomeModel = TRUE
+washoutPeriod = 183
+riskWindowStart = 0
+riskWindowEnd = 0
+addExposureDaysToEnd = TRUE
+firstOutcomeOnly = FALSE
+effectSizes = c(1, 1.25, 1.5, 2)
+oracleTempSchema <- NULL
+outputIdOffset = 1000
+precision = 0.01
+prior = createPrior("laplace", exclude = 0, useCrossValidation = TRUE)
+control = createControl(cvType = "auto", startingVariance = 0.1, noiseLevel = "quiet", threads = 10)
+workFolder <- "s:/temp/SignalInjectionTemp"
+buildModelPerExposure <- FALSE
+modelThreads = 1
+generationThreads = 1
+minOutcomeCount = 100
+
+
+
 pw <- pw
 dbms <- "postgresql"
 user <- "postgres"
@@ -34,7 +115,7 @@ pw <- ""
 dbms <- "pdw"
 user <- NULL
 server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "cdm_truven_mdcd_v5.dbo"
+cdmDatabaseSchema <- "cdm_truven_mdcd_v446.dbo"
 scratchDatabaseSchema <- "scratch.dbo"
 outputTable <- "mschuemi_injected_signals"
 port <- 17001
@@ -48,7 +129,7 @@ connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
                                                                 port = port)
 
 data("omopReferenceSet")
-#exposureOutcomePairs <- data.frame(exposureConceptId = 755695, outcomeConceptId = 194133)
+#exposureOutcomePairs <- data.frame(exposureId = 755695, outcomeId = 194133)
 
 createOutcomeCohorts(connectionDetails,
                      cdmDatabaseSchema,
@@ -72,43 +153,43 @@ negControls <- readRDS("s:/temp/negControls.rds")
 negControls$exposureId <- negControls$exposureConceptId
 negControls$outcomeId <- negControls$outcomeConceptId
 
-covariateSettings <- PatientLevelPrediction::createCovariateSettings(useCovariateDemographics = TRUE,
-                                                                     useCovariateConditionOccurrence = TRUE,
-                                                                     useCovariateConditionOccurrence365d = TRUE,
-                                                                     useCovariateConditionOccurrence30d = FALSE,
-                                                                     useCovariateConditionOccurrenceInpt180d = FALSE,
-                                                                     useCovariateConditionEra = FALSE,
-                                                                     useCovariateConditionEraEver = FALSE,
-                                                                     useCovariateConditionEraOverlap = FALSE,
-                                                                     useCovariateConditionGroup = FALSE,
-                                                                     useCovariateDrugExposure = FALSE,
-                                                                     useCovariateDrugExposure365d = FALSE,
-                                                                     useCovariateDrugExposure30d = FALSE,
-                                                                     useCovariateDrugEra = FALSE,
-                                                                     useCovariateDrugEra365d = FALSE,
-                                                                     useCovariateDrugEra30d = FALSE,
-                                                                     useCovariateDrugEraEver = FALSE,
-                                                                     useCovariateDrugEraOverlap = FALSE,
-                                                                     useCovariateDrugGroup = FALSE,
-                                                                     useCovariateProcedureOccurrence = FALSE,
-                                                                     useCovariateProcedureOccurrence365d = FALSE,
-                                                                     useCovariateProcedureOccurrence30d = FALSE,
-                                                                     useCovariateProcedureGroup = FALSE,
-                                                                     useCovariateObservation = FALSE,
-                                                                     useCovariateObservation365d = FALSE,
-                                                                     useCovariateObservation30d = FALSE,
-                                                                     useCovariateObservationCount365d = FALSE,
-                                                                     useCovariateMeasurement365d = FALSE,
-                                                                     useCovariateMeasurement30d = FALSE,
-                                                                     useCovariateMeasurementCount365d = FALSE,
-                                                                     useCovariateMeasurementBelow = FALSE,
-                                                                     useCovariateMeasurementAbove = FALSE,
-                                                                     useCovariateConceptCounts = FALSE,
-                                                                     useCovariateRiskScores = FALSE,
-                                                                     useCovariateInteractionYear = FALSE,
-                                                                     useCovariateInteractionMonth = FALSE,
-                                                                     excludedCovariateConceptIds = c(),
-                                                                     deleteCovariatesSmallCount = 100)
+covariateSettings <- FeatureExtraction::createCovariateSettings(useCovariateDemographics = TRUE,
+                                                                useCovariateConditionOccurrence = TRUE,
+                                                                useCovariateConditionOccurrence365d = TRUE,
+                                                                useCovariateConditionOccurrence30d = FALSE,
+                                                                useCovariateConditionOccurrenceInpt180d = FALSE,
+                                                                useCovariateConditionEra = FALSE,
+                                                                useCovariateConditionEraEver = FALSE,
+                                                                useCovariateConditionEraOverlap = FALSE,
+                                                                useCovariateConditionGroup = FALSE,
+                                                                useCovariateDrugExposure = FALSE,
+                                                                useCovariateDrugExposure365d = FALSE,
+                                                                useCovariateDrugExposure30d = FALSE,
+                                                                useCovariateDrugEra = FALSE,
+                                                                useCovariateDrugEra365d = FALSE,
+                                                                useCovariateDrugEra30d = FALSE,
+                                                                useCovariateDrugEraEver = FALSE,
+                                                                useCovariateDrugEraOverlap = FALSE,
+                                                                useCovariateDrugGroup = FALSE,
+                                                                useCovariateProcedureOccurrence = FALSE,
+                                                                useCovariateProcedureOccurrence365d = FALSE,
+                                                                useCovariateProcedureOccurrence30d = FALSE,
+                                                                useCovariateProcedureGroup = FALSE,
+                                                                useCovariateObservation = FALSE,
+                                                                useCovariateObservation365d = FALSE,
+                                                                useCovariateObservation30d = FALSE,
+                                                                useCovariateObservationCount365d = FALSE,
+                                                                useCovariateMeasurement365d = FALSE,
+                                                                useCovariateMeasurement30d = FALSE,
+                                                                useCovariateMeasurementCount365d = FALSE,
+                                                                useCovariateMeasurementBelow = FALSE,
+                                                                useCovariateMeasurementAbove = FALSE,
+                                                                useCovariateConceptCounts = FALSE,
+                                                                useCovariateRiskScores = FALSE,
+                                                                useCovariateInteractionYear = FALSE,
+                                                                useCovariateInteractionMonth = FALSE,
+                                                                excludedCovariateConceptIds = c(),
+                                                                deleteCovariatesSmallCount = 100)
 
 
 x <- injectSignals(connectionDetails,
