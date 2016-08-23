@@ -230,6 +230,7 @@ injectSignals <- function(connectionDetails,
   conn <- DatabaseConnector::connect(connectionDetails)
   
   ### Create exposure cohorts ###
+  cohortPersonCreated <- FALSE
   if (!file.exists(exposuresFile) && !file.exists(outcomesFile) && (buildOutcomeModel && !file.exists(covarDataFolder))){
     writeLines("\nCreating risk windows")
     renderedSql <- SqlRender::loadRenderTranslateSql("CreateExposedCohorts.sql",
@@ -248,6 +249,7 @@ injectSignals <- function(connectionDetails,
                                                      cohort_definition_id = cohortDefinitionId)
     
     DatabaseConnector::executeSql(conn, renderedSql)
+    cohortPersonCreated <- TRUE
   }
   
   if (file.exists(exposuresFile)) {
@@ -429,46 +431,30 @@ injectSignals <- function(connectionDetails,
   colnames(outcomesToInject) <- SqlRender::camelCaseToSnakeCase(colnames(outcomesToInject))
   DatabaseConnector::insertTable(conn, "#temp_outcomes", outcomesToInject, TRUE, TRUE, TRUE, oracleTempSchema)
   
-  if (createOutputTable){
-    sql <- "IF OBJECT_ID('@output_database_schema.@output_table', 'U') IS NOT NULL\nDROP TABLE @output_database_schema.@output_table;\n"
-    sql <- paste(sql, "SELECT @cohort_definition_id, cohort_start_date, cohort_end_date, subject_id INTO @output_database_schema.@output_table FROM (\n")
-  } else{
-    sql <- "DELETE FROM @output_database_schema.@output_table WHERE @cohort_definition_id IN (@new_outcome_ids);\n"
-    sql <- paste(sql, "INSERT INTO @output_database_schema.@output_table (@cohort_definition_id, cohort_start_date, cohort_end_date, subject_id)\n")
-  }
-  sql <- paste(sql, "SELECT @cohort_definition_id, cohort_start_date, NULL AS cohort_end_date, subject_id FROM #temp_outcomes UNION ALL\n")
-  sql <- SqlRender::renderSql(sql,
-                              output_database_schema = outputDatabaseSchema,
-                              output_table = outputTable,
-                              new_outcome_ids = result$newOutcomeId,
-                              cohort_definition_id = cohortDefinitionId)$sql
-  # Copy outcomes to output table:
-  outcomesCopySql <- c()
-  for (i in 1:nrow(result)) {
-    if (result$modelFolder[i] != "") {
-      # Note: targetDialect is SQL Server (no translation), because we'll translate later on
-      copySql <- SqlRender::loadRenderTranslateSql("CopyOutcomes.sql",
-                                                   packageName = "MethodEvaluation",
-                                                   dbms = "sql server",
-                                                   cdm_database_schema = cdmDatabaseSchema,
-                                                   outcome_database_schema = outcomeDatabaseSchema,
-                                                   outcome_table = outcomeTable,
-                                                   source_concept_id = result$outcomeId[i],
-                                                   target_concept_id =  result$newOutcomeId[i],
-                                                   cohort_definition_id = cohortDefinitionId)
-      outcomesCopySql <- c(outcomesCopySql, copySql)
-    }
-  }
-  sql <- paste(sql, paste(outcomesCopySql, collapse = " UNION ALL "))
-  if (createOutputTable){
-    sql <- paste(sql, ") temp;")
-  } else {
-    sql <- paste(sql, ";")
-  }
-  sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
-  DatabaseConnector::executeSql(conn, sql)
+  toCopy <- result[result$modelFolder != "", c("outcomeId", "newOutcomeId")]
+  colnames(toCopy) <- SqlRender::camelCaseToSnakeCase(colnames(toCopy))
+  DatabaseConnector::insertTable(conn, "#to_copy", toCopy, TRUE, TRUE, TRUE, oracleTempSchema)
   
-  sql <- "TRUNCATE TABLE #cohort_person; DROP TABLE #cohort_person; TRUNCATE TABLE #temp_outcomes; DROP TABLE #temp_outcomes;"
+  copySql <- SqlRender::loadRenderTranslateSql("CopyOutcomes.sql",
+                                               packageName = "MethodEvaluation",
+                                               dbms = connectionDetails$dbms,
+                                               cdm_database_schema = cdmDatabaseSchema,
+                                               outcome_database_schema = outcomeDatabaseSchema,
+                                               outcome_table = outcomeTable,
+                                               output_database_schema = outputDatabaseSchema,
+                                               output_table = outputTable,
+                                               cohort_definition_id = cohortDefinitionId,
+                                               create_output_table = createOutputTable)
+  
+  DatabaseConnector::executeSql(conn, copySql)
+  
+  if (cohortPersonCreated) {
+    sql <- "TRUNCATE TABLE #cohort_person; DROP TABLE #cohort_person;"
+    sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+    DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
+  }
+  
+  sql <- "TRUNCATE TABLE #temp_outcomes; DROP TABLE #temp_outcomes; TRUNCATE TABLE #to_copy; DROP TABLE #to_copy;"
   sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
   DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
   
@@ -494,6 +480,8 @@ fitModel <- function(task,
   open(covariateRef, readOnly = TRUE)
   if (buildModelPerExposure) {
     outcomes <- outcomeCounts[outcomeCounts$outcomeId == task$outcomeId & outcomeCounts$exposureId == task$exposureId, ]
+    exposures <- exposures[exposures@exposureId == task$exposureId, ]
+    covariates <- covariates[ffbase::'%in%'(covariates$rowId, exposures$rowId),]
   } else {
     outcomes <- outcomeCounts[outcomeCounts$outcomeId == task$outcomeId, ]
   }
@@ -557,7 +545,6 @@ generateOutcomes <- function(task,
   result <- result[result$exposureId == task$exposureId & result$outcomeId == task$outcomeId, ]
   if (!file.exists(file.path(task$modelFolder, "Error.txt"))) {
     prediction <- readRDS(file.path(task$modelFolder, "prediction.rds"))
-    betas <- readRDS(file.path(task$modelFolder, "betas.rds"))
     exposures <- readRDS(exposuresFile)
     exposures$prediction <- prediction
     exposures <- exposures[exposures$exposureId == task$exposureId, ]
@@ -649,7 +636,7 @@ generateOutcomes <- function(task,
                        injectedRrFirstExposure))
       
       newOutcomeId <- result$newOutcomeId[result$targetEffectSize == effectSize]
-      # Inject new outcomes:
+      # Write new outcomes to file for later insertion into DB:
       if (nrow(newOutcomes) != 0) {
         newOutcomes$cohortStartDate <- newOutcomes$cohortStartDate + newOutcomes$timeToEvent
         newOutcomes$timeToEvent <- NULL
