@@ -74,8 +74,9 @@
 #'                                         probabilities according to this model, and this will help
 #'                                         preserve the observed confounding when injecting signals.
 #' @param buildModelPerExposure            If TRUE, an outcome model will be created for each exposure ID. IF false,
-#'                                         outcome models will be created across all exposures. 
-#' @param minOutcomeCount                  Minimum number of outcome events required to build a model and inject a signal.
+#'                                         outcome models will be created across all exposures.
+#' @param minOutcomeCountForModel          Minimum number of outcome events required to build a model.
+#' @param minOutcomeCountForInjection      Minimum number of outcome events required to inject a signal.
 #' @param covariateSettings                An object of type \code{covariateSettings} as created using the
 #'                                         \code{createCovariateSettings} function in the
 #'                                         \code{FeatureExtraction} package.
@@ -131,8 +132,15 @@ injectSignals <- function(connectionDetails,
                           modelType = "poisson",
                           buildOutcomeModel = TRUE,
                           buildModelPerExposure = FALSE,
-                          minOutcomeCount = 100,
+                          minOutcomeCountForModel = 100,
+                          minOutcomeCountForInjection = 25,
                           covariateSettings = FeatureExtraction::createCovariateSettings(useCovariateDemographics = TRUE,
+                                                                                         useCovariateDemographicsGender = TRUE,
+                                                                                         useCovariateDemographicsRace = TRUE,
+                                                                                         useCovariateDemographicsEthnicity = TRUE,
+                                                                                         useCovariateDemographicsAge = TRUE,
+                                                                                         useCovariateDemographicsYear = TRUE,
+                                                                                         useCovariateDemographicsMonth = TRUE,
                                                                                          useCovariateConditionOccurrence = TRUE,
                                                                                          useCovariateConditionOccurrence365d = TRUE,
                                                                                          useCovariateConditionOccurrence30d = TRUE,
@@ -200,6 +208,10 @@ injectSignals <- function(connectionDetails,
   if (!file.exists(workFolder))
     dir.create(workFolder)
   
+  exposuresFile <- file.path(workFolder, "exposures.rds")
+  outcomesFile <- file.path(workFolder, "outcomes.rds")
+  covarDataFolder <- file.path(workFolder, "covariates")
+  
   result <- data.frame(exposureId = rep(exposureOutcomePairs$exposureId,
                                         each = length(effectSizes)),
                        outcomeId = rep(exposureOutcomePairs$outcomeId,
@@ -214,27 +226,30 @@ injectSignals <- function(connectionDetails,
                        stringsAsFactors = FALSE)
   
   exposureIds <- unique(exposureOutcomePairs$exposureId)
+  
   conn <- DatabaseConnector::connect(connectionDetails)
   
   ### Create exposure cohorts ###
-  writeLines("\nCreating risk windows")
-  renderedSql <- SqlRender::loadRenderTranslateSql("CreateExposedCohorts.sql",
-                                                   packageName = "MethodEvaluation",
-                                                   dbms = connectionDetails$dbms,
-                                                   oracleTempSchema = oracleTempSchema,
-                                                   cdm_database_schema = cdmDatabaseSchema,
-                                                   exposure_ids = exposureIds,
-                                                   washout_period = washoutPeriod,
-                                                   exposure_database_schema = exposureDatabaseSchema,
-                                                   exposure_table = exposureTable,
-                                                   first_exposure_only = firstExposureOnly,
-                                                   risk_window_start = riskWindowStart,
-                                                   risk_window_end = riskWindowEnd,
-                                                   add_exposure_days_to_end = addExposureDaysToEnd,
-                                                   cohort_definition_id = cohortDefinitionId)
+  if (!file.exists(exposuresFile) && !file.exists(outcomesFile) && (buildOutcomeModel && !file.exists(covarDataFolder))){
+    writeLines("\nCreating risk windows")
+    renderedSql <- SqlRender::loadRenderTranslateSql("CreateExposedCohorts.sql",
+                                                     packageName = "MethodEvaluation",
+                                                     dbms = connectionDetails$dbms,
+                                                     oracleTempSchema = oracleTempSchema,
+                                                     cdm_database_schema = cdmDatabaseSchema,
+                                                     exposure_ids = exposureIds,
+                                                     washout_period = washoutPeriod,
+                                                     exposure_database_schema = exposureDatabaseSchema,
+                                                     exposure_table = exposureTable,
+                                                     first_exposure_only = firstExposureOnly,
+                                                     risk_window_start = riskWindowStart,
+                                                     risk_window_end = riskWindowEnd,
+                                                     add_exposure_days_to_end = addExposureDaysToEnd,
+                                                     cohort_definition_id = cohortDefinitionId)
+    
+    DatabaseConnector::executeSql(conn, renderedSql)
+  }
   
-  DatabaseConnector::executeSql(conn, renderedSql)
-  exposuresFile <- file.path(workFolder, "exposures.rds")
   if (file.exists(exposuresFile)) {
     exposures <- readRDS(exposuresFile)
   } else {
@@ -256,11 +271,10 @@ injectSignals <- function(connectionDetails,
   colnames(firstExposureCounts)[colnames(firstExposureCounts) == "rowId"] <- "firstExposures"
   result <- merge(result, firstExposureCounts)
   
-  writeLines("Extracting outcome counts")
-  outcomesFile <- file.path(workFolder, "outcomes.rds")
   if (file.exists(outcomesFile)) {
     outcomeCounts <- readRDS(outcomesFile)
   } else {
+    writeLines("Extracting outcome counts")
     table <- exposureOutcomePairs
     colnames(table) <- SqlRender::camelCaseToSnakeCase(colnames(table))
     DatabaseConnector::insertTable(connection = conn,
@@ -290,7 +304,7 @@ injectSignals <- function(connectionDetails,
   temp <- merge(exposures[, c("rowId", "exposureId", "eraNumber")], outcomeCounts[, c("rowId", "outcomeId", "y")])
   if (modelType == "survival") {
     temp$y <- outcomeCounts$y != 0
-  } 
+  }
   tempAll <- aggregate(y ~ exposureId + outcomeId, temp, sum)
   colnames(tempAll)[colnames(tempAll) == "y"] <- "observedOutcomes"
   result <- merge(result, tempAll, all.x = TRUE)
@@ -302,7 +316,6 @@ injectSignals <- function(connectionDetails,
   
   # Build models (if needed)
   if (buildOutcomeModel) {
-    covarDataFolder <- file.path(workFolder, "covariates")
     if (!file.exists(covarDataFolder)) {
       writeLines("Extracting covariates for the outcome model")
       covariates <- FeatureExtraction::getDbCovariateData(connection = conn,
@@ -318,13 +331,14 @@ injectSignals <- function(connectionDetails,
       covariates <- covariates$covariates
       ffbase::save.ffdf(covariates, covariateRef, dir = covarDataFolder)
     }
+    
     writeLines("Fitting outcome models")
     tasks <- list()
     if (buildModelPerExposure) {
       for (exposureId in exposureIds) {
         outcomeIds <- unique(exposureOutcomePairs$outcomeId[exposureOutcomePairs$exposureId == exposureId])
         for (outcomeId in outcomeIds) {
-          if (result$observedOutcomes[result$exposureId == exposureId & result$outcomeId == outcomeId][1] >= minOutcomeCount) {
+          if (result$observedOutcomes[result$exposureId == exposureId & result$outcomeId == outcomeId][1] >= minOutcomeCountForModel) {
             modelFolder <- file.path(workFolder, paste0("model_e", exposureId, "_o", outcomeId))
             result$modelFolder[result$exposureId == exposureId & result$outcomeId == outcomeId] <- modelFolder
             if (!file.exists(modelFolder)) {
@@ -339,7 +353,7 @@ injectSignals <- function(connectionDetails,
     } else {
       outcomeIds <- unique(exposureOutcomePairs$outcomeId)
       for (outcomeId in outcomeIds) {
-        if (sum(result$observedOutcomes[result$outcomeId == outcomeId]) / length(effectSizes) >= minOutcomeCount) {
+        if (sum(result$observedOutcomes[result$outcomeId == outcomeId]) / length(effectSizes) >= minOutcomeCountForModel) {
           modelFolder <- file.path(workFolder, paste0("model_o", outcomeId))
           result$modelFolder[result$outcomeId == outcomeId] <- modelFolder
           if (!file.exists(modelFolder)) {
@@ -365,7 +379,7 @@ injectSignals <- function(connectionDetails,
                                 control)
       OhdsiRTools::stopCluster(cluster)
     }
-  } 
+  }
   
   writeLines("Generating outcomes")
   if (buildOutcomeModel) {
@@ -373,12 +387,14 @@ injectSignals <- function(connectionDetails,
     for (exposureId in exposureIds) {
       outcomeIds <- unique(exposureOutcomePairs$outcomeId[exposureOutcomePairs$exposureId == exposureId])
       for (outcomeId in outcomeIds) {
-        modelFolder <- result$modelFolder[result$exposureId == exposureId & result$outcomeId == outcomeId][1] 
-        if (modelFolder != "") {
-          task <- list(exposureId = exposureId,
-                       outcomeId = outcomeId,
-                       modelFolder = modelFolder)
-          tasks[[length(tasks)+1]] <- task
+        if (result$observedOutcomes[result$exposureId == exposureId & result$outcomeId == outcomeId] >= minOutcomeCountForInjection) {
+          modelFolder <- result$modelFolder[result$exposureId == exposureId & result$outcomeId == outcomeId][1]
+          if (modelFolder != "") {
+            task <- list(exposureId = exposureId,
+                         outcomeId = outcomeId,
+                         modelFolder = modelFolder)
+            tasks[[length(tasks)+1]] <- task
+          }
         }
       }
     }
@@ -537,7 +553,7 @@ generateOutcomes <- function(task,
                              modelType,
                              effectSizes,
                              precision,
-                             workFolder) { 
+                             workFolder) {
   result <- result[result$exposureId == task$exposureId & result$outcomeId == task$outcomeId, ]
   if (!file.exists(file.path(task$modelFolder, "Error.txt"))) {
     prediction <- readRDS(file.path(task$modelFolder, "prediction.rds"))
@@ -612,19 +628,19 @@ generateOutcomes <- function(task,
               writeLines(paste("Unable to achieve target RR using model as is. Adding multiplier of", multiplier, "to force target"))
             }
           }
-          injectedRr <- effectSize*(sum(outcomeCounts$y) + sum(temp)) / (sum(outcomeCounts$y) + correctedTargetCount)
+          injectedRr <- effectSize*(result$observedOutcomes[1] + sum(temp)) / (result$observedOutcomes[1] + correctedTargetCount)
           newOutcomes <- data.frame(personId = exposures$personId[temp],
                                     cohortStartDate = exposures$cohortStartDate[temp],
                                     timeToEvent = timeToEvent[temp])
           # Count outcomes during first episodes:
-          if (firstExposureOnly){
+          if (max(exposures$eraNumber) == 1){
             injectedRrFirstExposure <- injectedRr
           } else {
             injectedRrFirstExposure <- injectedRr
             warning("Computing injected rate during first exposure only is not yet implemented for survival models")
           }
         }
-      } 
+      }
       writeLines(paste("Target RR =",
                        effectSize,
                        ", injected RR =",

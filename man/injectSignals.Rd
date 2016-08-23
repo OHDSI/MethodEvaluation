@@ -11,26 +11,29 @@ injectSignals(connectionDetails, cdmDatabaseSchema,
   outputDatabaseSchema = outcomeDatabaseSchema, outputTable = outcomeTable,
   createOutputTable = FALSE, exposureOutcomePairs, modelType = "poisson",
   buildOutcomeModel = TRUE, buildModelPerExposure = FALSE,
-  minOutcomeCount = 100,
+  minOutcomeCountForModel = 100, minOutcomeCountForInjection = 25,
   covariateSettings = FeatureExtraction::createCovariateSettings(useCovariateDemographics
-  = TRUE, useCovariateConditionOccurrence = TRUE,
+  = TRUE, useCovariateDemographicsGender = TRUE, useCovariateDemographicsRace =
+  TRUE, useCovariateDemographicsEthnicity = TRUE, useCovariateDemographicsAge =
+  TRUE, useCovariateDemographicsYear = TRUE, useCovariateDemographicsMonth =
+  TRUE, useCovariateConditionOccurrence = TRUE,
   useCovariateConditionOccurrence365d = TRUE, useCovariateConditionOccurrence30d
   = TRUE, useCovariateConditionOccurrenceInpt180d = TRUE,
-  useCovariateConditionEra = TRUE, useCovariateConditionEraEver = TRUE,
+  useCovariateConditionEra = TRUE,      useCovariateConditionEraEver = TRUE,
   useCovariateConditionEraOverlap = TRUE, useCovariateConditionGroup = TRUE,
   useCovariateDrugExposure = TRUE, useCovariateDrugExposure365d = TRUE,
-  useCovariateDrugExposure30d = TRUE,      useCovariateDrugEra = TRUE,
+  useCovariateDrugExposure30d = TRUE, useCovariateDrugEra = TRUE,
   useCovariateDrugEra365d = TRUE, useCovariateDrugEra30d = TRUE,
   useCovariateDrugEraEver = TRUE, useCovariateDrugEraOverlap = TRUE,
   useCovariateDrugGroup = TRUE, useCovariateProcedureOccurrence = TRUE,
   useCovariateProcedureOccurrence365d = TRUE, useCovariateProcedureOccurrence30d
-  = TRUE, useCovariateProcedureGroup = TRUE, useCovariateObservation = TRUE,
-  useCovariateObservation365d = TRUE, useCovariateObservation30d = TRUE,
-  useCovariateObservationCount365d = TRUE, useCovariateMeasurement365d = TRUE,  
-     useCovariateMeasurement30d = TRUE, useCovariateMeasurementCount365d = TRUE,
+  = TRUE,      useCovariateProcedureGroup = TRUE, useCovariateObservation =
+  TRUE, useCovariateObservation365d = TRUE, useCovariateObservation30d = TRUE,
+  useCovariateObservationCount365d = TRUE, useCovariateMeasurement365d = TRUE,
+  useCovariateMeasurement30d = TRUE, useCovariateMeasurementCount365d = TRUE,
   useCovariateMeasurementBelow = TRUE, useCovariateMeasurementAbove = TRUE,
   useCovariateConceptCounts = TRUE, useCovariateRiskScores = TRUE,
-  useCovariateRiskScoresCharlson = TRUE, useCovariateRiskScoresDCSI = TRUE,
+  useCovariateRiskScoresCharlson = TRUE, useCovariateRiskScoresDCSI = TRUE,     
   useCovariateRiskScoresCHADS2 = TRUE, useCovariateRiskScoresCHADS2VASc = TRUE,
   useCovariateInteractionYear = FALSE, useCovariateInteractionMonth = FALSE,
   excludedCovariateConceptIds = c(), deleteCovariatesSmallCount = 100),
@@ -110,7 +113,9 @@ preserve the observed confounding when injecting signals.}
 \item{buildModelPerExposure}{If TRUE, an outcome model will be created for each exposure ID. IF false,
 outcome models will be created across all exposures.}
 
-\item{minOutcomeCount}{Minimum number of outcome events required to build a model and inject a signal.}
+\item{minOutcomeCountForModel}{Minimum number of outcome events required to build a model.}
+
+\item{minOutcomeCountForInjection}{Minimum number of outcome events required to inject a signal.}
 
 \item{covariateSettings}{An object of type \code{covariateSettings} as created using the
 \code{createCovariateSettings} function in the
