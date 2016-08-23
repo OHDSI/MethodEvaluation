@@ -69,3 +69,11 @@ notifications:
 
 after_success:
   - Rscript -e 'library(covr);codecov()'
+  # Rebuild docker container
+  - curl --data "build=true" -X POST https://registry.hub.docker.com/u/ohdsi/broadsea-methodslibrary/trigger/f0b51cec-4027-4781-9383-4b38b42dd4f5/
+  # Rebuild drat repo
+  - test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "master" && bash deploy.sh
+
+env:
+  global:
+    secure: Wo6+MEC3sOD9poyGoBPk9HhwBZBKAUfoJ5uZQ9t8pvWhl8eL7YjttqteJBLFJ0UdkLBn8yHM/gNpJ73FGxRh/n8DTXDAh3HmsOrN5SOo/mouw+WEVYW7xIEYP/EwTX4tP5BKLcZrssi+eWrQpuQg1C0ALHSC5bXKacX9BK8JWvk=
