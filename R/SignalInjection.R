@@ -102,6 +102,7 @@
 #' @param addExposureDaysToEnd             Should length of exposure be added to the risk window?
 #' @param firstOutcomeOnly                 Should only the first outcome per person be considered when
 #'                                         modeling the outcome?
+#' @param removePeopleWithPriorOutcomes    Remove people with prior outcomes?
 #' @param effectSizes                      A numeric vector of effect sizes that should be inserted.
 #' @param outputDatabaseSchema             The name of the database schema that is the location of the
 #'                                         tables containing the new outcomesRequires write permissions
@@ -189,6 +190,7 @@ injectSignals <- function(connectionDetails,
                           riskWindowEnd = 0,
                           addExposureDaysToEnd = TRUE,
                           firstOutcomeOnly = FALSE,
+                          removePeopleWithPriorOutcomes = FALSE,
                           effectSizes = c(1, 1.25, 1.5, 2, 4),
                           precision = 0.01,
                           outputIdOffset = 1000,
@@ -207,11 +209,12 @@ injectSignals <- function(connectionDetails,
   }
   if (!file.exists(workFolder))
     dir.create(workFolder)
-  
+
   exposuresFile <- file.path(workFolder, "exposures.rds")
   outcomesFile <- file.path(workFolder, "outcomes.rds")
+  priorOutcomesFile <- file.path(workFolder, "priorOutcomes.rds")
   covarDataFolder <- file.path(workFolder, "covariates")
-  
+
   result <- data.frame(exposureId = rep(exposureOutcomePairs$exposureId,
                                         each = length(effectSizes)),
                        outcomeId = rep(exposureOutcomePairs$outcomeId,
@@ -224,14 +227,14 @@ injectSignals <- function(connectionDetails,
                        modelFolder = "",
                        outcomesToInjectFile = "",
                        stringsAsFactors = FALSE)
-  
+
   exposureIds <- unique(exposureOutcomePairs$exposureId)
-  
+
   conn <- DatabaseConnector::connect(connectionDetails)
-  
+
   ### Create exposure cohorts ###
   cohortPersonCreated <- FALSE
-  if (!file.exists(exposuresFile) && !file.exists(outcomesFile) && (buildOutcomeModel && !file.exists(covarDataFolder))){
+  if (!file.exists(exposuresFile) || !file.exists(outcomesFile) || (buildOutcomeModel && !file.exists(covarDataFolder)) || (removePeopleWithPriorOutcomes && !file.exists(priorOutcomesFile))) {
     writeLines("\nCreating risk windows")
     renderedSql <- SqlRender::loadRenderTranslateSql("CreateExposedCohorts.sql",
                                                      packageName = "MethodEvaluation",
@@ -247,11 +250,11 @@ injectSignals <- function(connectionDetails,
                                                      risk_window_end = riskWindowEnd,
                                                      add_exposure_days_to_end = addExposureDaysToEnd,
                                                      cohort_definition_id = cohortDefinitionId)
-    
+
     DatabaseConnector::executeSql(conn, renderedSql)
     cohortPersonCreated <- TRUE
   }
-  
+
   if (file.exists(exposuresFile)) {
     exposures <- readRDS(exposuresFile)
   } else {
@@ -265,14 +268,39 @@ injectSignals <- function(connectionDetails,
     exposures <- exposures[order(exposures$rowId), ]
     saveRDS(exposures, exposuresFile)
   }
-  # Count exposures for result object
-  exposureCounts <- aggregate(rowId ~ exposureId, exposures, length)
-  colnames(exposureCounts)[colnames(exposureCounts) == "rowId"] <- "exposures"
-  result <- merge(result, exposureCounts)
-  firstExposureCounts <- aggregate(rowId ~ exposureId, exposures[exposures$eraNumber == 1, ], length)
-  colnames(firstExposureCounts)[colnames(firstExposureCounts) == "rowId"] <- "firstExposures"
-  result <- merge(result, firstExposureCounts)
-  
+
+  if (removePeopleWithPriorOutcomes) {
+      if (file.exists(priorOutcomesFile)) {
+          priorOutcomes <- readRDS(priorOutcomesFile)
+      } else {
+          writeLines("Finding people with prior outcomes")
+          table <- exposureOutcomePairs
+          colnames(table) <- SqlRender::camelCaseToSnakeCase(colnames(table))
+          DatabaseConnector::insertTable(connection = conn,
+                                         tableName = "#exposure_outcome",
+                                         data = table,
+                                         dropTableIfExists = TRUE,
+                                         createTable = TRUE,
+                                         tempTable = TRUE,
+                                         oracleTempSchema = oracleTempSchema)
+          outcomeSql <- SqlRender::loadRenderTranslateSql("GetPriorOutcomes.sql",
+                                                          packageName = "MethodEvaluation",
+                                                          dbms = connectionDetails$dbms,
+                                                          oracleTempSchema = oracleTempSchema,
+                                                          cdm_database_schema = cdmDatabaseSchema,
+                                                          outcome_database_schema = outcomeDatabaseSchema,
+                                                          outcome_table = outcomeTable,
+                                                          first_outcome_only = firstOutcomeOnly,
+                                                          cohort_definition_id = cohortDefinitionId)
+          priorOutcomes <- DatabaseConnector::querySql(conn, outcomeSql)
+          names(priorOutcomes) <- SqlRender::snakeCaseToCamelCase(names(priorOutcomes))
+          saveRDS(priorOutcomes, priorOutcomesFile)
+          sql <- "TRUNCATE TABLE #exposure_outcome; DROP TABLE #exposure_outcome;"
+          sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+          DatabaseConnector::executeSql(conn, sql)
+      }
+  }
+
   if (file.exists(outcomesFile)) {
     outcomeCounts <- readRDS(outcomesFile)
   } else {
@@ -302,20 +330,50 @@ injectSignals <- function(connectionDetails,
     sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
     DatabaseConnector::executeSql(conn, sql)
   }
-  # Count outcomes for result object
+  # Counts for result object
   temp <- merge(exposures[, c("rowId", "exposureId", "eraNumber")], outcomeCounts[, c("rowId", "outcomeId", "y")])
   if (modelType == "survival") {
-    temp$y <- outcomeCounts$y != 0
+      temp$y <- outcomeCounts$y != 0
   }
-  tempAll <- aggregate(y ~ exposureId + outcomeId, temp, sum)
-  colnames(tempAll)[colnames(tempAll) == "y"] <- "observedOutcomes"
-  result <- merge(result, tempAll, all.x = TRUE)
+  observedOutcomes <- list()
+  observedOutcomesFirstExposure <- list()
+  exposureCounts <- list()
+  firstExposureCounts <- list()
+  for (outcomeId in unique(outcomeCounts$outcomeId)) {
+      oTemp <- temp[temp$outcomeId == outcomeId, ]
+      tempExposures <- exposures
+      if (removePeopleWithPriorOutcomes) {
+          removeRowIds <- priorOutcomes$rowId[priorOutcomes$outcomeId == outcomeId]
+          oTemp <- oTemp[!(oTemp$rowId  %in% removeRowIds), ]
+          tempExposures <- tempExposures[!(tempExposures$rowId  %in% removeRowIds), ]
+      }
+      tempAll <- aggregate(y ~ exposureId, oTemp, sum)
+      tempAll$outcomeId <- outcomeId
+      colnames(tempAll)[colnames(tempAll) == "y"] <- "observedOutcomes"
+      observedOutcomes[[length(observedOutcomes) + 1]] <- tempAll
+
+      tempFirst <- aggregate(y ~ exposureId, oTemp[oTemp$eraNumber == 1, ], sum)
+      tempFirst$outcomeId <- outcomeId
+      colnames(tempFirst)[colnames(tempFirst) == "y"] <- "observedOutcomesFirstExposure"
+      observedOutcomesFirstExposure[[length(observedOutcomesFirstExposure) + 1]] <- tempFirst
+      
+      tempAll <- aggregate(rowId ~ exposureId, tempExposures, length)
+      tempAll$outcomeId <- outcomeId
+      colnames(tempAll)[colnames(tempAll) == "rowId"] <- "exposures"
+      exposureCounts[[length(exposureCounts) + 1]] <- tempAll
+      
+      tempFirst <- aggregate(rowId ~ exposureId, exposures[exposures$eraNumber == 1, ], length)
+      tempFirst$outcomeId <- outcomeId
+      colnames(tempFirst)[colnames(tempFirst) == "rowId"] <- "firstExposures"
+      firstExposureCounts[[length(firstExposureCounts) + 1]] <- tempFirst
+  }
+  result <- merge(result, do.call("rbind", observedOutcomes), all.x = TRUE)
   result$observedOutcomes[is.na(result$observedOutcomes)] <- 0
-  tempFirst <- aggregate(y ~ exposureId + outcomeId, temp[temp$eraNumber == 1, ], sum)
-  colnames(tempFirst)[colnames(tempFirst) == "y"] <- "observedOutcomesFirstExposure"
-  result <- merge(result, tempFirst, all.x = TRUE)
+  result <- merge(result, do.call("rbind", observedOutcomesFirstExposure), all.x = TRUE)
   result$observedOutcomesFirstExposure[is.na(result$observedOutcomesFirstExposure)] <- 0
-  
+  result <- merge(result, do.call("rbind", exposureCounts), all.x = TRUE)
+  result <- merge(result, do.call("rbind", firstExposureCounts), all.x = TRUE)
+
   # Build models (if needed)
   if (buildOutcomeModel) {
     if (!file.exists(covarDataFolder)) {
@@ -333,7 +391,7 @@ injectSignals <- function(connectionDetails,
       covariates <- covariates$covariates
       ffbase::save.ffdf(covariates, covariateRef, dir = covarDataFolder)
     }
-    
+
     writeLines("Fitting outcome models")
     tasks <- list()
     if (buildModelPerExposure) {
@@ -375,21 +433,23 @@ injectSignals <- function(connectionDetails,
                                 buildModelPerExposure,
                                 exposuresFile,
                                 outcomesFile,
+                                priorOutcomesFile,
                                 covarDataFolder,
+                                removePeopleWithPriorOutcomes,
                                 modelType,
                                 prior,
                                 control)
       OhdsiRTools::stopCluster(cluster)
     }
   }
-  
+
   writeLines("Generating outcomes")
   if (buildOutcomeModel) {
     tasks <- list()
     for (exposureId in exposureIds) {
       outcomeIds <- unique(exposureOutcomePairs$outcomeId[exposureOutcomePairs$exposureId == exposureId])
       for (outcomeId in outcomeIds) {
-        if (result$observedOutcomes[result$exposureId == exposureId & result$outcomeId == outcomeId] >= minOutcomeCountForInjection) {
+        if (result$observedOutcomes[result$exposureId == exposureId & result$outcomeId == outcomeId][1] >= minOutcomeCountForInjection) {
           modelFolder <- result$modelFolder[result$exposureId == exposureId & result$outcomeId == outcomeId][1]
           if (modelFolder != "") {
             task <- list(exposureId = exposureId,
@@ -407,6 +467,9 @@ injectSignals <- function(connectionDetails,
                                            generateOutcomes,
                                            result,
                                            exposuresFile,
+                                           outcomesFile,
+                                           priorOutcomesFile,
+                                           removePeopleWithPriorOutcomes,
                                            modelType,
                                            effectSizes,
                                            precision,
@@ -417,7 +480,7 @@ injectSignals <- function(connectionDetails,
   }  else {
     stop("Injection without an outcome model has not yet been implemented")
   }
-  
+
   writeLines("Inserting outcomes into database")
   outcomesToInject <- data.frame()
   for (i in 1:nrow(result)) {
@@ -430,11 +493,11 @@ injectSignals <- function(connectionDetails,
   }
   colnames(outcomesToInject) <- SqlRender::camelCaseToSnakeCase(colnames(outcomesToInject))
   DatabaseConnector::insertTable(conn, "#temp_outcomes", outcomesToInject, TRUE, TRUE, TRUE, oracleTempSchema)
-  
+
   toCopy <- result[result$modelFolder != "", c("outcomeId", "newOutcomeId")]
   colnames(toCopy) <- SqlRender::camelCaseToSnakeCase(colnames(toCopy))
   DatabaseConnector::insertTable(conn, "#to_copy", toCopy, TRUE, TRUE, TRUE, oracleTempSchema)
-  
+
   copySql <- SqlRender::loadRenderTranslateSql("CopyOutcomes.sql",
                                                packageName = "MethodEvaluation",
                                                dbms = connectionDetails$dbms,
@@ -445,19 +508,19 @@ injectSignals <- function(connectionDetails,
                                                output_table = outputTable,
                                                cohort_definition_id = cohortDefinitionId,
                                                create_output_table = createOutputTable)
-  
+
   DatabaseConnector::executeSql(conn, copySql)
-  
+
   if (cohortPersonCreated) {
     sql <- "TRUNCATE TABLE #cohort_person; DROP TABLE #cohort_person;"
     sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
     DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
   }
-  
+
   sql <- "TRUNCATE TABLE #temp_outcomes; DROP TABLE #temp_outcomes; TRUNCATE TABLE #to_copy; DROP TABLE #to_copy;"
   sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
   DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
-  
+
   RJDBC::dbDisconnect(conn)
   summaryFile <- .createSummaryFileName(workFolder)
   saveRDS(result, summaryFile)
@@ -469,12 +532,15 @@ fitModel <- function(task,
                      buildModelPerExposure,
                      exposuresFile,
                      outcomesFile,
+                     priorOutcomesFile,
                      covarDataFolder,
+                     removePeopleWithPriorOutcomes,
                      modelType,
                      prior,
                      control) {
   exposures <- readRDS(exposuresFile)
   outcomeCounts <- readRDS(outcomesFile)
+
   ffbase::load.ffdf(covarDataFolder)
   open(covariates, readOnly = TRUE)
   open(covariateRef, readOnly = TRUE)
@@ -484,6 +550,13 @@ fitModel <- function(task,
     covariates <- covariates[ffbase::'%in%'(covariates$rowId, exposures$rowId),]
   } else {
     outcomes <- outcomeCounts[outcomeCounts$outcomeId == task$outcomeId, ]
+  }
+  if (removePeopleWithPriorOutcomes) {
+    priorOutcomes <- readRDS(priorOutcomesFile)
+    removeRowIds <- priorOutcomes$rowId[priorOutcomes$outcomeId == task$outcomeId]
+    outcomes <- outcomes[!(outcomes$rowId  %in% removeRowIds), ]
+    exposures <- exposures[!(exposures$rowId  %in% removeRowIds), ]
+    covariates <- covariates[!ffbase::'%in%'(covariates$rowId, removeRowIds),]
   }
   outcomes <- merge(exposures, outcomes[, c("rowId", "y", "timeToEvent")], by = c("rowId"), all.x = TRUE)
   outcomes <- outcomes[order(outcomes$rowId), ]
@@ -497,7 +570,7 @@ fitModel <- function(task,
   outcomes$time <- outcomes$time + 1
   time <- outcomes$time
   firstExposureOutcomeCount <- sum(outcomes$y[outcomes$eraNumber == 1])
-  
+
   # Note: for survival, using Poisson regression with 1 outcome and censored time as equivalent of
   # survival regression:
   cyclopsData <- Cyclops::convertToCyclopsData(ff::as.ffdf(outcomes), covariates, modelType = "pr", quiet = TRUE)
@@ -538,6 +611,9 @@ fitModel <- function(task,
 generateOutcomes <- function(task,
                              result,
                              exposuresFile,
+                             outcomesFile,
+                             priorOutcomesFile,
+                             removePeopleWithPriorOutcomes,
                              modelType,
                              effectSizes,
                              precision,
@@ -546,8 +622,19 @@ generateOutcomes <- function(task,
   if (!file.exists(file.path(task$modelFolder, "Error.txt"))) {
     prediction <- readRDS(file.path(task$modelFolder, "prediction.rds"))
     exposures <- readRDS(exposuresFile)
+    outcomeCounts <- readRDS(outcomesFile)
+    outcomes <- outcomeCounts[outcomeCounts$outcomeId == task$outcomeId, ]
+    if (removePeopleWithPriorOutcomes) {
+      priorOutcomes <- readRDS(priorOutcomesFile)
+      removeRowIds <- priorOutcomes$rowId[priorOutcomes$outcomeId == task$outcomeId]
+      exposures <- exposures[!(exposures$rowId  %in% removeRowIds), ]
+      outcomes <- outcomes[!(outcomes$rowId  %in% removeRowIds), ]
+    } 
     exposures$prediction <- prediction
     exposures <- exposures[exposures$exposureId == task$exposureId, ]
+    exposures <- merge(exposures, outcomes, all.x = TRUE)
+    exposures$hasOutcome <- !is.na(exposures$timeToEvent)
+    exposures$daysAtRisk[exposures$hasOutcome] <- exposures$timeToEvent[exposures$hasOutcome]
     for (fxSizeIdx in 1:length(effectSizes)) {
       effectSize <- effectSizes[fxSizeIdx]
       if (effectSize == 1) {
@@ -594,7 +681,7 @@ generateOutcomes <- function(task,
             }
           }
           injectedRr <- 1 + (nrow(newOutcomes)/result$observedOutcomes[1])
-          
+
           # Count outcomes during first episodes:
           newOutcomeCountsFirstExposure <- sum(newOutcomeCounts[exposures$eraNumber == 1])
           injectedRrFirstExposure <- 1 + (newOutcomeCountsFirstExposure/result$observedOutcomesFirstExposure[1])
@@ -605,9 +692,11 @@ generateOutcomes <- function(task,
           temp <- c()
           while (round(abs(sum(temp) - correctedTargetCount)) > precision * correctedTargetCount) {
             timeToEvent <- round(rexp(nrow(exposures), multiplier * exposures$prediction * (effectSize - 1)))
-            temp <- timeToEvent <= time
+            temp <- timeToEvent < time
             # Correct the target count for the fact that we're censoring after the first outcome:
-            correctedTargetCount <- targetCount * (1-sum(time[timeToEvent <= time]-timeToEvent[timeToEvent <= time]) / sum(time))
+            correctedTargetCount <- targetCount * (sum(time[!temp]) + sum(timeToEvent[temp] + 1)) / sum(time)
+            # Correct for the fact that we might censor later outcomes with earlier outcomes:
+            correctedTargetCount <- correctedTargetCount + sum(exposures$hasOutcome[temp])
             ratios <- c(ratios, sum(temp) / correctedTargetCount)
             if (length(ratios) == 100){
               multiplier <- multiplier * 1/mean(ratios)
@@ -634,7 +723,7 @@ generateOutcomes <- function(task,
                        injectedRr,
                        ", injected RR during first exposure only =",
                        injectedRrFirstExposure))
-      
+
       newOutcomeId <- result$newOutcomeId[result$targetEffectSize == effectSize]
       # Write new outcomes to file for later insertion into DB:
       if (nrow(newOutcomes) != 0) {
@@ -666,13 +755,13 @@ plotCalibration <- function(prediction, y, time) {
   data$strata <- cut(data$cumTime, breaks = c(0, q, max(data$cumTime)), labels = FALSE)
   strataData <- merge(aggregate(obs ~ strata, data = data, sum),
                       aggregate(time ~ strata, data = data, sum))
-  
+
   strataData$rate <- strataData$obs/strataData$time
   temp <- aggregate(predRate ~ strata, data = data, min)
   names(temp)[names(temp) == "predRate"] <- "minx"
   strataData <- merge(strataData, temp)
   strataData$maxx <- c(strataData$minx[2:numberOfStrata], max(data$predRate))
-  
+
   # Do not show last percent of data (in days):
   limx <- min(data$predRate[data$cumTime > 0.99 * sum(data$time)])
   ggplot2::ggplot(strataData, ggplot2::aes(xmin = minx,

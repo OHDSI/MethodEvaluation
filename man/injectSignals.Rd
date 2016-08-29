@@ -41,10 +41,10 @@ injectSignals(connectionDetails, cdmDatabaseSchema,
   control = createControl(cvType = "auto", startingVariance = 0.1, noiseLevel
   = "quiet", threads = 10), firstExposureOnly = FALSE, washoutPeriod = 183,
   riskWindowStart = 0, riskWindowEnd = 0, addExposureDaysToEnd = TRUE,
-  firstOutcomeOnly = FALSE, effectSizes = c(1, 1.25, 1.5, 2, 4),
-  precision = 0.01, outputIdOffset = 1000,
-  workFolder = "./SignalInjectionTemp", cdmVersion = "4",
-  modelThreads = 1, generationThreads = 1)
+  firstOutcomeOnly = FALSE, removePeopleWithPriorOutcomes = FALSE,
+  effectSizes = c(1, 1.25, 1.5, 2, 4), precision = 0.01,
+  outputIdOffset = 1000, workFolder = "./SignalInjectionTemp",
+  cdmVersion = "4", modelThreads = 1, generationThreads = 1)
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{ConnectionDetails} created using
@@ -149,6 +149,8 @@ parameter is set to TRUE).}
 
 \item{firstOutcomeOnly}{Should only the first outcome per person be considered when
 modeling the outcome?}
+
+\item{removePeopleWithPriorOutcomes}{Remove people with prior outcomes?}
 
 \item{effectSizes}{A numeric vector of effect sizes that should be inserted.}
 
