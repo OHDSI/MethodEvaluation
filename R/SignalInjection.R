@@ -333,7 +333,7 @@ injectSignals <- function(connectionDetails,
   # Counts for result object
   temp <- merge(exposures[, c("rowId", "exposureId", "eraNumber")], outcomeCounts[, c("rowId", "outcomeId", "y")])
   if (modelType == "survival") {
-      temp$y <- outcomeCounts$y != 0
+      temp$y <- temp$y != 0
   }
   observedOutcomes <- list()
   observedOutcomesFirstExposure <- list()
