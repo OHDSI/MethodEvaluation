@@ -356,12 +356,12 @@ injectSignals <- function(connectionDetails,
       tempFirst$outcomeId <- outcomeId
       colnames(tempFirst)[colnames(tempFirst) == "y"] <- "observedOutcomesFirstExposure"
       observedOutcomesFirstExposure[[length(observedOutcomesFirstExposure) + 1]] <- tempFirst
-      
+
       tempAll <- aggregate(rowId ~ exposureId, tempExposures, length)
       tempAll$outcomeId <- outcomeId
       colnames(tempAll)[colnames(tempAll) == "rowId"] <- "exposures"
       exposureCounts[[length(exposureCounts) + 1]] <- tempAll
-      
+
       tempFirst <- aggregate(rowId ~ exposureId, exposures[exposures$eraNumber == 1, ], length)
       tempFirst$outcomeId <- outcomeId
       colnames(tempFirst)[colnames(tempFirst) == "rowId"] <- "firstExposures"
@@ -546,10 +546,13 @@ fitModel <- function(task,
   open(covariateRef, readOnly = TRUE)
   if (buildModelPerExposure) {
     outcomes <- outcomeCounts[outcomeCounts$outcomeId == task$outcomeId & outcomeCounts$exposureId == task$exposureId, ]
-    exposures <- exposures[exposures@exposureId == task$exposureId, ]
+    exposures <- exposures[exposures$exposureId == task$exposureId, ]
     covariates <- covariates[ffbase::'%in%'(covariates$rowId, exposures$rowId),]
   } else {
     outcomes <- outcomeCounts[outcomeCounts$outcomeId == task$outcomeId, ]
+    exposures$exposureId <- NULL
+    exposures <- exposures[order(exposures$rowId), ]
+    exposures <- exposures[!duplicated(exposures$rowId), ]
   }
   if (removePeopleWithPriorOutcomes) {
     priorOutcomes <- readRDS(priorOutcomesFile)
@@ -602,6 +605,7 @@ fitModel <- function(task,
       # Convert Poisson-based prediction to rate for exponential distribution:
       prediction <- prediction/time
     }
+    prediction <- data.frame(prediction = prediction, rowId = outcomes$rowId)
     dir.create(task$modelFolder)
     saveRDS(prediction, file.path(task$modelFolder, "prediction.rds"))
     saveRDS(betas, file.path(task$modelFolder, "betas.rds"))
@@ -622,6 +626,7 @@ generateOutcomes <- function(task,
   if (!file.exists(file.path(task$modelFolder, "Error.txt"))) {
     prediction <- readRDS(file.path(task$modelFolder, "prediction.rds"))
     exposures <- readRDS(exposuresFile)
+    exposures <- exposures[exposures$exposureId == task$exposureId, ]
     outcomeCounts <- readRDS(outcomesFile)
     outcomes <- outcomeCounts[outcomeCounts$outcomeId == task$outcomeId, ]
     if (removePeopleWithPriorOutcomes) {
@@ -629,9 +634,8 @@ generateOutcomes <- function(task,
       removeRowIds <- priorOutcomes$rowId[priorOutcomes$outcomeId == task$outcomeId]
       exposures <- exposures[!(exposures$rowId  %in% removeRowIds), ]
       outcomes <- outcomes[!(outcomes$rowId  %in% removeRowIds), ]
-    } 
-    exposures$prediction <- prediction
-    exposures <- exposures[exposures$exposureId == task$exposureId, ]
+    }
+    exposures <- merge(exposures, prediction)
     exposures <- merge(exposures, outcomes, all.x = TRUE)
     exposures$hasOutcome <- !is.na(exposures$timeToEvent)
     exposures$daysAtRisk[exposures$hasOutcome] <- exposures$timeToEvent[exposures$hasOutcome]
@@ -693,10 +697,8 @@ generateOutcomes <- function(task,
           while (round(abs(sum(temp) - correctedTargetCount)) > precision * correctedTargetCount) {
             timeToEvent <- round(rexp(nrow(exposures), multiplier * exposures$prediction * (effectSize - 1)))
             temp <- timeToEvent < time
-            # Correct the target count for the fact that we're censoring after the first outcome:
-            correctedTargetCount <- targetCount * (sum(time[!temp]) + sum(timeToEvent[temp] + 1)) / sum(time)
-            # Correct for the fact that we might censor later outcomes with earlier outcomes:
-            correctedTargetCount <- correctedTargetCount + sum(exposures$hasOutcome[temp])
+            # Correct for censored time and outcomes:
+            correctedTargetCount <- (result$observedOutcomes[1] / sum(time)) * (sum(time[!temp]) + sum(timeToEvent[temp] + 1)) * effectSize - sum(exposures$hasOutcome[!temp])
             ratios <- c(ratios, sum(temp) / correctedTargetCount)
             if (length(ratios) == 100){
               multiplier <- multiplier * 1/mean(ratios)
@@ -704,7 +706,9 @@ generateOutcomes <- function(task,
               writeLines(paste("Unable to achieve target RR using model as is. Adding multiplier of", multiplier, "to force target"))
             }
           }
-          injectedRr <- effectSize*(result$observedOutcomes[1] + sum(temp)) / (result$observedOutcomes[1] + correctedTargetCount)
+          rateBefore <- result$observedOutcomes[1] / sum(time)
+          rateAfter <- (sum(exposures$hasOutcome[!temp]) + sum(temp)) / (sum(time[!temp]) + sum(timeToEvent[temp] + 1))
+          injectedRr <- rateAfter / rateBefore
           newOutcomes <- data.frame(personId = exposures$personId[temp],
                                     cohortStartDate = exposures$cohortStartDate[temp],
                                     timeToEvent = timeToEvent[temp])
