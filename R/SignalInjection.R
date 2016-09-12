@@ -103,6 +103,7 @@
 #' @param firstOutcomeOnly                 Should only the first outcome per person be considered when
 #'                                         modeling the outcome?
 #' @param removePeopleWithPriorOutcomes    Remove people with prior outcomes?
+#' @param maxSubjectsForModel              Maximum number of people used to fit an outcome model.
 #' @param effectSizes                      A numeric vector of effect sizes that should be inserted.
 #' @param outputDatabaseSchema             The name of the database schema that is the location of the
 #'                                         tables containing the new outcomesRequires write permissions
@@ -191,6 +192,7 @@ injectSignals <- function(connectionDetails,
                           addExposureDaysToEnd = TRUE,
                           firstOutcomeOnly = FALSE,
                           removePeopleWithPriorOutcomes = FALSE,
+                          maxSubjectsForModel = 100000,
                           effectSizes = c(1, 1.25, 1.5, 2, 4),
                           precision = 0.01,
                           outputIdOffset = 1000,
@@ -436,6 +438,7 @@ injectSignals <- function(connectionDetails,
                                 priorOutcomesFile,
                                 covarDataFolder,
                                 removePeopleWithPriorOutcomes,
+                                maxSubjectsForModel,
                                 modelType,
                                 prior,
                                 control)
@@ -535,6 +538,7 @@ fitModel <- function(task,
                      priorOutcomesFile,
                      covarDataFolder,
                      removePeopleWithPriorOutcomes,
+                     maxSubjectsForModel, 
                      modelType,
                      prior,
                      control) {
@@ -576,7 +580,13 @@ fitModel <- function(task,
 
   # Note: for survival, using Poisson regression with 1 outcome and censored time as equivalent of
   # survival regression:
-  cyclopsData <- Cyclops::convertToCyclopsData(ff::as.ffdf(outcomes), covariates, modelType = "pr", quiet = TRUE)
+  if (maxSubjectsForModel > 0 && nrow(outcomes) > maxSubjectsForModel) {
+    sampleOutcomes <- outcomes[sample.int(n = nrow(outcomes), size = maxSubjectsForModel, replace = FALSE), ]
+    sampleCovariates <- covariates[ffbase::'%in%'(covariates$rowId, sampleOutcomes$rowId), ]
+    cyclopsData <- Cyclops::convertToCyclopsData(ff::as.ffdf(sampleOutcomes), sampleCovariates, modelType = "pr", quiet = TRUE)
+  } else {
+    cyclopsData <- Cyclops::convertToCyclopsData(ff::as.ffdf(outcomes), covariates, modelType = "pr", quiet = TRUE)
+  }
   fit <- tryCatch({
     Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
   }, error = function(e) {
@@ -600,7 +610,11 @@ fitModel <- function(task,
       betas <- betas[order(-abs(betas$beta)), ]
     }
     betas <- rbind(data.frame(beta = intercept, id = 0, covariateName = "(Intercept)", row.names = NULL), betas)
-    prediction <- predict(fit)
+    if (maxSubjectsForModel > 0 && nrow(outcomes) > maxSubjectsForModel) {
+      prediction <- predict(fit, ff::as.ffdf(outcomes), covariates)
+    } else {
+      prediction <- predict(fit)  
+    }
     if (modelType == "survival") {
       # Convert Poisson-based prediction to rate for exponential distribution:
       prediction <- prediction/time

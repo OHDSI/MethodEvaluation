@@ -42,9 +42,10 @@ injectSignals(connectionDetails, cdmDatabaseSchema,
   = "quiet", threads = 10), firstExposureOnly = FALSE, washoutPeriod = 183,
   riskWindowStart = 0, riskWindowEnd = 0, addExposureDaysToEnd = TRUE,
   firstOutcomeOnly = FALSE, removePeopleWithPriorOutcomes = FALSE,
-  effectSizes = c(1, 1.25, 1.5, 2, 4), precision = 0.01,
-  outputIdOffset = 1000, workFolder = "./SignalInjectionTemp",
-  cdmVersion = "4", modelThreads = 1, generationThreads = 1)
+  maxSubjectsForModel = 1e+05, effectSizes = c(1, 1.25, 1.5, 2, 4),
+  precision = 0.01, outputIdOffset = 1000,
+  workFolder = "./SignalInjectionTemp", cdmVersion = "4",
+  modelThreads = 1, generationThreads = 1)
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{ConnectionDetails} created using
@@ -151,6 +152,8 @@ parameter is set to TRUE).}
 modeling the outcome?}
 
 \item{removePeopleWithPriorOutcomes}{Remove people with prior outcomes?}
+
+\item{maxSubjectsForModel}{Maximum number of people used to fit an outcome model.}
 
 \item{effectSizes}{A numeric vector of effect sizes that should be inserted.}
 
