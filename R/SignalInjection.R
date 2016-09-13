@@ -611,7 +611,7 @@ fitModel <- function(task,
     }
     betas <- rbind(data.frame(beta = intercept, id = 0, covariateName = "(Intercept)", row.names = NULL), betas)
     if (maxSubjectsForModel > 0 && nrow(outcomes) > maxSubjectsForModel) {
-      if (length(betas) > 0){
+      if (nrow(betas) > 1){
         prediction <- predict(fit, ff::as.ffdf(outcomes), covariates)
       } else {
         # Workaround until I can fix Cyclops predict:
