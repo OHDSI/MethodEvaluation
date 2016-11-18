@@ -611,13 +611,7 @@ fitModel <- function(task,
     }
     betas <- rbind(data.frame(beta = intercept, id = 0, covariateName = "(Intercept)", row.names = NULL), betas)
     if (maxSubjectsForModel > 0 && nrow(outcomes) > maxSubjectsForModel) {
-      if (nrow(betas) > 1){
-        prediction <- predict(fit, ff::as.ffdf(outcomes), covariates)
-      } else {
-        # Workaround until I can fix Cyclops predict:
-        prediction <- exp(intercept) * outcomes$time
-        names(prediction) <- outcomes$rowId
-      }
+      prediction <- predict(fit, ff::as.ffdf(outcomes), covariates)
     } else {
       prediction <- predict(fit)  
     }
