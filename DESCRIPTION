@@ -1,8 +1,8 @@
 Package: MethodEvaluation
 Type: Package
 Title: Package for evaluation of estimation methods
-Version: 0.0.3
-Date: 2016-04-12
+Version: 0.0.4
+Date: 2017-02-17
 Author: Martijn J. Schuemie [aut, cre],
 Maintainer: Martijn J. Schuemie <schuemie@ohdsi.org>
 Description: This package contains resources for the evaluation of the
