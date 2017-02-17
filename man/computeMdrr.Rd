@@ -8,7 +8,7 @@ computeMdrr(connectionDetails, cdmDatabaseSchema,
   oracleTempSchema = cdmDatabaseSchema, exposureOutcomePairs,
   exposureDatabaseSchema = cdmDatabaseSchema, exposureTable = "drug_era",
   outcomeDatabaseSchema = cdmDatabaseSchema, outcomeTable = "condition_era",
-  outcomeConditionTypeConceptIds = c(), cdmVersion = "4")
+  cdmVersion = "5")
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{ConnectionDetails} created using
@@ -53,10 +53,6 @@ outcomeTable <> CONDITION_OCCURRENCE, then expectation is
 outcomeTable has format of COHORT table:
 COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
 COHORT_END_DATE.}
-
-\item{outcomeConditionTypeConceptIds}{A list of TYPE_CONCEPT_ID values that will restrict
-condition occurrences.  Only applicable if outcomeTable =
-CONDITION_OCCURRENCE.}
 
 \item{cdmVersion}{Define the OMOP CDM version used: currently support "4" and "5".}
 }

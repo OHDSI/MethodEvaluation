@@ -78,7 +78,7 @@ NULL
 #' \item{comparatorType}{How the comparator was selected} }
 #' @references
 #' Coloma PM, Avillach P, Salvo F, Schuemie MJ, Ferrajolo C, Pariente A, Fourrier-Reglat A, Molokhia
-#' M, Patadia V, van der Lei J, Sturkenboom M, Trifirò G. A reference standard for evaluation of
+#' M, Patadia V, van der Lei J, Sturkenboom M, Trifiro G. A reference standard for evaluation of
 #' methods for drug safety signal detection using electronic healthcare record databases. Drug Safety
 #' 36(1):13-23, 2013
 NULL

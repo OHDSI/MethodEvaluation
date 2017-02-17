@@ -6,8 +6,7 @@
 \usage{
 createOutcomeCohorts(connectionDetails, cdmDatabaseSchema,
   createNewCohortTable = FALSE, cohortDatabaseSchema = cdmDatabaseSchema,
-  cohortTable = "cohort", referenceSet = "omopReferenceSet",
-  cdmVersion = "4")
+  cohortTable = "cohort", referenceSet = "omopReferenceSet")
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{ConnectionDetails} created using the
@@ -27,7 +26,7 @@ SQL Server, botth the database and schema should be specified, e.g.
 
 \item{cohortTable}{The name of the table where the outcomes will be stored.}
 
-\item{cdmVersion}{Define the OMOP CDM version used: currently support "4" and "5".}
+\item{referenceSet}{The name of the reference set for which outcomes need to be created.}
 }
 \description{
 Create outcomes of interest

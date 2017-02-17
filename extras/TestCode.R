@@ -82,14 +82,16 @@ minOutcomeCount = 100
 
 
 
+# MDRR --------------------------------------------------------------------
+
 pw <- pw
 dbms <- "postgresql"
 user <- "postgres"
 server <- "localhost/ohdsi"
-cdmDatabaseSchema <- "cdm_truven_ccae_6k"
+cdmDatabaseSchema <- "cdm_synpuf"
+scratchDatabaseSchema <- "scratch"
 outputTable <- "mschuemi_injected_signals"
 port <- NULL
-cdmVersion <- "4"
 
 pw <- ""
 dbms <- "sql server"
@@ -136,8 +138,7 @@ createOutcomeCohorts(connectionDetails,
                      createNewCohortTable = TRUE,
                      cohortDatabaseSchema = scratchDatabaseSchema,
                      cohortTable = "mschuemi_omop_hois",
-                     referenceSet = "omopReferenceSet",
-                     cdmVersion = cdmVersion)
+                     referenceSet = "omopReferenceSet")
 
 mdrr <- computeMdrr(connectionDetails,
                     cdmDatabaseSchema = cdmDatabaseSchema,

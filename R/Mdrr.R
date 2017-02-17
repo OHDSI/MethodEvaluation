@@ -63,9 +63,6 @@
 #'                                         outcomeTable has format of COHORT table:
 #'                                         COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
 #'                                         COHORT_END_DATE.
-#' @param outcomeConditionTypeConceptIds   A list of TYPE_CONCEPT_ID values that will restrict
-#'                                         condition occurrences.  Only applicable if outcomeTable =
-#'                                         CONDITION_OCCURRENCE.
 #' @param cdmVersion                   Define the OMOP CDM version used: currently support "4" and "5".
 #'
 #' @return
@@ -91,9 +88,11 @@ computeMdrr <- function(connectionDetails,
                         exposureTable = "drug_era",
                         outcomeDatabaseSchema = cdmDatabaseSchema,
                         outcomeTable = "condition_era",
-                        outcomeConditionTypeConceptIds = c(),
-                        cdmVersion = "4") {
-  cdmDatabase <- strsplit(cdmDatabaseSchema, "\\.")[[1]][1]
+                        cdmVersion = "5") {
+  if (is.null(exposureOutcomePairs$exposureConceptId))
+    stop("exposureOutcomePairs is missing exposureConceptId column")
+  if (is.null(exposureOutcomePairs$outcomeConceptId))
+    stop("exposureOutcomePairs is missing exposureConceptId column")
   exposureTable <- tolower(exposureTable)
   outcomeTable <- tolower(outcomeTable)
   if (exposureTable == "drug_era") {
@@ -140,7 +139,7 @@ computeMdrr <- function(connectionDetails,
                                                    packageName = "MethodEvaluation",
                                                    dbms = connectionDetails$dbms,
                                                    oracleTempSchema = oracleTempSchema,
-                                                   cdm_database = cdmDatabase,
+                                                   cdm_database_schema = cdmDatabaseSchema,
                                                    exposures_of_interest = unique(exposureOutcomePairs$exposureConceptId),
                                                    outcomes_of_interest = unique(exposureOutcomePairs$outcomeConceptId),
                                                    exposure_database_schema = exposureDatabaseSchema,
@@ -154,8 +153,7 @@ computeMdrr <- function(connectionDetails,
                                                    outcome_start_date = outcomeStartDate,
                                                    outcome_end_date = outcomeEndDate,
                                                    outcome_concept_id = outcomeConceptId,
-                                                   outcome_person_id = outcomePersonId,
-                                                   outcome_condition_type_concept_id_list = outcomeConditionTypeConceptIds)
+                                                   outcome_person_id = outcomePersonId)
   
   writeLines("Computing minimumum detectable relative risks. This could take a while")
   DatabaseConnector::executeSql(conn, renderedSql)
@@ -165,6 +163,7 @@ computeMdrr <- function(connectionDetails,
                                  targetDialect = connectionDetails$dbms,
                                  oracleTempSchema = oracleTempSchema)$sql
   mdrr <- DatabaseConnector::querySql(conn, sql)
+  colnames(mdrr) <- SqlRender::snakeCaseToCamelCase(colnames(mdrr))
   
   renderedSql <- SqlRender::loadRenderTranslateSql("MDRR_Drop_temp_tables.sql",
                                                    packageName = "MethodEvaluation",
@@ -174,11 +173,10 @@ computeMdrr <- function(connectionDetails,
   
   RJDBC::dbDisconnect(conn)
   
-  names(mdrr) <- toupper(names(mdrr))
-  mdrr <- data.frame(exposureConceptId = mdrr$DRUG_CONCEPT_ID,
-                     outcomeConceptId = mdrr$CONDITION_CONCEPT_ID,
-                     expectedCount = mdrr$EXPECTED_COUNT,
-                     mdrr = mdrr$MDRR)
+  mdrr <- data.frame(exposureConceptId = mdrr$drugConceptId,
+                     outcomeConceptId = mdrr$conditionConceptId,
+                     expectedCount = mdrr$expectedCount,
+                     mdrr = mdrr$mdrr)
   mdrr <- merge(exposureOutcomePairs, mdrr)
   return(mdrr)
 }

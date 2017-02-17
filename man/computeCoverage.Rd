@@ -7,13 +7,13 @@
 computeCoverage(logRr, seLogRr, trueLogRr, region = 0.95)
 }
 \arguments{
-\item{logRr}{A numeric vector of effect estimates on the log scale}
+\item{logRr}{A numeric vector of effect estimates on the log scale.}
 
 \item{seLogRr}{The standard error of the log of the effect estimates. Hint: often the standard
 error = (log(<lower bound 95 percent confidence interval>) - log(<effect
-estimate>))/qnorm(0.025)}
+estimate>))/qnorm(0.025).}
 
-\item{trueLogRr}{A vector of the true effect sizes}
+\item{trueLogRr}{A vector of the true effect sizes.}
 
 \item{region}{Size of the confidence interval. Default is .95 (95 percent).}
 }

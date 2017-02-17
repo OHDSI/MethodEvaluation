@@ -75,11 +75,11 @@ computeAucs <- function(logRr, trueLogRr) {
 #' Compute the fractions of estimates where the true effect size is below, above or within the confidence
 #' interval, for one or more true effect sizes.
 #'
-#' @param logRr       A numeric vector of effect estimates on the log scale
+#' @param logRr       A numeric vector of effect estimates on the log scale.
 #' @param seLogRr     The standard error of the log of the effect estimates. Hint: often the standard
 #'                    error = (log(<lower bound 95 percent confidence interval>) - log(<effect
-#'                    estimate>))/qnorm(0.025)
-#' @param trueLogRr   A vector of the true effect sizes
+#'                    estimate>))/qnorm(0.025).
+#' @param trueLogRr   A vector of the true effect sizes.
 #' @param region      Size of the confidence interval. Default is .95 (95 percent).
 #'
 #' @export
@@ -102,6 +102,9 @@ computeCoverage <- function(logRr, seLogRr, trueLogRr, region = 0.95) {
 }
 
 #' Compute the mean squared error
+#' 
+#' @param logRr       A numeric vector of effect estimates on the log scale.
+#' @param trueLogRr   A vector of the true effect sizes.
 #'
 #' @export
 computeMse <- function(logRr, trueLogRr) {
@@ -122,6 +125,13 @@ computeMse <- function(logRr, trueLogRr) {
 }
 
 #' Compute type 1 and 2 error
+#' 
+#' @param logRr       A numeric vector of effect estimates on the log scale.
+#' @param seLogRr     The standard error of the log of the effect estimates. Hint: often the standard
+#'                    error = (log(<lower bound 95 percent confidence interval>) - log(<effect
+#'                    estimate>))/qnorm(0.025).
+#' @param trueLogRr   A vector of the true effect sizes.
+#' @param alpha       The alpha (expected type I error).
 #'
 #' @export
 computeType1And2Error <- function(logRr, seLogRr, trueLogRr, alpha = 0.05) {
@@ -137,7 +147,11 @@ computeType1And2Error <- function(logRr, seLogRr, trueLogRr, alpha = 0.05) {
                        type2Error = NA)
   for (i in 1:nrow(result)) {
     target <- result$trueLogRr[i]
-    p <- EmpiricalCalibration::computeTraditionalP(logRr[trueLogRr == target], seLogRr[trueLogRr == target])
+    computeTraditionalP <- function(logRr, seLogRr) {
+      z <- logRr/seLogRr
+      return(2 * pmin(pnorm(z), 1 - pnorm(z)))  # 2-sided p-value
+    }
+    p <- computeTraditionalP(logRr[trueLogRr == target], seLogRr[trueLogRr == target])
     if (target == 0){
         result$type1Error[i] <- mean(p < alpha)
     } else {

@@ -6,6 +6,11 @@
 \usage{
 computeMse(logRr, trueLogRr)
 }
+\arguments{
+\item{logRr}{A numeric vector of effect estimates on the log scale.}
+
+\item{trueLogRr}{A vector of the true effect sizes.}
+}
 \description{
 Compute the mean squared error
 }

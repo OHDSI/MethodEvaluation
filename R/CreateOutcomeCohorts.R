@@ -35,7 +35,7 @@
 #'                               SQL Server, botth the database and schema should be specified, e.g.
 #'                               'cdm_schema.dbo'
 #' @param cohortTable            The name of the table where the outcomes will be stored.
-#' @param cdmVersion                   Define the OMOP CDM version used: currently support "4" and "5".
+#' @param referenceSet           The name of the reference set for which outcomes need to be created.
 #'
 #' @export
 createOutcomeCohorts <- function(connectionDetails,
@@ -43,27 +43,17 @@ createOutcomeCohorts <- function(connectionDetails,
                                  createNewCohortTable = FALSE,
                                  cohortDatabaseSchema = cdmDatabaseSchema,
                                  cohortTable = "cohort",
-                                 referenceSet = "omopReferenceSet",
-                                 cdmVersion = "4") {
-  cohortDatabase <- strsplit(cohortDatabaseSchema, "\\.")[[1]][1]
-  cdmDatabase <- strsplit(cdmDatabaseSchema, "\\.")[[1]][1]
-  if (cdmVersion == "4"){
-    cohortDefinitionId <- "cohort_concept_id"
-  } else { 
-    cohortDefinitionId <- "cohort_definition_id"
-  }
-
+                                 referenceSet = "omopReferenceSet") {
+  
   if (referenceSet == "omopReferenceSet") {
     writeLines("Generating HOIs for the OMOP reference set")
     renderedSql <- SqlRender::loadRenderTranslateSql("CreateOmopHois.sql",
                                                      packageName = "MethodEvaluation",
                                                      dbms = connectionDetails$dbms,
-                                                     cdm_database = cdmDatabase,
+                                                     cdm_database_schema = cdmDatabaseSchema,
                                                      create_new_cohort_table = createNewCohortTable,
-                                                     cohort_database = cohortDatabase,
                                                      cohort_database_schema = cohortDatabaseSchema,
-                                                     cohort_table = cohortTable,
-                                                     cohort_definition_id = cohortDefinitionId)
+                                                     cohort_table = cohortTable)
   } else if (referenceSet == "euadrReferenceSet") {
     writeLines("Generating HOIs for the EU-ADR reference set")
     # TODO: add code for creating the EU-ADR HOIs
@@ -71,7 +61,7 @@ createOutcomeCohorts <- function(connectionDetails,
     stop(paste("Unknow reference set:", referenceSet))
   }
   conn <- DatabaseConnector::connect(connectionDetails)
-
+  
   writeLines("Executing multiple queries. This could take a while")
   DatabaseConnector::executeSql(conn, renderedSql)
   writeLines("Done")

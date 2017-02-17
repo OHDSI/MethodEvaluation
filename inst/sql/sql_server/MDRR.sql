@@ -20,7 +20,7 @@ limitations under the License.
 
 {DEFAULT @exposures_of_interest = 1,2,3}
 {DEFAULT @outcomes_of_interest = 1,2,3}
-{DEFAULT @cdm_database = 'cdm4_sim'}
+{DEFAULT @cdm_database_schema = 'cdm4_sim'}
 {DEFAULT @exposure_database_schema = 'cdm4_sim'}
 {DEFAULT @exposure_table = 'drug_era'}
 {DEFAULT @exposure_start_date = 'drug_era_start_date'} 
@@ -33,11 +33,6 @@ limitations under the License.
 {DEFAULT @outcome_end_date = 'condition_era_end_date'} 
 {DEFAULT @outcome_concept_id = 'condition_concept_id'} 
 {DEFAULT @outcome_person_id = 'person_id'} 
-{DEFAULT @outcome_condition_type_concept_ids = ''}
-{DEFAULT @person_table = 'person'} 
-{DEFAULT @observation_period_table = 'observation_period'}
-
-USE @cdm_database;
 
 SELECT @exposure_concept_id AS drug_concept_id,
 	FLOOR((YEAR(@exposure_start_date) - year_of_birth) / 10) AS age_group,
@@ -53,7 +48,7 @@ FROM (
 	GROUP BY @exposure_person_id,
 		@exposure_concept_id
 	) persons_with_drug
-INNER JOIN @person_table person
+INNER JOIN @cdm_database_schema.person
 	ON persons_with_drug.person_id = person.person_id
 GROUP BY @exposure_concept_id,
 	FLOOR((YEAR(@exposure_start_date) - year_of_birth) / 10),
@@ -74,7 +69,7 @@ FROM (
 	GROUP BY @outcome_person_id,
 		@outcome_concept_id
 	) persons_with_condition
-INNER JOIN @person_table person
+INNER JOIN @cdm_database_schema.person
 	ON persons_with_condition.person_id = person.person_id
 GROUP BY @outcome_concept_id,
 	FLOOR((YEAR(@outcome_start_date) - year_of_birth) / 10),
@@ -87,10 +82,10 @@ INTO #prev_count
 FROM (
 	SELECT person_id,
 		min(observation_period_start_date) AS observation_period_start_date
-	FROM @observation_period_table
+	FROM @cdm_database_schema.observation_period
 	GROUP BY person_id
 	) observation_period
-INNER JOIN @person_table person
+INNER JOIN @cdm_database_schema.person
 	ON observation_period.person_id = person.person_id
 GROUP BY FLOOR((YEAR(observation_period_start_date) - year_of_birth) / 10),
 	gender_concept_id;
