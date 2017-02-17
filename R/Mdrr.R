@@ -92,7 +92,7 @@ computeMdrr <- function(connectionDetails,
   if (is.null(exposureOutcomePairs$exposureConceptId))
     stop("exposureOutcomePairs is missing exposureConceptId column")
   if (is.null(exposureOutcomePairs$outcomeConceptId))
-    stop("exposureOutcomePairs is missing exposureConceptId column")
+    stop("exposureOutcomePairs is missing outcomeConceptId column")
   exposureTable <- tolower(exposureTable)
   outcomeTable <- tolower(outcomeTable)
   if (exposureTable == "drug_era") {
