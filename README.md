@@ -56,8 +56,9 @@ Development
 ===========
 MethodEvaluation is being developed in R Studio.
 
-###Development status
+### Development status
 [![Build Status](https://travis-ci.org/OHDSI/MethodEvaluation.svg?branch=master)](https://travis-ci.org/OHDSI/MethodEvaluation)
+
 Currently under development. Do not use.
 
 Acknowledgements
