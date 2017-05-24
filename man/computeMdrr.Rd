@@ -24,9 +24,9 @@ create/insert permissions to this database.}
 
 \item{exposureOutcomePairs}{A data frame with at least two columns:
 \itemize{
-  \item {"exposureConceptId" containing the drug_concept_ID
+  \item {"exposureId" or "targetId" containing the drug_concept_ID
         or cohort_definition_id of the exposure variable}
-  \item {"outcomeConceptId" containing the
+  \item {"outcomeId" containing the
         condition_concept_ID or cohort_definition_id of the
         outcome variable}
 }}
@@ -70,12 +70,11 @@ and gender.
 \dontrun{
 connectionDetails <- createConnectionDetails(dbms = "sql server",
                                              server = "RNDUSRDHIT07.jnj.com")
-exposureOutcomePairs <- data.frame(exposureConceptId = c(767410, 1314924, 907879),
-                                   outcomeConceptId = c(444382, 79106, 138825))
+exposureOutcomePairs <- data.frame(exposureId = c(767410, 1314924, 907879),
+                                   outcomeId = c(444382, 79106, 138825))
 mdrrs <- computeMdrr(connectionDetails,
                      "cdm_truven_mdcr",
                      exposureOutcomePairs,
                      outcomeTable = "condition_era")
 }
 }
-

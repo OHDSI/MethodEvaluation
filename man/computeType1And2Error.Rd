@@ -20,4 +20,3 @@ estimate>))/qnorm(0.025).}
 \description{
 Compute type 1 and 2 error
 }
-

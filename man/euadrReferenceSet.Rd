@@ -4,14 +4,14 @@
 \name{euadrReferenceSet}
 \alias{euadrReferenceSet}
 \title{The EU-ADR reference set}
-\format{A data frame with 399 rows and 10 variables: \describe{ \item{exposureConceptId}{Concept ID
-identifying the exposure} \item{exposureConceptName}{Name of the exposure}
-\item{outcomeConceptId}{Concept ID identifying the outcome} \item{outcomeConceptName}{Name of the
+\format{A data frame with 399 rows and 10 variables: \describe{ \item{exposureId}{Concept ID
+identifying the exposure} \item{exposureName}{Name of the exposure}
+\item{outcomeId}{Concept ID identifying the outcome} \item{outcomeName}{Name of the
 outcome} \item{groundTruth}{0 = negative control, 1 = positive control}
-\item{indicationConceptId}{Concept Id identifying the (primary) indication of the drug. To be used
-when one wants to nest the analysis within the indication} \item{indicationConceptName}{Name of the
-indication} \item{comparatorDrugConceptId}{Concept ID identifying a comparator drug that can be
-used as a counterfactual} \item{comparatorDrugConceptName}{Name of the comparator drug}
+\item{indicationId}{Concept Id identifying the (primary) indication of the drug. To be used
+when one wants to nest the analysis within the indication} \item{indicationName}{Name of the
+indication} \item{comparatorId}{Concept ID identifying a comparator drug that can be
+used as a counterfactual} \item{comparatorName}{Name of the comparator drug}
 \item{comparatorType}{How the comparator was selected} }}
 \usage{
 data(euadrReferenceSet)
@@ -30,4 +30,3 @@ methods for drug safety signal detection using electronic healthcare record data
 36(1):13-23, 2013
 }
 \keyword{datasets}
-

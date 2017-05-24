@@ -22,4 +22,3 @@ A Ggplot object. Use the \code{ggsave} function to save to file.
 \description{
 Plot the ROC curves for various injected signal sizes
 }
-

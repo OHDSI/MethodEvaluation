@@ -21,6 +21,9 @@
 #' @docType package
 #' @name MethodEvaluation
 #' @importFrom SqlRender loadRenderTranslateSql translateSql
+#' @importFrom grDevices rgb
+#' @importFrom stats aggregate coef pnorm predict qnorm quantile rexp rpois
+#' @importFrom utils write.csv
 #' @import Cyclops
 #' @import DatabaseConnector
 #' @import FeatureExtraction
@@ -39,14 +42,14 @@ NULL
 #' @usage
 #' data(omopReferenceSet)
 #' @format
-#' A data frame with 399 rows and 10 variables: \describe{ \item{exposureConceptId}{Concept ID
-#' identifying the exposure} \item{exposureConceptName}{Name of the exposure}
-#' \item{outcomeConceptId}{Concept ID identifying the outcome} \item{outcomeConceptName}{Name of the
+#' A data frame with 399 rows and 10 variables: \describe{ \item{exposureId}{Concept ID
+#' identifying the exposure} \item{exposureName}{Name of the exposure}
+#' \item{outcomeId}{Concept ID identifying the outcome} \item{outcomeName}{Name of the
 #' outcome} \item{groundTruth}{0 = negative control, 1 = positive control}
-#' \item{indicationConceptId}{Concept Id identifying the (primary) indication of the drug. To be used
-#' when one wants to nest the analysis within the indication} \item{indicationConceptName}{Name of the
-#' indication} \item{comparatorDrugConceptId}{Concept ID identifying a comparator drug that can be
-#' used as a counterfactual} \item{comparatorDrugConceptName}{Name of the comparator drug}
+#' \item{indicationId}{Concept Id identifying the (primary) indication of the drug. To be used
+#' when one wants to nest the analysis within the indication} \item{indicationName}{Name of the
+#' indication} \item{comparatorId}{Concept ID identifying a comparator drug that can be
+#' used as a counterfactual} \item{comparatorName}{Name of the comparator drug}
 #' \item{comparatorType}{How the comparator was selected} }
 #' @references
 #' Ryan PB, Schuemie MJ, Welebob E, Duke J, Valentine S, Hartzema AG. Defining a reference set to
@@ -67,14 +70,14 @@ NULL
 #' @usage
 #' data(euadrReferenceSet)
 #' @format
-#' A data frame with 399 rows and 10 variables: \describe{ \item{exposureConceptId}{Concept ID
-#' identifying the exposure} \item{exposureConceptName}{Name of the exposure}
-#' \item{outcomeConceptId}{Concept ID identifying the outcome} \item{outcomeConceptName}{Name of the
+#' A data frame with 399 rows and 10 variables: \describe{ \item{exposureId}{Concept ID
+#' identifying the exposure} \item{exposureName}{Name of the exposure}
+#' \item{outcomeId}{Concept ID identifying the outcome} \item{outcomeName}{Name of the
 #' outcome} \item{groundTruth}{0 = negative control, 1 = positive control}
-#' \item{indicationConceptId}{Concept Id identifying the (primary) indication of the drug. To be used
-#' when one wants to nest the analysis within the indication} \item{indicationConceptName}{Name of the
-#' indication} \item{comparatorDrugConceptId}{Concept ID identifying a comparator drug that can be
-#' used as a counterfactual} \item{comparatorDrugConceptName}{Name of the comparator drug}
+#' \item{indicationId}{Concept Id identifying the (primary) indication of the drug. To be used
+#' when one wants to nest the analysis within the indication} \item{indicationName}{Name of the
+#' indication} \item{comparatorId}{Concept ID identifying a comparator drug that can be
+#' used as a counterfactual} \item{comparatorName}{Name of the comparator drug}
 #' \item{comparatorType}{How the comparator was selected} }
 #' @references
 #' Coloma PM, Avillach P, Salvo F, Schuemie MJ, Ferrajolo C, Pariente A, Fourrier-Reglat A, Molokhia

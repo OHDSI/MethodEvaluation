@@ -25,4 +25,3 @@ A subset of the data object.
 \description{
 Filters a dataset to those exposure-outcome pairs with sufficient power.
 }
-

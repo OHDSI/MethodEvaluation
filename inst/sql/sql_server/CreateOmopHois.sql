@@ -1,9 +1,7 @@
 /************************************************************************
-@file GetExposedCohorts.sql
-
 Copyright 2017 Observational Health Data Sciences and Informatics
 
-This file is part of CohortMethod
+This file is part of MethodEvaluation
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,27 +16,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ************************************************************************/
 
-{DEFAULT @cdm_database_schema = 'CDM4_SIM.dbo' } 
-{DEFAULT @create_new_cohort_table = TRUE} 
-{DEFAULT @cohort_database_schema = 'scratch.dbo' } 
-{DEFAULT @cohort_table = 'omop_hois' }
+{DEFAULT @cdm_database_schema = 'CDM_SIM.dbo' } 
+{DEFAULT @outcome_database_schema = 'scratch.dbo' } 
+{DEFAULT @outcome_table = 'omop_hois' }
 
-{@create_new_cohort_table} ? {
+IF OBJECT_ID('@outcome_database_schema.@outcome_table', 'U') IS NOT NULL
+	DROP TABLE @outcome_database_schema.@outcome_table;
 
-IF OBJECT_ID('@cohort_database_schema.@cohort_table', 'U') IS NOT NULL
-	DROP TABLE @cohort_database_schema.@cohort_table;
-
-CREATE TABLE @cohort_database_schema.@cohort_table (
+CREATE TABLE @outcome_database_schema.@outcome_table (
 	cohort_definition_id INT NOT NULL,
 	cohort_start_date DATE NOT NULL,
 	cohort_end_date DATE NULL,
 	subject_id BIGINT NOT NULL
 	);
-}
 
 -- Acute Liver Injury
 -- 1. Broad definition
-INSERT INTO @cohort_database_schema.@cohort_table (
+INSERT INTO @outcome_database_schema.@outcome_table (
 	subject_id,
 	cohort_start_date,
 	cohort_end_date,
@@ -80,7 +74,7 @@ WHERE condition_concept_id IN (
 
 -- Acute Kidney Injury
 -- 1. Broad definition
-INSERT INTO @cohort_database_schema.@cohort_table (
+INSERT INTO @outcome_database_schema.@outcome_table (
 	subject_id,
 	cohort_start_date,
 	cohort_end_date,
@@ -111,7 +105,7 @@ WHERE condition_concept_id IN (
 
 -- Acute Myocardial Infarction
 -- 1. Broad definition 
-INSERT INTO @cohort_database_schema.@cohort_table (
+INSERT INTO @outcome_database_schema.@outcome_table (
 	subject_id,
 	cohort_start_date,
 	cohort_end_date,
@@ -179,7 +173,7 @@ WHERE o.condition_concept_id IN (
 
 -- GI Bleed
 -- 3. Narrow definition and diagnostic procedure without hospitalization
-INSERT INTO @cohort_database_schema.@cohort_table (
+INSERT INTO @outcome_database_schema.@outcome_table (
 	subject_id,
 	cohort_start_date,
 	cohort_end_date,

@@ -17,4 +17,3 @@ A data frame with per injected signal size the AUC and the 95 percent confidence
 \description{
 Compute the AUCs for various injected signal sizes
 }
-

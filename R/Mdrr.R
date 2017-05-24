@@ -37,9 +37,9 @@
 #'                                         create/insert permissions to this database.
 #' @param exposureOutcomePairs             A data frame with at least two columns:
 #'                                         \itemize{
-#'                                           \item {"exposureConceptId" containing the drug_concept_ID
+#'                                           \item {"exposureId" or "targetId" containing the drug_concept_ID
 #'                                                 or cohort_definition_id of the exposure variable}
-#'                                           \item {"outcomeConceptId" containing the
+#'                                           \item {"outcomeId" containing the
 #'                                                 condition_concept_ID or cohort_definition_id of the
 #'                                                 outcome variable}
 #'                                         }
@@ -72,8 +72,8 @@
 #' \dontrun{
 #' connectionDetails <- createConnectionDetails(dbms = "sql server",
 #'                                              server = "RNDUSRDHIT07.jnj.com")
-#' exposureOutcomePairs <- data.frame(exposureConceptId = c(767410, 1314924, 907879),
-#'                                    outcomeConceptId = c(444382, 79106, 138825))
+#' exposureOutcomePairs <- data.frame(exposureId = c(767410, 1314924, 907879),
+#'                                    outcomeId = c(444382, 79106, 138825))
 #' mdrrs <- computeMdrr(connectionDetails,
 #'                      "cdm_truven_mdcr",
 #'                      exposureOutcomePairs,
@@ -89,10 +89,12 @@ computeMdrr <- function(connectionDetails,
                         outcomeDatabaseSchema = cdmDatabaseSchema,
                         outcomeTable = "condition_era",
                         cdmVersion = "5") {
-  if (is.null(exposureOutcomePairs$exposureConceptId))
-    stop("exposureOutcomePairs is missing exposureConceptId column")
-  if (is.null(exposureOutcomePairs$outcomeConceptId))
-    stop("exposureOutcomePairs is missing outcomeConceptId column")
+  if (is.null(exposureOutcomePairs$exposureId) && !is.null(exposureOutcomePairs$targetId))
+    exposureOutcomePairs$exposureId <- exposureOutcomePairs$targetId
+  if (is.null(exposureOutcomePairs$exposureId))
+    stop("exposureOutcomePairs is missing exposureId and targetId column")
+  if (is.null(exposureOutcomePairs$outcomeId))
+    stop("exposureOutcomePairs is missing outcomeId column")
   exposureTable <- tolower(exposureTable)
   outcomeTable <- tolower(outcomeTable)
   if (exposureTable == "drug_era") {
@@ -140,8 +142,8 @@ computeMdrr <- function(connectionDetails,
                                                    dbms = connectionDetails$dbms,
                                                    oracleTempSchema = oracleTempSchema,
                                                    cdm_database_schema = cdmDatabaseSchema,
-                                                   exposures_of_interest = unique(exposureOutcomePairs$exposureConceptId),
-                                                   outcomes_of_interest = unique(exposureOutcomePairs$outcomeConceptId),
+                                                   exposures_of_interest = unique(exposureOutcomePairs$exposureId),
+                                                   outcomes_of_interest = unique(exposureOutcomePairs$outcomeId),
                                                    exposure_database_schema = exposureDatabaseSchema,
                                                    exposure_table = exposureTable,
                                                    exposure_start_date = exposureStartDate,
@@ -173,8 +175,8 @@ computeMdrr <- function(connectionDetails,
   
   RJDBC::dbDisconnect(conn)
   
-  mdrr <- data.frame(exposureConceptId = mdrr$drugConceptId,
-                     outcomeConceptId = mdrr$conditionConceptId,
+  mdrr <- data.frame(exposureId = mdrr$drugConceptId,
+                     outcomeId = mdrr$conditionConceptId,
                      expectedCount = mdrr$expectedCount,
                      mdrr = mdrr$mdrr)
   mdrr <- merge(exposureOutcomePairs, mdrr)

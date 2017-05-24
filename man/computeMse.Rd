@@ -14,4 +14,3 @@ computeMse(logRr, trueLogRr)
 \description{
 Compute the mean squared error
 }
-

@@ -9,4 +9,3 @@ computeAuc(methodResults, referenceSet, confidenceIntervals = TRUE)
 \description{
 Compute the area under the ROC curve
 }
-

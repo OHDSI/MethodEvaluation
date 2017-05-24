@@ -21,4 +21,3 @@ Compute the AUC, coverage, MSE, and type 1 and 2 error
 \details{
 Compute the AUC, coverage, MSE, and type 1 and 2 error.
 }
-

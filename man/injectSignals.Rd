@@ -184,4 +184,3 @@ specified risk window of the drug: a Poisson model assuming multiple outcomes co
 single exposure, and a survival model considering only one outcome per exposure.
 For each
 }
-

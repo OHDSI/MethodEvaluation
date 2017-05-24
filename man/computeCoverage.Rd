@@ -24,4 +24,3 @@ Compute the coverage
 Compute the fractions of estimates where the true effect size is below, above or within the confidence
 interval, for one or more true effect sizes.
 }
-
