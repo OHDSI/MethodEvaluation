@@ -6,7 +6,7 @@ pw <- NULL
 dbms <- "pdw"
 user <- NULL
 server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "CDM_Truven_MDCD_V432.dbo"
+cdmDatabaseSchema <- "CDM_Truven_MDCD_V569.dbo"
 oracleTempSchema <- NULL
 outcomeDatabaseSchema <- "scratch.dbo"
 outcomeTable <- "mschuemie_outcomes"
@@ -24,13 +24,13 @@ connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
 exposureOutcomePairs <- data.frame(exposureId = 1124300,
                                    outcomeId = c(24609, 29735, 73754, 80004, 134718, 139099, 141932, 192367, 193739, 194997, 197236, 199074, 255573, 257007, 313459, 314658, 316084, 319843, 321596, 374366, 375292, 380094, 433753, 433811, 436665, 436676, 436940, 437784, 438134, 440358, 440374, 443617, 443800, 4084966, 4288310))
 
-covariateSettings <- FeatureExtraction::createCovariateSettings(useCovariateDemographics = TRUE,
-                                                               useCovariateDemographicsGender = TRUE,
-                                                               useCovariateDemographicsAge = TRUE,
-                                                               useCovariateConditionEra = TRUE,
-                                                               useCovariateConditionEraEver = TRUE,
-                                                               useCovariateConditionEraOverlap = TRUE,
-                                                               useCovariateConditionGroup = TRUE)
+covariateSettings <- FeatureExtraction::createCovariateSettings(useDemographicsGender = TRUE,
+                                                                useDemographicsAge = TRUE,
+                                                                useConditionEraLongTerm = TRUE,
+                                                                useConditionGroupEraLongTerm = TRUE,
+                                                                useDrugEraLongTerm = TRUE,
+                                                                useDrugGroupEraLongTerm = TRUE,
+                                                                useCharlsonIndex = TRUE)
 
 x <- injectSignals(connectionDetails,
                    cdmDatabaseSchema = cdmDatabaseSchema,
@@ -42,15 +42,15 @@ x <- injectSignals(connectionDetails,
                    outputTable = "mschuemi_test_injection",
                    createOutputTable = TRUE,
                    firstExposureOnly = FALSE,
-                   firstOutcomeOnly = FALSE,
-                   modelType = "poisson",
+                   firstOutcomeOnly = TRUE,
+                   modelType = "survival",
                    prior = createPrior("laplace", exclude = 0, useCrossValidation = TRUE),
-                   control = createControl(cvType = "auto", startingVariance = 0.1, noiseLevel = "quiet", threads = 5),
+                   control = createControl(cvType = "auto", startingVariance = 0.1, noiseLevel = "quiet", threads = 10),
                    workFolder = "s:/temp/SignalInjectionTemp",
                    cdmVersion = cdmVersion,
                    covariateSettings = covariateSettings,
-                   modelThreads = 10,
-                   generationThreads = 10)
+                   modelThreads = 4,
+                   generationThreads = 1)
 
 
 exposureDatabaseSchema = cdmDatabaseSchema

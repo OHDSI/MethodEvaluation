@@ -12,39 +12,31 @@ injectSignals(connectionDetails, cdmDatabaseSchema,
   createOutputTable = FALSE, exposureOutcomePairs, modelType = "poisson",
   buildOutcomeModel = TRUE, buildModelPerExposure = FALSE,
   minOutcomeCountForModel = 100, minOutcomeCountForInjection = 25,
-  covariateSettings = FeatureExtraction::createCovariateSettings(useCovariateDemographics
-  = TRUE, useCovariateDemographicsGender = TRUE, useCovariateDemographicsRace =
-  TRUE, useCovariateDemographicsEthnicity = TRUE, useCovariateDemographicsAge =
-  TRUE, useCovariateDemographicsYear = TRUE, useCovariateDemographicsMonth =
-  TRUE, useCovariateConditionOccurrence = TRUE,
-  useCovariateConditionOccurrence365d = TRUE, useCovariateConditionOccurrence30d
-  = TRUE, useCovariateConditionOccurrenceInpt180d = TRUE,
-  useCovariateConditionEra = TRUE,      useCovariateConditionEraEver = TRUE,
-  useCovariateConditionEraOverlap = TRUE, useCovariateConditionGroup = TRUE,
-  useCovariateDrugExposure = TRUE, useCovariateDrugExposure365d = TRUE,
-  useCovariateDrugExposure30d = TRUE, useCovariateDrugEra = TRUE,
-  useCovariateDrugEra365d = TRUE, useCovariateDrugEra30d = TRUE,
-  useCovariateDrugEraEver = TRUE, useCovariateDrugEraOverlap = TRUE,
-  useCovariateDrugGroup = TRUE, useCovariateProcedureOccurrence = TRUE,
-  useCovariateProcedureOccurrence365d = TRUE, useCovariateProcedureOccurrence30d
-  = TRUE,      useCovariateProcedureGroup = TRUE, useCovariateObservation =
-  TRUE, useCovariateObservation365d = TRUE, useCovariateObservation30d = TRUE,
-  useCovariateObservationCount365d = TRUE, useCovariateMeasurement365d = TRUE,
-  useCovariateMeasurement30d = TRUE, useCovariateMeasurementCount365d = TRUE,
-  useCovariateMeasurementBelow = TRUE, useCovariateMeasurementAbove = TRUE,
-  useCovariateConceptCounts = TRUE, useCovariateRiskScores = TRUE,
-  useCovariateRiskScoresCharlson = TRUE, useCovariateRiskScoresDCSI = TRUE,     
-  useCovariateRiskScoresCHADS2 = TRUE, useCovariateRiskScoresCHADS2VASc = TRUE,
-  useCovariateInteractionYear = FALSE, useCovariateInteractionMonth = FALSE,
-  excludedCovariateConceptIds = c(), deleteCovariatesSmallCount = 100),
-  prior = createPrior("laplace", exclude = 0, useCrossValidation = TRUE),
-  control = createControl(cvType = "auto", startingVariance = 0.1, noiseLevel
-  = "quiet", threads = 10), firstExposureOnly = FALSE, washoutPeriod = 183,
-  riskWindowStart = 0, riskWindowEnd = 0, addExposureDaysToEnd = TRUE,
+  covariateSettings = FeatureExtraction::createCovariateSettings(useDemographicsGender
+  = TRUE, useDemographicsAge = TRUE, useDemographicsIndexYear = TRUE,
+  useDemographicsIndexMonth = TRUE, useConditionOccurrenceLongTerm = TRUE,
+  useConditionOccurrenceShortTerm = TRUE, useConditionEraLongTerm = TRUE,
+  useConditionEraShortTerm = TRUE, useConditionGroupEraLongTerm = TRUE,
+  useConditionGroupEraShortTerm = TRUE, useDrugExposureLongTerm = TRUE,
+  useDrugExposureShortTerm = TRUE, useDrugEraLongTerm = TRUE,
+  useDrugEraShortTerm = TRUE,      useDrugGroupEraLongTerm = TRUE,
+  useDrugGroupEraShortTerm = TRUE, useProcedureOccurrenceLongTerm = TRUE,
+  useProcedureOccurrenceShortTerm = TRUE, useDeviceExposureLongTerm = TRUE,
+  useDeviceExposureShortTerm = TRUE, useMeasurementLongTerm = TRUE,
+  useMeasurementShortTerm = TRUE, useObservationLongTerm = TRUE,
+  useObservationShortTerm = TRUE, useCharlsonIndex = TRUE, longTermDays = 365,
+  shortTermDays = 30, windowEndDays = 0, excludedCovariateConceptIds = c(),
+  addDescendantsToExclude = FALSE, includedCovariateConceptIds = c(),     
+  addDescendantsToInclude = FALSE, includedCovariateIds = x,
+  deleteCovariatesSmallCount = 100), prior = createPrior("laplace", exclude =
+  0, useCrossValidation = TRUE), control = createControl(cvType = "auto",
+  startingVariance = 0.1, noiseLevel = "quiet", threads = 10),
+  firstExposureOnly = FALSE, washoutPeriod = 183, riskWindowStart = 0,
+  riskWindowEnd = 0, addExposureDaysToEnd = TRUE,
   firstOutcomeOnly = FALSE, removePeopleWithPriorOutcomes = FALSE,
   maxSubjectsForModel = 1e+05, effectSizes = c(1, 1.25, 1.5, 2, 4),
   precision = 0.01, outputIdOffset = 1000,
-  workFolder = "./SignalInjectionTemp", cdmVersion = "4",
+  workFolder = "./SignalInjectionTemp", cdmVersion = "5",
   modelThreads = 1, generationThreads = 1)
 }
 \arguments{

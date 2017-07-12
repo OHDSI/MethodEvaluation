@@ -64,7 +64,7 @@ createReferenceSetCohorts <- function(connectionDetails,
     conn <- DatabaseConnector::connect(connectionDetails)
     DatabaseConnector::executeSql(conn, renderedSql)
     writeLines("Done")
-    dummy <- RJDBC::dbDisconnect(conn)
+    DatabaseConnector::disconnect(conn)
   } else if (referenceSet == "euadrReferenceSet") {
     writeLines("Generating HOIs for the EU-ADR reference set")
     # TODO: add code for creating the EU-ADR HOIs

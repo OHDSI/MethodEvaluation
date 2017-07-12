@@ -173,7 +173,7 @@ computeMdrr <- function(connectionDetails,
                                                    oracleTempSchema = oracleTempSchema)
   DatabaseConnector::executeSql(conn, renderedSql, progressBar = FALSE, reportOverallTime = FALSE)
   
-  RJDBC::dbDisconnect(conn)
+  DatabaseConnector::disconnect(conn)
   
   mdrr <- data.frame(exposureId = mdrr$drugConceptId,
                      outcomeId = mdrr$conditionConceptId,
