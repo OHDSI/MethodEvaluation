@@ -50,7 +50,7 @@ x <- injectSignals(connectionDetails,
                    cdmVersion = cdmVersion,
                    covariateSettings = covariateSettings,
                    modelThreads = 4,
-                   generationThreads = 1)
+                   generationThreads = 3)
 
 
 exposureDatabaseSchema = cdmDatabaseSchema

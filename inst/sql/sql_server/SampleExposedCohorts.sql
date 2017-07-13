@@ -19,6 +19,7 @@ limitations under the License.
 ************************************************************************/
 {DEFAULT @cohort_definition_id = 'cohort_concept_id'}
 {DEFAULT @sample_size = 100000}
+{DEFAULT @build_model_per_exposure = FALSE}
 
 --HINT DISTRIBUTE_ON_KEY(subject_id)
 SELECT row_id,
@@ -29,7 +30,11 @@ SELECT row_id,
 	era_number
 INTO #sampled_person
 FROM (
+{@build_model_per_exposure} ? {
 	SELECT ROW_NUMBER() OVER (PARTITION BY @cohort_definition_id ORDER BY NEWID()) AS rn,
+} : {
+	SELECT ROW_NUMBER() OVER (ORDER BY NEWID()) AS rn,
+}
 		row_id,
 		@cohort_definition_id,
 		subject_id,

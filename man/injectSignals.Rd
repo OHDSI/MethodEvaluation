@@ -27,7 +27,7 @@ injectSignals(connectionDetails, cdmDatabaseSchema,
   useObservationShortTerm = TRUE, useCharlsonIndex = TRUE, longTermDays = 365,
   shortTermDays = 30, windowEndDays = 0, excludedCovariateConceptIds = c(),
   addDescendantsToExclude = FALSE, includedCovariateConceptIds = c(),     
-  addDescendantsToInclude = FALSE, includedCovariateIds = x,
+  addDescendantsToInclude = FALSE, includedCovariateIds = c(),
   deleteCovariatesSmallCount = 100), prior = createPrior("laplace", exclude =
   0, useCrossValidation = TRUE), control = createControl(cvType = "auto",
   startingVariance = 0.1, noiseLevel = "quiet", threads = 10),
