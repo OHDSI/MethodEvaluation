@@ -482,6 +482,7 @@ injectSignals <- function(connectionDetails,
       }
       modelCovariateIds <- unique(modelCovariateIds)
       modelCovariateIds <- modelCovariateIds[modelCovariateIds != 0]
+      writeLines(paste("Number of unique covariates across outcome models:",length(modelCovariateIds)))
       covariateSettings$includedCovariateIds <- modelCovariateIds 
       covariateData <- FeatureExtraction::getDbCovariateData(connection = conn,
                                                              oracleTempSchema = oracleTempSchema,
@@ -642,15 +643,24 @@ fitModel <- function(task,
   # survival regression:
   cyclopsData <- Cyclops::convertToCyclopsData(ff::as.ffdf(outcomes), covariates, modelType = "pr", quiet = TRUE)
   
-  fit <- tryCatch({
-    Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
-  }, error = function(e) {
-    e$message
-  })
-  if (fit$return_flag != "SUCCESS")
-    fit <- fit$return_flag
+  #### TODO: catch this earlier ####
+  if (sum(outcomes$y) < 25) {
+    fit <- "Not enough outcomes"
+  } else {
+    fit <- tryCatch({
+      Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
+    }, error = function(e) {
+      e$message
+    })
+    if (fit$return_flag != "SUCCESS")
+      fit <- fit$return_flag
+  }
   if (is.character(fit)) {
-    writeLines(paste("Unable to fit model for exposure", exposureId, "and outcome", outcomeId, ":", fit))
+    if (is.null(task$exposureId)) {
+      writeLines(paste("Unable to fit model for outcome", task$outcomeId, ":", fit))
+    } else {
+      writeLines(paste("Unable to fit model for exposure", task$exposureId, "and outcome", task$outcomeId, ":", fit))
+    }
     dir.create(task$modelFolder)
     write.csv(fit, file.path(task$modelFolder, "Error.txt"))
   } else {
@@ -696,8 +706,6 @@ generateOutcomes <- function(task,
   result <- result[result$exposureId == task$exposureId & result$outcomeId == task$outcomeId, ]
   if (!file.exists(file.path(task$modelFolder, "Error.txt"))) {
     exposures <- readRDS(exposuresFile)
-    exposures <- exposures[exposures$exposureId == task$exposureId, ]
-    
     predictionFile <- file.path(task$modelFolder, "prediction.rds")    
     if (file.exists(predictionFile)) {
       prediction <- readRDS(predictionFile)
@@ -708,7 +716,7 @@ generateOutcomes <- function(task,
       prediction <- .predict(betas, exposures, covariates, modelType)
       saveRDS(prediction, predictionFile)    
     }
-    
+    exposures <- exposures[exposures$exposureId == task$exposureId, ]
     outcomeCounts <- readRDS(outcomesFile)
     outcomes <- outcomeCounts[outcomeCounts$outcomeId == task$outcomeId, ]
     if (removePeopleWithPriorOutcomes) {
