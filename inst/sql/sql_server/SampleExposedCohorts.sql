@@ -17,30 +17,26 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ************************************************************************/
-{DEFAULT @cohort_definition_id = 'cohort_concept_id'}
 {DEFAULT @sample_size = 100000}
-{DEFAULT @build_model_per_exposure = FALSE}
+{DEFAULT @cohort_ids = 1,2,3}
 
 --HINT DISTRIBUTE_ON_KEY(subject_id)
 SELECT row_id,
-	@cohort_definition_id,
+	cohort_definition_id,
 	subject_id,
 	cohort_start_date,
 	cohort_end_date,
 	era_number
 INTO #sampled_person
 FROM (
-{@build_model_per_exposure} ? {
-	SELECT ROW_NUMBER() OVER (PARTITION BY @cohort_definition_id ORDER BY NEWID()) AS rn,
-} : {
 	SELECT ROW_NUMBER() OVER (ORDER BY NEWID()) AS rn,
-}
 		row_id,
-		@cohort_definition_id,
+		cohort_definition_id,
 		subject_id,
 		cohort_start_date,
 		cohort_end_date,
 		era_number
 	FROM #cohort_person
+	WHERE cohort_definition_id IN (@cohort_ids)
 ) temp
-WHERE rn <= @sample_size
+WHERE rn <= @sample_size;

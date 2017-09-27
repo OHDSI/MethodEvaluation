@@ -10,34 +10,23 @@ injectSignals(connectionDetails, cdmDatabaseSchema,
   outcomeDatabaseSchema = cdmDatabaseSchema, outcomeTable = "cohort",
   outputDatabaseSchema = outcomeDatabaseSchema, outputTable = outcomeTable,
   createOutputTable = FALSE, exposureOutcomePairs, modelType = "poisson",
-  buildOutcomeModel = TRUE, buildModelPerExposure = FALSE,
-  minOutcomeCountForModel = 100, minOutcomeCountForInjection = 25,
-  covariateSettings = FeatureExtraction::createCovariateSettings(useDemographicsGender
-  = TRUE, useDemographicsAge = TRUE, useDemographicsIndexYear = TRUE,
-  useDemographicsIndexMonth = TRUE, useConditionOccurrenceLongTerm = TRUE,
-  useConditionOccurrenceShortTerm = TRUE, useConditionEraLongTerm = TRUE,
-  useConditionEraShortTerm = TRUE, useConditionGroupEraLongTerm = TRUE,
-  useConditionGroupEraShortTerm = TRUE, useDrugExposureLongTerm = TRUE,
-  useDrugExposureShortTerm = TRUE, useDrugEraLongTerm = TRUE,
-  useDrugEraShortTerm = TRUE,      useDrugGroupEraLongTerm = TRUE,
-  useDrugGroupEraShortTerm = TRUE, useProcedureOccurrenceLongTerm = TRUE,
-  useProcedureOccurrenceShortTerm = TRUE, useDeviceExposureLongTerm = TRUE,
-  useDeviceExposureShortTerm = TRUE, useMeasurementLongTerm = TRUE,
-  useMeasurementShortTerm = TRUE, useObservationLongTerm = TRUE,
-  useObservationShortTerm = TRUE, useCharlsonIndex = TRUE, longTermDays = 365,
-  shortTermDays = 30, windowEndDays = 0, excludedCovariateConceptIds = c(),
-  addDescendantsToExclude = FALSE, includedCovariateConceptIds = c(),     
-  addDescendantsToInclude = FALSE, includedCovariateIds = c(),
-  deleteCovariatesSmallCount = 100), prior = createPrior("laplace", exclude =
-  0, useCrossValidation = TRUE), control = createControl(cvType = "auto",
-  startingVariance = 0.1, noiseLevel = "quiet", threads = 10),
-  firstExposureOnly = FALSE, washoutPeriod = 183, riskWindowStart = 0,
-  riskWindowEnd = 0, addExposureDaysToEnd = TRUE,
-  firstOutcomeOnly = FALSE, removePeopleWithPriorOutcomes = FALSE,
-  maxSubjectsForModel = 1e+05, effectSizes = c(1, 1.25, 1.5, 2, 4),
-  precision = 0.01, outputIdOffset = 1000,
-  workFolder = "./SignalInjectionTemp", cdmVersion = "5",
-  modelThreads = 1, generationThreads = 1)
+  buildOutcomeModel = TRUE, minOutcomeCountForModel = 100,
+  minOutcomeCountForInjection = 25,
+  covariateSettings = FeatureExtraction::createCovariateSettings(useDemographicsAgeGroup
+  = TRUE, useDemographicsGender = TRUE, useDemographicsIndexYear = TRUE,
+  useDemographicsIndexMonth = TRUE, useConditionGroupEraLongTerm = TRUE,
+  useDrugGroupEraLongTerm = TRUE, useProcedureOccurrenceLongTerm = TRUE,
+  useMeasurementLongTerm = TRUE, useObservationLongTerm = TRUE, useCharlsonIndex
+  = TRUE, useDcsi = TRUE, useChads2Vasc = TRUE, longTermStartDays = 365, endDays
+  = 0), prior = createPrior("laplace", exclude = 0, useCrossValidation =
+  TRUE), control = createControl(cvType = "auto", startingVariance = 0.1,
+  noiseLevel = "quiet", threads = 10), firstExposureOnly = FALSE,
+  washoutPeriod = 183, riskWindowStart = 0, riskWindowEnd = 0,
+  addExposureDaysToEnd = TRUE, firstOutcomeOnly = FALSE,
+  removePeopleWithPriorOutcomes = FALSE, maxSubjectsForModel = 1e+05,
+  effectSizes = c(1, 1.25, 1.5, 2, 4), precision = 0.01,
+  outputIdOffset = 1000, workFolder = "./SignalInjectionTemp",
+  cdmVersion = "5", modelThreads = 1, generationThreads = 1)
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{ConnectionDetails} created using
@@ -103,9 +92,6 @@ outcomes will be inserted based on the predicted
 probabilities according to this model, and this will help
 preserve the observed confounding when injecting signals.}
 
-\item{buildModelPerExposure}{If TRUE, an outcome model will be created for each exposure ID. IF false,
-outcome models will be created across all exposures.}
-
 \item{minOutcomeCountForModel}{Minimum number of outcome events required to build a model.}
 
 \item{minOutcomeCountForInjection}{Minimum number of outcome events required to inject a signal.}
@@ -160,6 +146,9 @@ modeling the outcome?}
 \item{modelThreads}{Number of parallel threads to use when fitting outcome models.}
 
 \item{generationThreads}{Number of parallel threads to use when generating outcomes.}
+
+\item{buildModelPerExposure}{If TRUE, an outcome model will be created for each exposure ID. IF false,
+outcome models will be created across all exposures.}
 }
 \value{
 A data.frame listing all the drug-pairs in combination with requested effect sizes and the real inserted effect size

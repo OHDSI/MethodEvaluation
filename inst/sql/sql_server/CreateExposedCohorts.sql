@@ -27,15 +27,13 @@ limitations under the License.
 {DEFAULT @risk_window_start = 0}
 {DEFAULT @risk_window_end = 0}
 {DEFAULT @add_exposure_days_to_end = TRUE}
-{DEFAULT @cohort_definition_id = 'cohort_concept_id'}
-
 
 IF OBJECT_ID('tempdb..#cohort_person', 'U') IS NOT NULL
 	DROP TABLE #cohort_person;
 
 --HINT DISTRIBUTE_ON_KEY(subject_id)
-SELECT ROW_NUMBER() OVER (ORDER BY @cohort_definition_id, subject_id, cohort_start_date) AS row_id,
-    @cohort_definition_id,
+SELECT ROW_NUMBER() OVER (ORDER BY cohort_definition_id, subject_id, cohort_start_date) AS row_id,
+    cohort_definition_id,
 	subject_id,
 	DATEADD(DAY, @risk_window_start, cohort_start_date) AS cohort_start_date,
     {@add_exposure_days_to_end} ? {
@@ -48,7 +46,7 @@ INTO #cohort_person
 FROM 
 (
 {@exposure_table == 'drug_era' } ? {
-SELECT drug_concept_id AS @cohort_definition_id, 
+SELECT drug_concept_id AS cohort_definition_id, 
 	person_id AS subject_id,
 	drug_era_start_date AS cohort_start_date, 
 	drug_era_end_date AS cohort_end_date,
@@ -56,13 +54,13 @@ SELECT drug_concept_id AS @cohort_definition_id,
 FROM @cdm_database_schema.drug_era 
 WHERE drug_concept_id IN (@exposure_ids)
 } : {
-SELECT @cohort_definition_id, 
+SELECT cohort_definition_id, 
 	subject_id,
 	cohort_start_date, 
 	cohort_end_date,
-	ROW_NUMBER () OVER (PARTITION BY @cohort_definition_id, subject_id ORDER BY cohort_start_date) AS era_number
+	ROW_NUMBER () OVER (PARTITION BY cohort_definition_id, subject_id ORDER BY cohort_start_date) AS era_number
 FROM @exposure_database_schema.@exposure_table exposure
-WHERE @cohort_definition_id IN (@exposure_ids)
+WHERE cohort_definition_id IN (@exposure_ids)
 } 
 ) exposure
 INNER JOIN @cdm_database_schema.observation_period

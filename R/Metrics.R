@@ -135,10 +135,11 @@ computeMse <- function(logRr, trueLogRr) {
 #'
 #' @export
 computeType1And2Error <- function(logRr, seLogRr, trueLogRr, alpha = 0.05) {
-  if (any(is.na(logRr))) {
+  if (any(is.na(seLogRr))) {
     warning("Some estimates are NA, removing prior to computing coverage")
-    trueLogRr <- trueLogRr[!is.na(logRr)]
-    logRr <- logRr[!is.na(logRr)]
+    trueLogRr <- trueLogRr[!is.na(seLogRr)]
+    logRr <- logRr[!is.na(seLogRr)]
+    seLogRr <- seLogRr[!is.na(seLogRr)]
   }
   
   trueLogRrLevels <- unique(trueLogRr)

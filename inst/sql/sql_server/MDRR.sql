@@ -92,6 +92,9 @@ GROUP BY FLOOR((YEAR(observation_period_start_date) - year_of_birth) / 10),
 
 SELECT drug_concept_id,
 	condition_concept_id,
+	SUM(drug_person_count) AS drug_person_count,
+	SUM(condition_person_count) AS condition_person_count,
+	SUM(person_count) AS person_count,
 	SUM(expected_count) AS expected_count,
 	CASE 
 		WHEN SUM(expected_count) > 0.01

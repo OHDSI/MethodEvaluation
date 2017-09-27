@@ -177,6 +177,9 @@ computeMdrr <- function(connectionDetails,
   
   mdrr <- data.frame(exposureId = mdrr$drugConceptId,
                      outcomeId = mdrr$conditionConceptId,
+                     exposurePersonCount = mdrr$drugPersonCount,
+                     outcomePersonCount = mdrr$conditionPersonCount,
+                     personCount = mdrr$personCount,
                      expectedCount = mdrr$expectedCount,
                      mdrr = mdrr$mdrr)
   mdrr <- merge(exposureOutcomePairs, mdrr)

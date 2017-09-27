@@ -22,7 +22,6 @@ limitations under the License.
 {DEFAULT @outcome_database_schema = 'CDM4_SIM' } 
 {DEFAULT @outcome_table = 'condition_occurrence' }
 {DEFAULT @first_outcome_only = TRUE }
-{DEFAULT @cohort_definition_id = 'cohort_definition_id'}
 
 SELECT exposure.row_id,
 	outcome.outcome_id,
@@ -30,7 +29,7 @@ SELECT exposure.row_id,
 	MIN(DATEDIFF(DAY, exposure.cohort_start_date, outcome_date)) AS time_to_event
 FROM #cohort_person exposure
 INNER JOIN #exposure_outcome exposure_outcome
-ON exposure_outcome.exposure_id = exposure.@cohort_definition_id
+ON exposure_outcome.exposure_id = exposure.cohort_definition_id
 INNER JOIN (
 {@first_outcome_only} ? {
 {@outcome_table == 'condition_era' } ? {
@@ -41,11 +40,11 @@ INNER JOIN (
 	GROUP BY condition_concept_id,
 		person_id
 } : {
-	SELECT @cohort_definition_id AS outcome_id,
+	SELECT cohort_definition_id AS outcome_id,
 	  subject_id AS person_id,
 	  MIN(cohort_start_date) AS outcome_date
 	FROM @outcome_database_schema.@outcome_table co1
-	GROUP BY @cohort_definition_id,
+	GROUP BY cohort_definition_id,
 		subject_id
 }
 } : {
@@ -55,7 +54,7 @@ INNER JOIN (
 	  condition_era_start_date AS outcome_date
 	FROM @cdm_database_schema.condition_era
 } : {
-	SELECT @cohort_definition_id AS outcome_id,
+	SELECT cohort_definition_id AS outcome_id,
 	  subject_id AS person_id,
 	  cohort_start_date AS outcome_date
 	FROM @outcome_database_schema.@outcome_table co1
@@ -69,5 +68,5 @@ ON outcome.person_id = exposure.subject_id
 GROUP BY exposure.row_id,
 	exposure.subject_id,
 	exposure.cohort_start_date,
-	exposure.@cohort_definition_id,
+	exposure.cohort_definition_id,
 	outcome.outcome_id;

@@ -17,10 +17,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ************************************************************************/
-{DEFAULT @cohort_definition_id = 'cohort_concept_id'}
-
 SELECT row_id,
-	@cohort_definition_id AS exposure_id,
+	cohort_definition_id AS exposure_id,
 	subject_id AS person_id,
 	cohort_start_date,
 	DATEDIFF(DAY, cohort_start_date, cohort_end_date) AS days_at_risk,
