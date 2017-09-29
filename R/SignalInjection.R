@@ -479,8 +479,7 @@ injectSignals <- function(connectionDetails,
       if (length(modelCovariateIds) == 0) {
         dir.create(covarFileName)
       } else {
-        # need to fix: single covariateId causes problem (not an array), so adding dummy ID:
-        covariateSettings$includedCovariateIds <- c(modelCovariateIds, 0)
+        covariateSettings$includedCovariateIds <- modelCovariateIds
         sql <- "SELECT * INTO #selected_person FROM #cohort_person WHERE cohort_definition_id IN (@cohort_ids);"
         sql <- SqlRender::renderSql(sql, cohort_ids = uniqueGroups[[i]])$sql
         sql <- SqlRender::translateSql(sql, 
@@ -689,20 +688,23 @@ generateOutcomes <- function(task,
                              effectSizes,
                              precision,
                              workFolder) {
-  result <- result[result$exposureId == task$exposureId & result$outcomeId == task$outcomeId, ]
-  if (!file.exists(file.path(task$modelFolder, "Error.txt"))) {
+  resultSubset <- result[result$exposureId == task$exposureId & result$outcomeId == task$outcomeId, ]
+  if (file.exists(file.path(task$modelFolder, "Error.txt"))) {
+    return(resultSubset)
+  } else {
     exposures <- readRDS(exposuresFile)
-    predictionFile <- file.path(task$modelFolder, "prediction.rds")    
+    exposures <- exposures[exposures$exposureId == task$exposureId, ]
+    predictionFile <- file.path(task$modelFolder, paste0("prediction_e", task$exposureId,".rds"))    
     if (file.exists(predictionFile)) {
       prediction <- readRDS(predictionFile)
     } else {
       betas <- readRDS(file.path(task$modelFolder, "betas.rds"))
       ffbase::load.ffdf(task$covarFileName)
       open(covariates, readOnly = TRUE)
+      covariates <- covariates[ffbase::`%in%`(covariates$rowId, exposures$rowId), ]
       prediction <- .predict(betas, exposures, covariates, modelType)
       saveRDS(prediction, predictionFile)    
     }
-    exposures <- exposures[exposures$exposureId == task$exposureId, ]
     outcomes <- readRDS(outcomesFile)
     outcomes <- outcomes[outcomes$outcomeId == task$outcomeId, ]
     if (removePeopleWithPriorOutcomes) {
@@ -724,7 +726,7 @@ generateOutcomes <- function(task,
       } else {
         # When sampling, the expected RR size is the target RR, but the actual RR could be different due to
         # random error.  this code is redoing the sampling until actual RR is equal to the target RR.
-        targetCount <- result$observedOutcomes[1] * (effectSize - 1)
+        targetCount <- resultSubset$observedOutcomes[1] * (effectSize - 1)
         time <- exposures$daysAtRisk + 1
         newOutcomeCounts <- 0
         if (modelType == "poisson") {
@@ -761,11 +763,11 @@ generateOutcomes <- function(task,
               cursor <- cursor + nOutcomes
             }
           }
-          injectedRr <- 1 + (nrow(newOutcomes)/result$observedOutcomes[1])
+          injectedRr <- 1 + (nrow(newOutcomes)/resultSubset$observedOutcomes[1])
           
           # Count outcomes during first episodes:
           newOutcomeCountsFirstExposure <- sum(newOutcomeCounts[exposures$eraNumber == 1])
-          injectedRrFirstExposure <- 1 + (newOutcomeCountsFirstExposure/result$observedOutcomesFirstExposure[1])
+          injectedRrFirstExposure <- 1 + (newOutcomeCountsFirstExposure/resultSubset$observedOutcomesFirstExposure[1])
         } else { # Survival model
           # Generate outcomes under survival model --------------------------------------
           correctedTargetCount <- targetCount
@@ -776,7 +778,7 @@ generateOutcomes <- function(task,
             timeToEvent <- round(rexp(nrow(exposures), multiplier * exposures$prediction * (effectSize - 1)))
             temp <- timeToEvent < time
             # Correct for censored time and outcomes:
-            correctedTargetCount <- (result$observedOutcomes[1] / sum(time)) * (sum(time[!temp]) + sum(timeToEvent[temp] + 1)) * effectSize - sum(exposures$hasOutcome[!temp])
+            correctedTargetCount <- (resultSubset$observedOutcomes[1] / sum(time)) * (sum(time[!temp]) + sum(timeToEvent[temp] + 1)) * effectSize - sum(exposures$hasOutcome[!temp])
             ratios <- c(ratios, sum(temp) / correctedTargetCount)
             if (length(ratios) == 100){
               multiplier <- multiplier * 1/mean(ratios)
@@ -784,7 +786,7 @@ generateOutcomes <- function(task,
               writeLines(paste("Unable to achieve target RR using model as is. Adding multiplier of", multiplier, "to force target"))
             }
           }
-          rateBefore <- result$observedOutcomes[1] / sum(time)
+          rateBefore <- resultSubset$observedOutcomes[1] / sum(time)
           rateAfter <- (sum(exposures$hasOutcome[!temp]) + sum(temp)) / (sum(time[!temp]) + sum(timeToEvent[temp] + 1))
           injectedRr <- rateAfter / rateBefore
           newOutcomes <- data.frame(personId = exposures$personId[temp],
@@ -798,7 +800,7 @@ generateOutcomes <- function(task,
             firstTimeToEvent <- timeToEvent[exposures$eraNumber == 1]
             firstExposures <- exposures[exposures$eraNumber == 1, ]
             firstTime <- time[exposures$eraNumber == 1]
-            rateBeforeFirstExposure <- result$observedOutcomesFirstExposure[1] / sum(firstTime)
+            rateBeforeFirstExposure <- resultSubset$observedOutcomesFirstExposure[1] / sum(firstTime)
             rateAfterFirstExposure <- (sum(firstExposures$hasOutcome[!firstTemp]) + sum(firstTemp)) / (sum(firstTime[!firstTemp]) + sum(firstTimeToEvent[firstTemp] + 1))
             injectedRrFirstExposure <- rateAfterFirstExposure / rateBeforeFirstExposure
           }
@@ -811,7 +813,7 @@ generateOutcomes <- function(task,
                        ", injected RR during first exposure only =",
                        injectedRrFirstExposure))
       
-      newOutcomeId <- result$newOutcomeId[result$targetEffectSize == effectSize]
+      newOutcomeId <- resultSubset$newOutcomeId[resultSubset$targetEffectSize == effectSize]
       # Write new outcomes to file for later insertion into DB:
       if (nrow(newOutcomes) != 0) {
         newOutcomes$cohortStartDate <- newOutcomes$cohortStartDate + newOutcomes$timeToEvent
@@ -820,15 +822,15 @@ generateOutcomes <- function(task,
         names(newOutcomes)[names(newOutcomes) == "personId"] <- "subjectId"
         outcomesToInjectFile <- file.path(workFolder, paste0("newOutcomes_e", task$exposureId, "_o", task$outcomeId, "_rr", effectSize , ".rds"))
         saveRDS(newOutcomes, outcomesToInjectFile)
-        result$outcomesToInjectFile[result$targetEffectSize == effectSize] <- outcomesToInjectFile
+        resultSubset$outcomesToInjectFile[resultSubset$targetEffectSize == effectSize] <- outcomesToInjectFile
       }
-      idx <- result$targetEffectSize == effectSize
-      result$trueEffectSize[idx] <- injectedRr
-      result$trueEffectSizeFirstExposure[idx] <- injectedRrFirstExposure
-      result$injectedOutcomes[idx] <- nrow(newOutcomes)
+      idx <- resultSubset$targetEffectSize == effectSize
+      resultSubset$trueEffectSize[idx] <- injectedRr
+      resultSubset$trueEffectSizeFirstExposure[idx] <- injectedRrFirstExposure
+      resultSubset$injectedOutcomes[idx] <- nrow(newOutcomes)
     }
+    return(resultSubset)
   }
-  return(result)
 }
 
 plotCalibration <- function(prediction, y, time) {
