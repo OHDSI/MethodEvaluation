@@ -561,9 +561,6 @@ injectSignals <- function(connectionDetails,
       outcomesToInject <- rbind(outcomesToInject, readRDS(result$outcomesToInjectFile[i]))
     }
   }
-  if (cdmVersion == "4") {
-    colnames(outcomesToInject)[colnames(outcomesToInject) == "cohortDefinitionId"] <- "cohortConceptId"
-  }
   colnames(outcomesToInject) <- SqlRender::camelCaseToSnakeCase(colnames(outcomesToInject))
   DatabaseConnector::insertTable(conn, "#temp_outcomes", outcomesToInject, TRUE, TRUE, TRUE, oracleTempSchema)
   
@@ -579,7 +576,6 @@ injectSignals <- function(connectionDetails,
                                                outcome_table = outcomeTable,
                                                output_database_schema = outputDatabaseSchema,
                                                output_table = outputTable,
-                                               cohort_definition_id = cohortDefinitionId,
                                                create_output_table = createOutputTable)
   
   DatabaseConnector::executeSql(conn, copySql)
@@ -699,9 +695,13 @@ generateOutcomes <- function(task,
       prediction <- readRDS(predictionFile)
     } else {
       betas <- readRDS(file.path(task$modelFolder, "betas.rds"))
-      ffbase::load.ffdf(task$covarFileName)
-      open(covariates, readOnly = TRUE)
-      covariates <- covariates[ffbase::`%in%`(covariates$rowId, exposures$rowId), ]
+      if (nrow(betas) == 1) {
+        covariates <- NULL 
+      } else {
+        ffbase::load.ffdf(task$covarFileName)
+        open(covariates, readOnly = TRUE)
+        covariates <- covariates[ffbase::`%in%`(covariates$rowId, exposures$rowId), ]
+      }
       prediction <- .predict(betas, exposures, covariates, modelType)
       saveRDS(prediction, predictionFile)    
     }
@@ -871,8 +871,12 @@ plotCalibration <- function(prediction, y, time) {
 
 .predict <- function(betas, exposures, covariates, modelType) {
   intercept <- betas$beta[1]
-  betas <- betas[2:length(betas), ]
-  colnames(betas)[colnames(betas) == "id"] <- "covariateId"
+  if (nrow(betas) == 1) {
+    betas <- data.frame()
+  } else {
+    betas <- betas[2:length(betas), ]
+    colnames(betas)[colnames(betas) == "id"] <- "covariateId"
+  }
   if (nrow(betas) == 0) {
     prediction <- data.frame(rowId = exposures$rowId,
                              daysAtRisk = exposures$daysAtRisk,

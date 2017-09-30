@@ -3,24 +3,23 @@
 {DEFAULT @outcome_table = 'condition_era' }
 {DEFAULT @output_database_schema = 'CDM4_SIM' } 
 {DEFAULT @output_table = 'cohort' }
-{DEFAULT @cohort_definition_id = 'cohort_concept_id'}
 {DEFAULT @create_output_table = TRUE}
 
 {@create_output_table} ? {
 IF OBJECT_ID('@output_database_schema.@output_table', 'U') IS NOT NULL
 	DROP TABLE @output_database_schema.@output_table;
 	
-SELECT @cohort_definition_id, cohort_start_date, cohort_end_date, subject_id 
+SELECT cohort_definition_id, cohort_start_date, cohort_end_date, subject_id 
 INTO @output_database_schema.@output_table 
 FROM (
 } : {
 DELETE FROM @output_database_schema.@output_table 
-WHERE @cohort_definition_id IN (SELECT new_outcome_id FROM #to_copy);
+WHERE cohort_definition_id IN (SELECT new_outcome_id FROM #to_copy);
 
-INSERT INTO @output_database_schema.@output_table (@cohort_definition_id, cohort_start_date, cohort_end_date, subject_id)
+INSERT INTO @output_database_schema.@output_table (cohort_definition_id, cohort_start_date, cohort_end_date, subject_id)
 }
 -- Add new outcomes:
-SELECT @cohort_definition_id, 
+SELECT cohort_definition_id, 
 	cohort_start_date, 
 	NULL AS cohort_end_date, 
 	subject_id 
@@ -30,7 +29,7 @@ FROM #temp_outcomes
 
 -- Copy old outcomes:
 {@outcome_table == 'condition_era' } ? {
-	SELECT to_copy.new_outcome_id AS @cohort_definition_id,
+	SELECT to_copy.new_outcome_id AS cohort_definition_id,
 		condition_era_start_date AS cohort_start_date,
 		condition_era_end_date AS cohort_end_date,
 		person_id AS subject_id  
@@ -38,13 +37,13 @@ FROM #temp_outcomes
 	INNER JOIN #to_copy to_copy
 	ON condition_concept_id = to_copy.outcome_id
 } : {
-	SELECT to_copy.new_outcome_id AS @cohort_definition_id,
+	SELECT to_copy.new_outcome_id AS cohort_definition_id,
 		cohort_start_date,
 		cohort_end_date,
 		subject_id
 	FROM @outcome_database_schema.@outcome_table
 	INNER JOIN #to_copy to_copy
-	ON @cohort_definition_id = to_copy.outcome_id
+	ON cohort_definition_id = to_copy.outcome_id
 }
 
 {@create_output_table} ? {
