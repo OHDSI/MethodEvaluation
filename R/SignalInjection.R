@@ -613,8 +613,8 @@ fitModel <- function(task,
     outcomes <- outcomes[outcomes$rowId %in% sampledExposures$rowId, ]
     exposures <- exposures[exposures$rowId %in% sampledExposures$rowId, ]
   } else {
-    outcomes <- outcomes[outcomes$exposureId %in% task$groupExposureIds, ]
     exposures <- exposures[exposures$exposureId %in% task$groupExposureIds, ]
+    outcomes <- outcomes[outcomes$rowId %in% exposures$rowId, ]
   }
   
   ffbase::load.ffdf(task$covarFileName)

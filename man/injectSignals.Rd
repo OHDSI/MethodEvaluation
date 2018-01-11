@@ -10,8 +10,7 @@ injectSignals(connectionDetails, cdmDatabaseSchema,
   outcomeDatabaseSchema = cdmDatabaseSchema, outcomeTable = "cohort",
   outputDatabaseSchema = outcomeDatabaseSchema, outputTable = outcomeTable,
   createOutputTable = FALSE, exposureOutcomePairs, modelType = "poisson",
-  buildOutcomeModel = TRUE, minOutcomeCountForModel = 100,
-  minOutcomeCountForInjection = 25,
+  minOutcomeCountForModel = 100, minOutcomeCountForInjection = 25,
   covariateSettings = FeatureExtraction::createCovariateSettings(useDemographicsAgeGroup
   = TRUE, useDemographicsGender = TRUE, useDemographicsIndexYear = TRUE,
   useDemographicsIndexMonth = TRUE, useConditionGroupEraLongTerm = TRUE,
@@ -86,11 +85,6 @@ will first be deleted.}
 }}
 
 \item{modelType}{Can be either "poisson" or "survival"}
-
-\item{buildOutcomeModel}{Should an outcome model be created to predict outcomes. New
-outcomes will be inserted based on the predicted
-probabilities according to this model, and this will help
-preserve the observed confounding when injecting signals.}
 
 \item{minOutcomeCountForModel}{Minimum number of outcome events required to build a model.}
 
