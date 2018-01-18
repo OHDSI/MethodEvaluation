@@ -9,7 +9,7 @@ These resources include reference sets for evaluating methods on real data, as w
 
 Features
 ========
-- Contains the OMOP and EU-ADR reference set for evaluating method performance using real data.
+- Contains the OMOP and EU-ADR reference set, and the OHDSI Method benchmark for evaluating method performance using real data.
 - Function for inserting simulated effects in real data based on negative control drug-outcome pairs.
 - Function for computation of the minimum detectable relative risk (MDRR)
 - Functions for computing predictive accuracy, error, and bias
@@ -24,6 +24,7 @@ Dependencies
  * SqlRender
  * FeatureExtraction
  * Cyclops
+ * OhdsiRTools
 
 Getting Started
 ===============
@@ -35,6 +36,7 @@ Getting Started
   ```r
   install.packages("devtools")
   library(devtools)
+  install_github("ohdsi/OHdsiRTools") 
   install_github("ohdsi/SqlRender") 
   install_github("ohdsi/DatabaseConnector") 
   install_github("ohdsi/Cyclops") 
@@ -59,7 +61,7 @@ MethodEvaluation is being developed in R Studio.
 ### Development status
 [![Build Status](https://travis-ci.org/OHDSI/MethodEvaluation.svg?branch=master)](https://travis-ci.org/OHDSI/MethodEvaluation)
 
-Currently under development. Do not use.
+Beta
 
 Acknowledgements
 ================

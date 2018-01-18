@@ -16,24 +16,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#' Compute the area under the ROC curve
-#'
-#' @export
-computeAuc <- function(methodResults, referenceSet, confidenceIntervals = TRUE) {
-  # TODO: add stratification (e.g. by analysisId, outcomeConceptId)
-  methodResults <- merge(methodResults,
-                         referenceSet[,
-                                      c("exposureConceptId", "outcomeConceptId", "groundTruth")])
-  roc <- pROC::roc.default(methodResults$groundTruth, methodResults$logRr, algorithm = 3)
-  if (confidenceIntervals) {
-    auc <- as.numeric(pROC::ci.auc.roc(roc, method = "delong"))
-    return(data.frame(auc = auc[2], auc_lb95ci = auc[1], auc_lb95ci = auc[3]))
-  } else {
-    auc <- pROC::auc.roc(roc)
-    return(auc[1])
-  }
-}
-
 #' Compute the AUCs for various injected signal sizes
 #'
 #' @param logRr       A vector containing the log of the relative risk as estimated by a method.

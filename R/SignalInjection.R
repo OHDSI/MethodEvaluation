@@ -69,8 +69,6 @@
 #'                                         }
 #'
 #' @param modelType                        Can be either "poisson" or "survival"
-#' @param buildModelPerExposure            If TRUE, an outcome model will be created for each exposure ID. IF false,
-#'                                         outcome models will be created across all exposures.
 #' @param minOutcomeCountForModel          Minimum number of outcome events required to build a model.
 #' @param minOutcomeCountForInjection      Minimum number of outcome events required to inject a signal.
 #' @param covariateSettings                An object of type \code{covariateSettings} as created using the
@@ -128,7 +126,6 @@ injectSignals <- function(connectionDetails,
                           createOutputTable = FALSE,
                           exposureOutcomePairs,
                           modelType = "poisson",
-                          # buildModelPerExposure = FALSE,
                           minOutcomeCountForModel = 100,
                           minOutcomeCountForInjection = 25,
                           covariateSettings = FeatureExtraction::createCovariateSettings(useDemographicsAgeGroup = TRUE,
@@ -467,8 +464,6 @@ injectSignals <- function(connectionDetails,
       for (modelFolder in unique(result$modelFolder[result$outcomeId %in% outcomeIds])) {
         if (modelFolder != "" && file.exists(file.path(modelFolder, "betas.rds"))) {
           betas <- readRDS(file.path(modelFolder, "betas.rds"))
-          print(modelFolder)
-          print(nrow(betas))
           modelCovariateIds <- c(modelCovariateIds, betas$id)
         }
       }
@@ -784,6 +779,9 @@ generateOutcomes <- function(task,
               multiplier <- multiplier * 1/mean(ratios)
               ratios <- c()
               writeLines(paste("Unable to achieve target RR using model as is. Adding multiplier of", multiplier, "to force target"))
+            }
+            if (is.na(round(abs(sum(temp) - correctedTargetCount)))) {
+              writeLines("Problem")
             }
           }
           rateBefore <- resultSubset$observedOutcomes[1] / sum(time)

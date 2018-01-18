@@ -140,9 +140,6 @@ modeling the outcome?}
 \item{modelThreads}{Number of parallel threads to use when fitting outcome models.}
 
 \item{generationThreads}{Number of parallel threads to use when generating outcomes.}
-
-\item{buildModelPerExposure}{If TRUE, an outcome model will be created for each exposure ID. IF false,
-outcome models will be created across all exposures.}
 }
 \value{
 A data.frame listing all the drug-pairs in combination with requested effect sizes and the real inserted effect size

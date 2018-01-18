@@ -24,6 +24,7 @@
 #' @importFrom grDevices rgb
 #' @importFrom stats aggregate coef pnorm predict qnorm quantile rexp rpois
 #' @importFrom utils write.csv
+#' @importFrom methods is
 #' @import Cyclops
 #' @import DatabaseConnector
 #' @import FeatureExtraction
@@ -84,4 +85,33 @@ NULL
 #' M, Patadia V, van der Lei J, Sturkenboom M, Trifiro G. A reference standard for evaluation of
 #' methods for drug safety signal detection using electronic healthcare record databases. Drug Safety
 #' 36(1):13-23, 2013
+NULL
+
+#' The OHDSI Method Evaluation Benchmark - Negative Controls
+#'
+#' A set of 200 negative controls, centered around four outcomes of interest (acute pancreatitis,
+#' GI bleeding, Stroke, and IBD), and 4 exposures of interest (diclofenac, ciprofloxacin, metformin,
+#' and sertraline), which 25 negative controls each. Each drug-outcome pair also includes a comparator
+#' drug (where the comparator is also a negative control), allowing for evaluation of comparative effect
+#' estimation, and a nesting cohort for evaluating methods such as the nested case-control design. 
+#' 
+#' The exposure, outcome, and nesting cohorts can be created using the \code{\link{createReferenceSetCohorts}}
+#' function.
+#' 
+#' These negative controls can form the basis to generate positive controls using the \code{\link{injectSignals}}
+#' function.
+#'
+#' @docType data
+#' @keywords datasets
+#' @name ohdsiNegativeControls
+#' @usage
+#' data(ohdsiNegativeControls)
+#' @format
+#' A data frame with 200 rows and 9 variables: \describe{ \item{targetID}{Cohort ID
+#' identifying the target exposure} \item{targetName}{Name of the target cohort} 
+#' \item{comparatorId}{Cohort ID identifying the comparator exposure} 
+#' \item{comparatorName}{Name of the comparator cohort}
+#' \item{nestingId}{Cohort ID identifying the nesting cohort} \item{nestingName}{Name of the nesting cohort}
+#' \item{outcomeId}{Cohort ID identifying the outcome} \item{outcomeName}{Name of the outcome}
+#' \item{type}{THe type of control: exposure or outcome}}
 NULL
