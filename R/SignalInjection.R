@@ -343,7 +343,7 @@ injectSignals <- function(connectionDetails,
     return(exposureIds[order(exposureIds)])
   }
   outcomeIds <- unique(exposureOutcomePairs$outcomeId)
-  groups <- sapply(unique(outcomeIds), group)
+  groups <- lapply(unique(outcomeIds), group)
   uniqueGroups <- unique(groups)
   saveRDS(uniqueGroups, file.path(workFolder, "uniqueGroups.rds"))
   outcomeIdToGroupId <- data.frame(outcomeIds = outcomeIds, groupIds = match(groups, uniqueGroups))
@@ -354,7 +354,7 @@ injectSignals <- function(connectionDetails,
     covarFileName <- file.path(workFolder, paste0("covarsForModel_g", i))
     if (!file.exists(covarFileName)) {
       cohortIds <- uniqueGroups[[i]]
-      sql <- "SELECT COUNT(*) FROM #cohort_person WHERE cohort_definition_id IN (@cohort_ids);"
+      sql <- "SELECT COUNT(*) FROM (SELECT DISTINCT subject_id, cohort_start_date FROM #cohort_person WHERE cohort_definition_id IN (@cohort_ids)) tmp;"
       sql <- SqlRender::renderSql(sql, cohort_ids = cohortIds)$sql
       sql <- SqlRender::translateSql(sql, 
                                      targetDialect = connectionDetails$dbms,
@@ -601,6 +601,10 @@ fitModel <- function(task,
                      prior,
                      control) {
   exposures <- readRDS(exposuresFile)
+  # Dedupe exposures for model fitting, so we don't overfit:
+  exposures <- exposures[order(exposures$personId, exposures$cohortStartDate), ]
+  exposures <- exposures[!duplicated(exposures[, c("personId", "cohortStartDate")]), ]
+
   outcomes <- readRDS(outcomesFile)
   outcomes <- outcomes[outcomes$outcomeId == task$outcomeId, ]
   if (file.exists(task$sampledExposuresFile)) {
