@@ -41,6 +41,7 @@ SELECT ROW_NUMBER() OVER (ORDER BY cohort_definition_id, subject_id, cohort_star
 	} : {
 		CASE WHEN DATEADD(DAY, @risk_window_end, cohort_start_date) > observation_period_end_date THEN observation_period_end_date ELSE DATEADD(DAY, @risk_window_end, cohort_start_date) END AS cohort_end_date,
 	}
+	observation_period_end_date,
 	era_number
 INTO #cohort_person
 FROM 

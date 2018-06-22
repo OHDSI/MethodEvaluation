@@ -22,5 +22,6 @@ SELECT row_id,
 	subject_id AS person_id,
 	cohort_start_date,
 	DATEDIFF(DAY, cohort_start_date, cohort_end_date) AS days_at_risk,
+	DATEDIFF(DAY, cohort_start_date, observation_period_end_date) AS days_observed,
 	era_number
 FROM #cohort_person

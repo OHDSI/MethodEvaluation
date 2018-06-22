@@ -21,11 +21,12 @@ injectSignals(connectionDetails, cdmDatabaseSchema,
   TRUE), control = createControl(cvType = "auto", startingVariance = 0.1,
   noiseLevel = "quiet", threads = 10), firstExposureOnly = FALSE,
   washoutPeriod = 183, riskWindowStart = 0, riskWindowEnd = 0,
-  addExposureDaysToEnd = TRUE, firstOutcomeOnly = FALSE,
-  removePeopleWithPriorOutcomes = FALSE, maxSubjectsForModel = 1e+05,
-  effectSizes = c(1, 1.25, 1.5, 2, 4), precision = 0.01,
-  outputIdOffset = 1000, workFolder = "./SignalInjectionTemp",
-  cdmVersion = "5", modelThreads = 1, generationThreads = 1)
+  addExposureDaysToEnd = TRUE, addIntentToTreat = FALSE,
+  firstOutcomeOnly = FALSE, removePeopleWithPriorOutcomes = FALSE,
+  maxSubjectsForModel = 1e+05, effectSizes = c(1, 1.25, 1.5, 2, 4),
+  precision = 0.01, outputIdOffset = 1000,
+  workFolder = "./SignalInjectionTemp", cdmVersion = "5",
+  modelThreads = 1, generationThreads = 1)
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{ConnectionDetails} created using
@@ -120,6 +121,15 @@ parameter is set to TRUE).}
 
 \item{addExposureDaysToEnd}{Should length of exposure be added to the risk window?}
 
+\item{addIntentToTreat}{If true, the signal will not only be injected in the primary
+time at risk, but also after the time at risk (up until the
+obseration period end). In both time periods, the target effect 
+size will be enforced. This allows the same positive control
+synthesis to be used in both on treatment and intent-to-treat
+analysis variants. However, this will preclude the controls
+to be used in self-controlled designs that consider the time
+after exposure. Requires \code{firstExposureOnly = TRUE}.}
+
 \item{firstOutcomeOnly}{Should only the first outcome per person be considered when
 modeling the outcome?}
 
@@ -154,5 +164,9 @@ that these drug-outcome pairs represent negative controls, so the true relative 
 inserting any outcomes should be 1. There are two models for inserting the outcomes during the
 specified risk window of the drug: a Poisson model assuming multiple outcomes could occurr during a
 single exposure, and a survival model considering only one outcome per exposure.
-For each
+}
+\references{
+Schuemie MJ, Hripcsak G, Ryan PB, Madigan D, Suchard MA. Empirical confidence interval calibration for 
+population-level effect estimation studies in observational healthcare data. Proc Natl Acad Sci U S A. 
+2018 Mar 13;115(11):2571-2577.
 }

@@ -1,8 +1,8 @@
 Package: MethodEvaluation
 Type: Package
 Title: Package for evaluation of estimation methods
-Version: 0.2.1
-Date: 2018-01-18
+Version: 0.3.0
+Date: 2018-06-22
 Author: Martijn J. Schuemie [aut, cre],
 Maintainer: Martijn J. Schuemie <schuemie@ohdsi.org>
 Description: This package contains resources for the evaluation of the
@@ -29,4 +29,4 @@ Imports:
     methods
 Suggests:
     testthat
-RoxygenNote: 6.0.1
+RoxygenNote: 6.0.1.9000

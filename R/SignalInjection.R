@@ -24,7 +24,6 @@
 #' inserting any outcomes should be 1. There are two models for inserting the outcomes during the
 #' specified risk window of the drug: a Poisson model assuming multiple outcomes could occurr during a
 #' single exposure, and a survival model considering only one outcome per exposure.
-#' For each
 #'
 #' @param connectionDetails                An R object of type \code{ConnectionDetails} created using
 #'                                         the function \code{createConnectionDetails} in the
@@ -53,12 +52,12 @@
 #'                                         to have the same format as the COHORT table:
 #'                                         SUBJECT_ID, COHORT_START_DATE,
 #'                                         COHORT_END_DATE, COHORT_CONCEPT_ID (CDM v4) or COHORT_DEFINITION_ID (CDM v5 and higher).
-#' @param createOutputTable               Should the output table be created prior to inserting the
+#' @param createOutputTable                Should the output table be created prior to inserting the
 #'                                         outcomes? If TRUE and the tables already exists, it will
 #'                                         first be deleted. If FALSE, the table is assumed to exist and the
 #'                                         outcomes will be inserted. Any existing outcomes with the same IDs
 #'                                         will first be deleted.
-#' @param outputIdOffset            What should be the first new outcome ID that is to be created?
+#' @param outputIdOffset                   What should be the first new outcome ID that is to be created?
 #' @param exposureOutcomePairs             A data frame with at least two columns:
 #'                                         \itemize{
 #'                                           \item {"exposureId" containing the drug_concept_ID
@@ -74,11 +73,11 @@
 #' @param covariateSettings                An object of type \code{covariateSettings} as created using the
 #'                                         \code{createCovariateSettings} function in the
 #'                                         \code{FeatureExtraction} package.
-#' @param prior                 The prior used to fit the outcome model. See \code{\link[Cyclops]{createPrior}}
-#'                              for details.
-#' @param control               The control object used to control the cross-validation used to
-#'                              determine the hyperparameters of the prior (if applicable). See
-#'                              \code{\link[Cyclops]{createControl}} for details.
+#' @param prior                            The prior used to fit the outcome model. See \code{\link[Cyclops]{createPrior}}
+#'                                         for details.
+#' @param control                          The control object used to control the cross-validation used to
+#'                                         determine the hyperparameters of the prior (if applicable). See
+#'                                         \code{\link[Cyclops]{createControl}} for details.
 #' @param precision                        The allowed ratio between target and injected signal size.
 #' @param firstExposureOnly                Should signals be injected only for the first exposure? (ie.
 #'                                         assuming an acute effect)
@@ -94,6 +93,14 @@
 #'                                         added to this number (when the \code{addExposureDaysToEnd}
 #'                                         parameter is set to TRUE).
 #' @param addExposureDaysToEnd             Should length of exposure be added to the risk window?
+#' @param addIntentToTreat                 If true, the signal will not only be injected in the primary
+#'                                         time at risk, but also after the time at risk (up until the
+#'                                         obseration period end). In both time periods, the target effect 
+#'                                         size will be enforced. This allows the same positive control
+#'                                         synthesis to be used in both on treatment and intent-to-treat
+#'                                         analysis variants. However, this will preclude the controls
+#'                                         to be used in self-controlled designs that consider the time
+#'                                         after exposure. Requires \code{firstExposureOnly = TRUE}.
 #' @param firstOutcomeOnly                 Should only the first outcome per person be considered when
 #'                                         modeling the outcome?
 #' @param removePeopleWithPriorOutcomes    Remove people with prior outcomes?
@@ -109,6 +116,11 @@
 #' @param modelThreads                     Number of parallel threads to use when fitting outcome models.
 #' @param generationThreads                Number of parallel threads to use when generating outcomes.
 #'
+#' @references 
+#' Schuemie MJ, Hripcsak G, Ryan PB, Madigan D, Suchard MA. Empirical confidence interval calibration for 
+#' population-level effect estimation studies in observational healthcare data. Proc Natl Acad Sci U S A. 
+#' 2018 Mar 13;115(11):2571-2577.
+#' 
 #' @return
 #' A data.frame listing all the drug-pairs in combination with requested effect sizes and the real inserted effect size
 #' (might be different from the requested effect size because of sampling error).
@@ -149,6 +161,7 @@ injectSignals <- function(connectionDetails,
                           riskWindowStart = 0,
                           riskWindowEnd = 0,
                           addExposureDaysToEnd = TRUE,
+                          addIntentToTreat = FALSE,
                           firstOutcomeOnly = FALSE,
                           removePeopleWithPriorOutcomes = FALSE,
                           maxSubjectsForModel = 100000,
@@ -163,7 +176,11 @@ injectSignals <- function(connectionDetails,
     stop("Effect sizes smaller than 1 are currently not supported")
   if (modelType != "poisson" && modelType != "survival")
     stop(paste0("Unknown modelType '", modelType, "', please select either 'poisson' or 'survival'"))
-  if (cdmVersion == "4"){
+  if (!firstExposureOnly && addIntentToTreat)
+    stop("Cannot have addIntentToTreat = TRUE and firstExposureOnly = FALSE at the same time")
+  if (modelType == "poisson" && addIntentToTreat)
+    stop("Intent to treat injection not yet implemented for Poisson models")
+  if (cdmVersion == "4") {
     stop("CDM version 4 is not supported")
   } 
   if (!file.exists(workFolder)) {
@@ -178,9 +195,10 @@ injectSignals <- function(connectionDetails,
                        outcomeId = rep(exposureOutcomePairs$outcomeId,
                                        each = length(effectSizes)),
                        targetEffectSize = rep(effectSizes, nrow(exposureOutcomePairs)),
-                       newOutcomeId = outputIdOffset+(0:(nrow(exposureOutcomePairs)*length(effectSizes)-1)),
+                       newOutcomeId = outputIdOffset + (0:(nrow(exposureOutcomePairs)*length(effectSizes) - 1)),
                        trueEffectSize = 0,
                        trueEffectSizeFirstExposure = 0,
+                       trueEffectSizeItt = 0,
                        injectedOutcomes = 0,
                        modelFolder = "",
                        outcomesToInjectFile = "",
@@ -189,9 +207,9 @@ injectSignals <- function(connectionDetails,
   exposureIds <- unique(exposureOutcomePairs$exposureId)
   
   conn <- DatabaseConnector::connect(connectionDetails)
+  on.exit(DatabaseConnector::disconnect(conn))
   
   # Create exposure cohorts ------------------------------------
-  # cohortPersonCreated <- FALSE
   writeLines("\nCreating risk windows")
   renderedSql <- SqlRender::loadRenderTranslateSql("CreateExposedCohorts.sql",
                                                    packageName = "MethodEvaluation",
@@ -208,8 +226,7 @@ injectSignals <- function(connectionDetails,
                                                    add_exposure_days_to_end = addExposureDaysToEnd)
   
   DatabaseConnector::executeSql(conn, renderedSql)
-  # cohortPersonCreated <- TRUE
-  
+
   # Get exposure cohorts from database -------------------------------
   if (file.exists(exposuresFile)) {
     exposures <- readRDS(exposuresFile)
@@ -252,7 +269,7 @@ injectSignals <- function(connectionDetails,
       saveRDS(priorOutcomes, priorOutcomesFile)
       sql <- "TRUNCATE TABLE #exposure_outcome; DROP TABLE #exposure_outcome;"
       sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
-      DatabaseConnector::executeSql(conn, sql)
+      DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
     }
   }
   
@@ -283,7 +300,7 @@ injectSignals <- function(connectionDetails,
     saveRDS(outcomeCounts, outcomesFile)
     sql <- "TRUNCATE TABLE #exposure_outcome; DROP TABLE #exposure_outcome;"
     sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
-    DatabaseConnector::executeSql(conn, sql)
+    DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
   }
   
   # Generate counts for result object -------------------------------
@@ -291,12 +308,15 @@ injectSignals <- function(connectionDetails,
     result <- readRDS(countsFile)
   } else {
     writeLines("Computing counts per exposure - outcome pair")
-    temp <- merge(exposures[, c("rowId", "exposureId", "eraNumber")], outcomeCounts[, c("rowId", "outcomeId", "y")])
+    temp <- merge(exposures[, c("rowId", "exposureId", "eraNumber")], outcomeCounts[, c("rowId", "outcomeId", "y", "yItt")])
     if (modelType == "survival") {
       temp$y <- temp$y != 0
+      temp$yItt <- temp$yItt != 0
     }
     observedOutcomes <- list()
     observedOutcomesFirstExposure <- list()
+    observedOutcomesItt <- list()
+    observedOutcomesFirstExposureItt <- list()
     exposureCounts <- list()
     firstExposureCounts <- list()
     for (outcomeId in unique(outcomeCounts$outcomeId)) {
@@ -317,6 +337,16 @@ injectSignals <- function(connectionDetails,
       colnames(tempFirst)[colnames(tempFirst) == "y"] <- "observedOutcomesFirstExposure"
       observedOutcomesFirstExposure[[length(observedOutcomesFirstExposure) + 1]] <- tempFirst
       
+      tempAll <- aggregate(yItt ~ exposureId, oTemp, sum)
+      tempAll$outcomeId <- outcomeId
+      colnames(tempAll)[colnames(tempAll) == "yItt"] <- "observedOutcomesItt"
+      observedOutcomesItt[[length(observedOutcomesItt) + 1]] <- tempAll
+      
+      tempFirst <- aggregate(yItt ~ exposureId, oTemp[oTemp$eraNumber == 1, ], sum)
+      tempFirst$outcomeId <- outcomeId
+      colnames(tempFirst)[colnames(tempFirst) == "yItt"] <- "observedOutcomesFirstExposureItt"
+      observedOutcomesFirstExposureItt[[length(observedOutcomesFirstExposureItt) + 1]] <- tempFirst
+      
       tempAll <- aggregate(rowId ~ exposureId, tempExposures, length)
       tempAll$outcomeId <- outcomeId
       colnames(tempAll)[colnames(tempAll) == "rowId"] <- "exposures"
@@ -331,6 +361,10 @@ injectSignals <- function(connectionDetails,
     result$observedOutcomes[is.na(result$observedOutcomes)] <- 0
     result <- merge(result, do.call("rbind", observedOutcomesFirstExposure), all.x = TRUE)
     result$observedOutcomesFirstExposure[is.na(result$observedOutcomesFirstExposure)] <- 0
+    result <- merge(result, do.call("rbind", observedOutcomesItt), all.x = TRUE)
+    result$observedOutcomesItt[is.na(result$observedOutcomesItt)] <- 0
+    result <- merge(result, do.call("rbind", observedOutcomesFirstExposureItt), all.x = TRUE)
+    result$observedOutcomesFirstExposureItt[is.na(result$observedOutcomesFirstExposureItt)] <- 0
     result <- merge(result, do.call("rbind", exposureCounts), all.x = TRUE)
     result <- merge(result, do.call("rbind", firstExposureCounts), all.x = TRUE)
     saveRDS(result, countsFile)
@@ -428,7 +462,7 @@ injectSignals <- function(connectionDetails,
                      covarFileName = file.path(workFolder, paste0("covarsForModel_g", groupId)),
                      sampledExposuresFile = file.path(workFolder, paste0("sampledRowIds_g", groupId)),
                      groupExposureIds = groupExposureIds)
-        tasks[[length(tasks)+1]] <- task
+        tasks[[length(tasks) + 1]] <- task
       }
     }
   }
@@ -525,7 +559,7 @@ injectSignals <- function(connectionDetails,
                        outcomeId = outcomeId,
                        modelFolder = modelFolder,
                        covarFileName = covarFileName)
-          tasks[[length(tasks)+1]] <- task
+          tasks[[length(tasks) + 1]] <- task
         }
       }
     }
@@ -543,7 +577,8 @@ injectSignals <- function(connectionDetails,
                                          modelType,
                                          effectSizes,
                                          precision,
-                                         workFolder)
+                                         workFolder,
+                                         addIntentToTreat)
     OhdsiRTools::stopCluster(cluster)
     result <- do.call("rbind", results)
   }
@@ -584,8 +619,7 @@ injectSignals <- function(connectionDetails,
   sql <- "TRUNCATE TABLE #temp_outcomes; DROP TABLE #temp_outcomes; TRUNCATE TABLE #to_copy; DROP TABLE #to_copy;"
   sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
   DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
-  
-  DatabaseConnector::disconnect(conn)
+
   summaryFile <- .createSummaryFileName(workFolder)
   saveRDS(result, summaryFile)
   return(result)
@@ -615,11 +649,12 @@ fitModel <- function(task,
     exposures <- exposures[exposures$exposureId %in% task$groupExposureIds, ]
     outcomes <- outcomes[outcomes$rowId %in% exposures$rowId, ]
   }
-  
-  ffbase::load.ffdf(task$covarFileName)
+  covariates <- NULL
+  covariateRef <- NULL
+  ffbase::load.ffdf(task$covarFileName) # loads covariates and covariatesRef
   open(covariates, readOnly = TRUE)
   open(covariateRef, readOnly = TRUE)
-  covariates <- covariates[ffbase::'%in%'(covariates$rowId, exposures$rowId),]
+  covariates <- covariates[ffbase::'%in%'(covariates$rowId, exposures$rowId), ]
   if (removePeopleWithPriorOutcomes) {
     priorOutcomes <- readRDS(priorOutcomesFile)
     removeRowIds <- priorOutcomes$rowId[priorOutcomes$outcomeId == task$outcomeId]
@@ -637,9 +672,7 @@ fitModel <- function(task,
     outcomes$time[outcomes$y != 0] <- outcomes$timeToEvent[outcomes$y != 0]
   }
   outcomes$time <- outcomes$time + 1
-  time <- outcomes$time
-  firstExposureOutcomeCount <- sum(outcomes$y[outcomes$eraNumber == 1])
-  
+
   # Note: for survival, using Poisson regression with 1 outcome and censored time as equivalent of
   # survival regression:
   cyclopsData <- Cyclops::convertToCyclopsData(ff::as.ffdf(outcomes), covariates, modelType = "pr", quiet = TRUE)
@@ -660,7 +693,7 @@ fitModel <- function(task,
     intercept <- betas[1]
     betas <- betas[2:length(betas)]
     betas <- betas[betas != 0]
-    if (length(betas) > 0){
+    if (length(betas) > 0) {
       betas <- data.frame(beta = betas, id = as.numeric(attr(betas, "names")))
       betas <- merge(ff::as.ffdf(betas), covariateRef, by.x = "id", by.y = "covariateId")
       betas <- ff::as.ram(betas)
@@ -682,7 +715,8 @@ generateOutcomes <- function(task,
                              modelType,
                              effectSizes,
                              precision,
-                             workFolder) {
+                             workFolder,
+                             addIntentToTreat) {
   resultSubset <- result[result$exposureId == task$exposureId & result$outcomeId == task$outcomeId, ]
   if (file.exists(file.path(task$modelFolder, "Error.txt"))) {
     return(resultSubset)
@@ -714,14 +748,15 @@ generateOutcomes <- function(task,
     }
     exposures <- merge(exposures, prediction)
     exposures <- merge(exposures, outcomes, all.x = TRUE)
-    exposures$hasOutcome <- !is.na(exposures$timeToEvent)
-    exposures$daysAtRisk[exposures$hasOutcome] <- exposures$timeToEvent[exposures$hasOutcome]
+    exposures$y[is.na(exposures$y)] <- 0
+    exposures$yItt[is.na(exposures$yItt)] <- 0
     for (fxSizeIdx in 1:length(effectSizes)) {
       effectSize <- effectSizes[fxSizeIdx]
       if (effectSize == 1) {
         newOutcomes <- data.frame()
         injectedRr <- 1
         injectedRrFirstExposure <- 1
+        injectedRrItt <- 1
       } else {
         # When sampling, the expected RR size is the target RR, but the actual RR could be different due to
         # random error.  this code is redoing the sampling until actual RR is equal to the target RR.
@@ -732,11 +767,11 @@ generateOutcomes <- function(task,
           # Generate results under Poisson model -------------------------
           multiplier <- 1
           ratios <- c()
-          while (round(abs(sum(newOutcomeCounts) - targetCount)) > precision * targetCount){
+          while (round(abs(sum(newOutcomeCounts) - targetCount)) > precision * targetCount) {
             newOutcomeCounts <- rpois(nrow(exposures), multiplier * exposures$prediction * (effectSize - 1))
             newOutcomeCounts[newOutcomeCounts > time] <- time[newOutcomeCounts > time]
             ratios <- c(ratios, sum(newOutcomeCounts) / targetCount)
-            if (length(ratios) == 100){
+            if (length(ratios) == 100) {
               multiplier <- multiplier * 1/mean(ratios)
               ratios <- c()
               writeLines(paste("Unable to achieve target RR using model as is. Adding multiplier of", multiplier, "to force target"))
@@ -767,53 +802,22 @@ generateOutcomes <- function(task,
           # Count outcomes during first episodes:
           newOutcomeCountsFirstExposure <- sum(newOutcomeCounts[exposures$eraNumber == 1])
           injectedRrFirstExposure <- 1 + (newOutcomeCountsFirstExposure/resultSubset$observedOutcomesFirstExposure[1])
-        } else { # Survival model
+        } else {# Survival model
           # Generate outcomes under survival model --------------------------------------
-          correctedTargetCount <- targetCount
-          ratios <- c()
-          multiplier <- 1
-          temp <- c()
-          while (round(abs(sum(temp) - correctedTargetCount)) > precision * correctedTargetCount) {
-            timeToEvent <- round(rexp(nrow(exposures), multiplier * exposures$prediction * (effectSize - 1)))
-            temp <- timeToEvent < time
-            # Correct for censored time and outcomes:
-            correctedTargetCount <- (resultSubset$observedOutcomes[1] / sum(time)) * (sum(time[!temp]) + sum(timeToEvent[temp] + 1)) * effectSize - sum(exposures$hasOutcome[!temp])
-            ratios <- c(ratios, sum(temp) / correctedTargetCount)
-            if (length(ratios) == 100){
-              multiplier <- multiplier * 1/mean(ratios)
-              ratios <- c()
-              writeLines(paste("Unable to achieve target RR using model as is. Adding multiplier of", multiplier, "to force target"))
-            }
-            if (is.na(round(abs(sum(temp) - correctedTargetCount)))) {
-              writeLines("Problem")
-            }
-          }
-          rateBefore <- resultSubset$observedOutcomes[1] / sum(time)
-          rateAfter <- (sum(exposures$hasOutcome[!temp]) + sum(temp)) / (sum(time[!temp]) + sum(timeToEvent[temp] + 1))
-          injectedRr <- rateAfter / rateBefore
-          newOutcomes <- data.frame(personId = exposures$personId[temp],
-                                    cohortStartDate = exposures$cohortStartDate[temp],
-                                    timeToEvent = timeToEvent[temp])
-          # Count outcomes during first episodes:
-          if (max(exposures$eraNumber) == 1){
-            injectedRrFirstExposure <- injectedRr
-          } else {
-            firstTemp <- temp[exposures$eraNumber == 1]
-            firstTimeToEvent <- timeToEvent[exposures$eraNumber == 1]
-            firstExposures <- exposures[exposures$eraNumber == 1, ]
-            firstTime <- time[exposures$eraNumber == 1]
-            rateBeforeFirstExposure <- resultSubset$observedOutcomesFirstExposure[1] / sum(firstTime)
-            rateAfterFirstExposure <- (sum(firstExposures$hasOutcome[!firstTemp]) + sum(firstTemp)) / (sum(firstTime[!firstTemp]) + sum(firstTimeToEvent[firstTemp] + 1))
-            injectedRrFirstExposure <- rateAfterFirstExposure / rateBeforeFirstExposure
-          }
-        }
+          result <- injectSurvival(exposures, effectSize, precision, addIntentToTreat)
+          injectedRr <- result$injectedRr
+          injectedRrFirstExposure <- result$injectedRrFirstExposure
+          injectedRrItt <- result$injectedRrItt
+          newOutcomes <- result$newOutcomes}
       }
       writeLines(paste("Target RR =",
                        effectSize,
                        ", injected RR =",
                        injectedRr,
                        ", injected RR during first exposure only =",
-                       injectedRrFirstExposure))
+                       injectedRrFirstExposure,
+                       ", injected RR during ITT window =",
+                       injectedRrItt))
       
       newOutcomeId <- resultSubset$newOutcomeId[resultSubset$targetEffectSize == effectSize]
       # Write new outcomes to file for later insertion into DB:
@@ -829,10 +833,100 @@ generateOutcomes <- function(task,
       idx <- resultSubset$targetEffectSize == effectSize
       resultSubset$trueEffectSize[idx] <- injectedRr
       resultSubset$trueEffectSizeFirstExposure[idx] <- injectedRrFirstExposure
+      resultSubset$trueEffectSizeItt[idx] <- injectedRrItt
       resultSubset$injectedOutcomes[idx] <- nrow(newOutcomes)
     }
     return(resultSubset)
   }
+}
+
+injectSurvival <- function(exposures, effectSize, precision, addIntentToTreat) {
+  hasOutcome <- exposures$y != 0
+  observedCount <- sum(hasOutcome)
+  correctedTargetCount <- observedCount * (effectSize - 1)
+  survivalTime <- exposures$daysAtRisk
+  survivalTime[hasOutcome] <- exposures$timeToEvent[hasOutcome]
+  ratios <- c()
+  multiplier <- 1
+  hasNewOutcome <- c()
+  writeLines("Generating outcomes during time-at-risk")
+  while (round(abs(sum(hasNewOutcome) - correctedTargetCount)) > precision * correctedTargetCount) {
+    timeToNewOutcome <- round(rexp(nrow(exposures), multiplier * exposures$prediction * (effectSize - 1)))
+    hasNewOutcome <- timeToNewOutcome < survivalTime
+    # Correct for censored time and outcomes:
+    correctedTargetCount <- (observedCount / sum(survivalTime)) * (sum(survivalTime[!hasNewOutcome]) + sum(timeToNewOutcome[hasNewOutcome] + 1)) * effectSize - sum(hasOutcome[!hasNewOutcome])
+    ratios <- c(ratios, sum(hasNewOutcome) / correctedTargetCount)
+    if (length(ratios) == 100) {
+      writeLines(paste("Unable to achieve target RR using model as is. Correcting multiplier by", 1/mean(ratios), "to force target"))
+      multiplier <- multiplier * 1/mean(ratios)
+      ratios <- c()
+    }
+    if (is.na(round(abs(sum(hasNewOutcome) - correctedTargetCount)))) {
+      writeLines("Problem")
+    }
+  }
+  rateBefore <- observedCount / sum(survivalTime)
+  rateAfter <- (sum(hasOutcome[!hasNewOutcome]) + sum(hasNewOutcome)) / (sum(survivalTime[!hasNewOutcome]) + sum(timeToNewOutcome[hasNewOutcome] + 1))
+  injectedRr <- rateAfter / rateBefore
+  newOutcomes <- data.frame(personId = exposures$personId[hasNewOutcome],
+                            cohortStartDate = exposures$cohortStartDate[hasNewOutcome],
+                            timeToEvent = timeToNewOutcome[hasNewOutcome]) 
+  # Count outcomes during first episodes:
+  if (max(exposures$eraNumber) == 1) {
+    injectedRrFirstExposure <- injectedRr
+  } else {
+    firstHasNewOutcome <- hasNewOutcome[exposures$eraNumber == 1]
+    firstTimeToEvent <- timeToNewOutcome[exposures$eraNumber == 1]
+    firstHasOutcome <- hasOutcome[exposures$eraNumber == 1, ]
+    firstTime <- survivalTime[exposures$eraNumber == 1]
+    rateBeforeFirstExposure <- observedCount / sum(firstTime)
+    rateAfterFirstExposure <- (sum(firstHasOutcome[!firstHasNewOutcome]) + sum(firstHasNewOutcome)) / (sum(firstTime[!firstHasNewOutcome]) + sum(firstTimeToEvent[firstHasNewOutcome] + 1))
+    injectedRrFirstExposure <- rateAfterFirstExposure / rateBeforeFirstExposure
+  }
+  
+  if (addIntentToTreat) {
+    hasOutcomeItt <- exposures$yItt > 0
+    observedCountItt <- sum(hasOutcomeItt)
+    correctedTargetCount <- observedCountItt * (effectSize - 1)
+    survivalTimeItt <- exposures$daysObserved
+    survivalTimeItt[hasOutcomeItt] <- exposures$timeToEvent[hasOutcomeItt]
+    survivalTimeIttNew <- survivalTimeItt
+    survivalTimeIttNew[hasNewOutcome] <- timeToNewOutcome[hasNewOutcome]
+    rateBeforeItt <- observedCountItt / sum(survivalTimeItt)
+    ratios <- c()
+    multiplier <- rateBeforeItt / rateBefore # Adjust for fact that background rate may differ in ITT 
+    hasNewOutcomeItt <- c()
+    writeLines("Generating outcomes for intent-to-treat")
+    while (round(abs(sum(hasNewOutcomeItt) + sum(hasNewOutcome) - correctedTargetCount)) > precision * correctedTargetCount) {
+      timeToNewOutcomeItt <- round(rexp(nrow(exposures), multiplier * exposures$prediction * (effectSize - 1)))
+      hasNewOutcomeItt <- timeToNewOutcomeItt > exposures$daysAtRisk & timeToNewOutcomeItt < survivalTimeIttNew
+      # Correct for censored time and outcomes:
+      correctedTargetCount <- (observedCountItt / sum(survivalTimeItt)) * (sum(survivalTimeIttNew[!hasNewOutcomeItt]) + sum(timeToNewOutcomeItt[hasNewOutcomeItt] + 1)) * effectSize - 
+        sum(hasOutcomeItt[!hasNewOutcomeItt]) 
+      ratios <- c(ratios, (sum(hasNewOutcomeItt) + sum(hasNewOutcome)) / correctedTargetCount)
+      if (length(ratios) == 100) {
+        writeLines(paste("Unable to achieve target RR using model as is. Correcting multiplier by", 1/mean(ratios), "to force target"))
+        multiplier <- multiplier * 1/mean(ratios)
+        ratios <- c()
+        
+      }
+      if (is.na(round(abs(sum(hasNewOutcome) - correctedTargetCount)))) {
+        writeLines("Problem")
+      }
+    }
+    rateAfterItt <- (sum(hasOutcomeItt[!hasNewOutcome & !hasNewOutcomeItt]) + sum(hasNewOutcome) + sum(hasNewOutcomeItt)) / (sum(survivalTimeIttNew[!hasNewOutcomeItt]) + sum(timeToNewOutcomeItt[hasNewOutcomeItt] + 1))
+    injectedRrItt <- rateAfterItt / rateBeforeItt
+    newOutcomes <- rbind(newOutcomes,
+                         data.frame(personId = exposures$personId[hasNewOutcomeItt],
+                                    cohortStartDate = exposures$cohortStartDate[hasNewOutcomeItt],
+                                    timeToEvent = timeToNewOutcomeItt[hasNewOutcomeItt]))
+  } else {
+    injectedRrItt <- NA
+  }
+  return(list(injectedRr = injectedRr,
+              injectedRrFirstExposure = injectedRrFirstExposure,
+              injectedRrItt = injectedRrItt,
+              newOutcomes = newOutcomes))
 }
 
 plotCalibration <- function(prediction, y, time) {
@@ -905,4 +999,3 @@ plotCalibration <- function(prediction, y, time) {
   colnames(prediction)[colnames(prediction) == "value"] <- "prediction"
   return(prediction)
 }
-
