@@ -541,29 +541,47 @@ injectSignals <- function(connectionDetails,
   }
   
   writeLines("Generating outcomes")
-  tasks <- list()
-  for (exposureId in exposureIds) {
-    outcomeIds <- unique(exposureOutcomePairs$outcomeId[exposureOutcomePairs$exposureId == exposureId])
-    for (outcomeId in outcomeIds) {
-      if (result$observedOutcomes[result$exposureId == exposureId & result$outcomeId == outcomeId][1] >= minOutcomeCountForInjection) {
-        modelFolder <- result$modelFolder[result$exposureId == exposureId & result$outcomeId == outcomeId][1]
-        if (modelFolder != "") {
-          groupId <- outcomeIdToGroupId$groupId[outcomeIdToGroupId$outcomeId == outcomeId]
-          sampledExposuresFile <- file.path(workFolder, paste0("sampledRowIds_g", groupId))
-          if (file.exists(sampledExposuresFile)) {
-            covarFileName <- file.path(workFolder, paste0("covarsForPrediction_g", groupId))
-          } else {
-            covarFileName <- file.path(workFolder, paste0("covarsForModel_g", groupId))
-          }
-          task <- list(exposureId = exposureId,
-                       outcomeId = outcomeId,
-                       modelFolder = modelFolder,
-                       covarFileName = covarFileName)
-          tasks[[length(tasks) + 1]] <- task
-        }
-      }
+  temp <- result[result$observedOutcomes > minOutcomeCountForInjection, c("exposureId", "outcomeId", "modelFolder")]
+  temp <- temp[temp$modelFolder != "", ]
+  temp <- unique(temp)
+  createTask <- function(i) {
+    groupId <- outcomeIdToGroupId$groupId[outcomeIdToGroupId$outcomeId == temp$outcomeId[i]]
+    sampledExposuresFile <- file.path(workFolder, paste0("sampledRowIds_g", groupId))
+    if (file.exists(sampledExposuresFile)) {
+      covarFileName <- file.path(workFolder, paste0("covarsForPrediction_g", groupId))
+    } else {
+      covarFileName <- file.path(workFolder, paste0("covarsForModel_g", groupId))
     }
+    task <- list(exposureId =  temp$exposureId[i],
+                 outcomeId =  temp$outcomeId[i],
+                 modelFolder =  temp$modelFolder[i],
+                 covarFileName = covarFileName)
+    return(task)
   }
+  tasks <- lapply(1:nrow(temp), createTask)
+  # tasks <- list()
+  # for (exposureId in exposureIds) {
+  #   outcomeIds <- unique(exposureOutcomePairs$outcomeId[exposureOutcomePairs$exposureId == exposureId])
+  #   for (outcomeId in outcomeIds) {
+  #     if (result$observedOutcomes[result$exposureId == exposureId & result$outcomeId == outcomeId][1] >= minOutcomeCountForInjection) {
+  #       modelFolder <- result$modelFolder[result$exposureId == exposureId & result$outcomeId == outcomeId][1]
+  #       if (modelFolder != "") {
+  #         groupId <- outcomeIdToGroupId$groupId[outcomeIdToGroupId$outcomeId == outcomeId]
+  #         sampledExposuresFile <- file.path(workFolder, paste0("sampledRowIds_g", groupId))
+  #         if (file.exists(sampledExposuresFile)) {
+  #           covarFileName <- file.path(workFolder, paste0("covarsForPrediction_g", groupId))
+  #         } else {
+  #           covarFileName <- file.path(workFolder, paste0("covarsForModel_g", groupId))
+  #         }
+  #         task <- list(exposureId = exposureId,
+  #                      outcomeId = outcomeId,
+  #                      modelFolder = modelFolder,
+  #                      covarFileName = covarFileName)
+  #         tasks[[length(tasks) + 1]] <- task
+  #       }
+  #     }
+  #   }
+  # }
   if (length(tasks) > 0) {
     cluster <- OhdsiRTools::makeCluster(generationThreads)
     results <- OhdsiRTools::clusterApply(cluster,
@@ -584,7 +602,7 @@ injectSignals <- function(connectionDetails,
   }
   
   # Insert outcomes into database ------------------------------------------------
-  writeLines("Inserting outcomes into database")
+  writeLines("Inserting additional outcomes into database")
   outcomesToInject <- data.frame()
   for (i in 1:nrow(result)) {
     if (result$outcomesToInjectFile[i] != "") {
@@ -592,12 +610,20 @@ injectSignals <- function(connectionDetails,
     }
   }
   colnames(outcomesToInject) <- SqlRender::camelCaseToSnakeCase(colnames(outcomesToInject))
-  DatabaseConnector::insertTable(conn, "#temp_outcomes", outcomesToInject, TRUE, TRUE, TRUE, oracleTempSchema)
+  DatabaseConnector::insertTable(connection = conn, 
+                                 tableName = "#temp_outcomes", 
+                                 data = outcomesToInject, 
+                                 dropTableIfExists = TRUE, 
+                                 createTable = TRUE, 
+                                 tempTable = TRUE, 
+                                 oracleTempSchema = oracleTempSchema,
+                                 progressBar = TRUE)
   
   toCopy <- result[result$modelFolder != "", c("outcomeId", "newOutcomeId")]
   colnames(toCopy) <- SqlRender::camelCaseToSnakeCase(colnames(toCopy))
   DatabaseConnector::insertTable(conn, "#to_copy", toCopy, TRUE, TRUE, TRUE, oracleTempSchema)
   
+  writeLines("Copying negative control outcomes into database")
   copySql <- SqlRender::loadRenderTranslateSql("CopyOutcomes.sql",
                                                packageName = "MethodEvaluation",
                                                dbms = connectionDetails$dbms,
