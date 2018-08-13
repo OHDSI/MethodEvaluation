@@ -24,6 +24,10 @@
 #' inserting any outcomes should be 1. There are two models for inserting the outcomes during the
 #' specified risk window of the drug: a Poisson model assuming multiple outcomes could occurr during a
 #' single exposure, and a survival model considering only one outcome per exposure.
+#' 
+#' It is possible to use bulk import to insert the generated outcomes in the database. This requires
+#' the environmental variable 'USE_MPP_BULK_LOAD' to be set to 'TRUE'. See \code{
+#' ?DatabaseConnector::insertTable} for details on how to configure the bulk upload.
 #'
 #' @param connectionDetails                An R object of type \code{ConnectionDetails} created using
 #'                                         the function \code{createConnectionDetails} in the
@@ -559,29 +563,6 @@ injectSignals <- function(connectionDetails,
     return(task)
   }
   tasks <- lapply(1:nrow(temp), createTask)
-  # tasks <- list()
-  # for (exposureId in exposureIds) {
-  #   outcomeIds <- unique(exposureOutcomePairs$outcomeId[exposureOutcomePairs$exposureId == exposureId])
-  #   for (outcomeId in outcomeIds) {
-  #     if (result$observedOutcomes[result$exposureId == exposureId & result$outcomeId == outcomeId][1] >= minOutcomeCountForInjection) {
-  #       modelFolder <- result$modelFolder[result$exposureId == exposureId & result$outcomeId == outcomeId][1]
-  #       if (modelFolder != "") {
-  #         groupId <- outcomeIdToGroupId$groupId[outcomeIdToGroupId$outcomeId == outcomeId]
-  #         sampledExposuresFile <- file.path(workFolder, paste0("sampledRowIds_g", groupId))
-  #         if (file.exists(sampledExposuresFile)) {
-  #           covarFileName <- file.path(workFolder, paste0("covarsForPrediction_g", groupId))
-  #         } else {
-  #           covarFileName <- file.path(workFolder, paste0("covarsForModel_g", groupId))
-  #         }
-  #         task <- list(exposureId = exposureId,
-  #                      outcomeId = outcomeId,
-  #                      modelFolder = modelFolder,
-  #                      covarFileName = covarFileName)
-  #         tasks[[length(tasks) + 1]] <- task
-  #       }
-  #     }
-  #   }
-  # }
   if (length(tasks) > 0) {
     cluster <- OhdsiRTools::makeCluster(generationThreads)
     results <- OhdsiRTools::clusterApply(cluster,
@@ -600,28 +581,49 @@ injectSignals <- function(connectionDetails,
     OhdsiRTools::stopCluster(cluster)
     result <- do.call("rbind", results)
   }
-  
+
+  # Save summary -----------------------------------------------------------------
+  summaryFile <- .createSummaryFileName(workFolder)
+  saveRDS(result, summaryFile)
+    
   # Insert outcomes into database ------------------------------------------------
   writeLines("Inserting additional outcomes into database")
-  outcomesToInject <- data.frame()
-  for (i in 1:nrow(result)) {
-    if (result$outcomesToInjectFile[i] != "") {
-      outcomesToInject <- rbind(outcomesToInject, readRDS(result$outcomesToInjectFile[i]))
-    }
-  }
+  fileNames <- result$outcomesToInjectFile[result$outcomesToInjectFile != ""]
+  outcomesToInject <- lapply(fileNames, readRDS)
+  outcomesToInject <- do.call("rbind", outcomesToInject)
+  # outcomesToInject <- data.frame()
+  # for (i in 1:nrow(result)) {
+  #   if (result$outcomesToInjectFile[i] != "") {
+  #     outcomesToInject <- rbind(outcomesToInject, readRDS(result$outcomesToInjectFile[i]))
+  #   }
+  # }
   colnames(outcomesToInject) <- SqlRender::camelCaseToSnakeCase(colnames(outcomesToInject))
+  if (Sys.getenv("USE_MPP_BULK_LOAD") == "TRUE") {
+    tableName = paste0(outputDatabaseSchema, ".temp_outcomes_", paste(sample(letters, 5),collapse = ""))
+    tempTable = FALSE
+  } else {
+    tableName = "#temp_outcomes"
+    tempTable = TRUE
+  }
+  
   DatabaseConnector::insertTable(connection = conn, 
-                                 tableName = "#temp_outcomes", 
+                                 tableName = tableName, 
                                  data = outcomesToInject, 
                                  dropTableIfExists = TRUE, 
                                  createTable = TRUE, 
-                                 tempTable = TRUE, 
+                                 tempTable = tempTable, 
                                  oracleTempSchema = oracleTempSchema,
                                  progressBar = TRUE)
   
   toCopy <- result[result$modelFolder != "", c("outcomeId", "newOutcomeId")]
   colnames(toCopy) <- SqlRender::camelCaseToSnakeCase(colnames(toCopy))
-  DatabaseConnector::insertTable(conn, "#to_copy", toCopy, TRUE, TRUE, TRUE, oracleTempSchema)
+  DatabaseConnector::insertTable(connection = conn, 
+                                 tableName = "#to_copy", 
+                                 data = toCopy, 
+                                 dropTableIfExists = TRUE, 
+                                 createTable = TRUE, 
+                                 tempTable = TRUE, 
+                                 oracleTempSchema = oracleTempSchema)
   
   writeLines("Copying negative control outcomes into database")
   copySql <- SqlRender::loadRenderTranslateSql("CopyOutcomes.sql",
@@ -632,22 +634,24 @@ injectSignals <- function(connectionDetails,
                                                outcome_table = outcomeTable,
                                                output_database_schema = outputDatabaseSchema,
                                                output_table = outputTable,
-                                               create_output_table = createOutputTable)
+                                               create_output_table = createOutputTable,
+                                               temp_outcomes_table = tableName)
   
   DatabaseConnector::executeSql(conn, copySql)
   
-  # if (cohortPersonCreated) {
   sql <- "TRUNCATE TABLE #cohort_person; DROP TABLE #cohort_person;"
   sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
   DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
-  # }
+
+  sql <- "TRUNCATE TABLE #to_copy; DROP TABLE #to_copy;"
+  sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
+  DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
   
-  sql <- "TRUNCATE TABLE #temp_outcomes; DROP TABLE #temp_outcomes; TRUNCATE TABLE #to_copy; DROP TABLE #to_copy;"
+  sql <- "TRUNCATE TABLE @temp_outcomes_table; DROP TABLE @temp_outcomes_table;"
+  sql <- SqlRender::renderSql(sql, temp_outcomes_table = tableName)$sql
   sql <- SqlRender::translateSql(sql, targetDialect = connectionDetails$dbms)$sql
   DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
 
-  summaryFile <- .createSummaryFileName(workFolder)
-  saveRDS(result, summaryFile)
   return(result)
 }
 

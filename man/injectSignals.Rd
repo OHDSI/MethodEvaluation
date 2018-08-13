@@ -164,6 +164,10 @@ that these drug-outcome pairs represent negative controls, so the true relative 
 inserting any outcomes should be 1. There are two models for inserting the outcomes during the
 specified risk window of the drug: a Poisson model assuming multiple outcomes could occurr during a
 single exposure, and a survival model considering only one outcome per exposure.
+
+It is possible to use bulk import to insert the generated outcomes in the database. This requires
+the environmental variable 'USE_MPP_BULK_LOAD' to be set to 'TRUE'. See \code{
+?DatabaseConnector::insertTable} for details on how to configure the bulk upload.
 }
 \references{
 Schuemie MJ, Hripcsak G, Ryan PB, Madigan D, Suchard MA. Empirical confidence interval calibration for 

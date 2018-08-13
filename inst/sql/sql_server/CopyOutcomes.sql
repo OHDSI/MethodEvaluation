@@ -4,6 +4,7 @@
 {DEFAULT @output_database_schema = 'CDM4_SIM' } 
 {DEFAULT @output_table = 'cohort' }
 {DEFAULT @create_output_table = TRUE}
+{DEFAULT @temp_outcomes_table = '#temp_outcomes'}
 
 {@create_output_table} ? {
 IF OBJECT_ID('@output_database_schema.@output_table', 'U') IS NOT NULL
@@ -23,7 +24,7 @@ SELECT cohort_definition_id,
 	cohort_start_date, 
 	NULL AS cohort_end_date, 
 	subject_id 
-FROM #temp_outcomes 
+FROM @temp_outcomes_table 
 
 	UNION ALL
 
