@@ -214,7 +214,7 @@ injectSignals <- function(connectionDetails,
   on.exit(DatabaseConnector::disconnect(conn))
   
   # Create exposure cohorts ------------------------------------
-  writeLines("\nCreating risk windows")
+  ParallelLogger::logInfo("\nCreating risk windows")
   renderedSql <- SqlRender::loadRenderTranslateSql("CreateExposedCohorts.sql",
                                                    packageName = "MethodEvaluation",
                                                    dbms = connectionDetails$dbms,
@@ -250,7 +250,7 @@ injectSignals <- function(connectionDetails,
     if (file.exists(priorOutcomesFile)) {
       priorOutcomes <- readRDS(priorOutcomesFile)
     } else {
-      writeLines("Finding people with prior outcomes")
+      ParallelLogger::logInfo("Finding people with prior outcomes")
       table <- exposureOutcomePairs
       colnames(table) <- SqlRender::camelCaseToSnakeCase(colnames(table))
       DatabaseConnector::insertTable(connection = conn,
@@ -281,7 +281,7 @@ injectSignals <- function(connectionDetails,
   if (file.exists(outcomesFile)) {
     outcomeCounts <- readRDS(outcomesFile)
   } else {
-    writeLines("Extracting outcome counts")
+    ParallelLogger::logInfo("Extracting outcome counts")
     table <- exposureOutcomePairs
     colnames(table) <- SqlRender::camelCaseToSnakeCase(colnames(table))
     DatabaseConnector::insertTable(connection = conn,
@@ -311,7 +311,7 @@ injectSignals <- function(connectionDetails,
   if (file.exists(countsFile)) {
     result <- readRDS(countsFile)
   } else {
-    writeLines("Computing counts per exposure - outcome pair")
+    ParallelLogger::logInfo("Computing counts per exposure - outcome pair")
     temp <- merge(exposures[, c("rowId", "exposureId", "eraNumber")], outcomeCounts[, c("rowId", "outcomeId", "y", "yItt")])
     if (modelType == "survival") {
       temp$y <- temp$y != 0
@@ -399,7 +399,7 @@ injectSignals <- function(connectionDetails,
                                      oracleTempSchema = oracleTempSchema)$sql
       count <- DatabaseConnector::querySql(conn, sql)
       if (count > maxSubjectsForModel) {
-        writeLines("Sampling exposed cohorts for model(s)")
+        ParallelLogger::logInfo("Sampling exposed cohorts for model(s)")
         renderedSql <- SqlRender::loadRenderTranslateSql("SampleExposedCohorts.sql",
                                                          packageName = "MethodEvaluation",
                                                          dbms = connectionDetails$dbms,
@@ -425,7 +425,7 @@ injectSignals <- function(connectionDetails,
                                        oracleTempSchema = oracleTempSchema)$sql
         DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
       }
-      writeLines("Extracting covariates for fitting outcome model(s)")
+      ParallelLogger::logInfo("Extracting covariates for fitting outcome model(s)")
       covariateData <- FeatureExtraction::getDbCovariateData(connection = conn,
                                                              oracleTempSchema = oracleTempSchema,
                                                              cdmDatabaseSchema = cdmDatabaseSchema,
@@ -450,7 +450,7 @@ injectSignals <- function(connectionDetails,
     }
   }
   
-  writeLines("Fitting outcome models")
+  ParallelLogger::logInfo("Fitting outcome models")
   tasks <- list()
   outcomeIds <- unique(exposureOutcomePairs$outcomeId)
   for (outcomeId in outcomeIds) {
@@ -493,7 +493,7 @@ injectSignals <- function(connectionDetails,
     sampledExposuresFile <- file.path(workFolder, paste0("sampledRowIds_g", i))
     covarFileName <- file.path(workFolder, paste0("covarsForPrediction_g", i))
     if (file.exists(sampledExposuresFile) && !file.exists(covarFileName)) {
-      writeLines("Extracting covariates for all rows predicting outcomes")
+      ParallelLogger::logInfo("Extracting covariates for all rows predicting outcomes")
       if (!is(covariateSettings, "covariateSettings")) {
         stop("Composite covariate settings not supported")
       }
@@ -508,7 +508,7 @@ injectSignals <- function(connectionDetails,
       modelCovariateIds <- unique(modelCovariateIds)
       modelCovariateIds <- modelCovariateIds[modelCovariateIds != 0]
       
-      writeLines(paste("Number of unique covariates across outcome models:",length(modelCovariateIds)))
+      ParallelLogger::logInfo(paste("Number of unique covariates across outcome models:",length(modelCovariateIds)))
       if (length(modelCovariateIds) == 0) {
         dir.create(covarFileName)
       } else {
@@ -544,7 +544,7 @@ injectSignals <- function(connectionDetails,
     }
   }
   
-  writeLines("Generating outcomes")
+  ParallelLogger::logInfo("Generating outcomes")
   temp <- result[result$observedOutcomes > minOutcomeCountForInjection, c("exposureId", "outcomeId", "modelFolder")]
   temp <- temp[temp$modelFolder != "", ]
   temp <- unique(temp)
@@ -587,7 +587,7 @@ injectSignals <- function(connectionDetails,
   saveRDS(result, summaryFile)
     
   # Insert outcomes into database ------------------------------------------------
-  writeLines("Inserting additional outcomes into database")
+  ParallelLogger::logInfo("Inserting additional outcomes into database")
   fileNames <- result$outcomesToInjectFile[result$outcomesToInjectFile != ""]
   outcomesToInject <- lapply(fileNames, readRDS)
   outcomesToInject <- do.call("rbind", outcomesToInject)
@@ -625,7 +625,7 @@ injectSignals <- function(connectionDetails,
                                  tempTable = TRUE, 
                                  oracleTempSchema = oracleTempSchema)
   
-  writeLines("Copying negative control outcomes into database")
+  ParallelLogger::logInfo("Copying negative control outcomes into database")
   copySql <- SqlRender::loadRenderTranslateSql("CopyOutcomes.sql",
                                                packageName = "MethodEvaluation",
                                                dbms = connectionDetails$dbms,
@@ -664,6 +664,7 @@ fitModel <- function(task,
                      modelType,
                      prior,
                      control) {
+  ParallelLogger::logInfo("Fitting model for outcome ", task$outcomeId)
   exposures <- readRDS(exposuresFile)
   # Dedupe exposures for model fitting, so we don't overfit:
   exposures <- exposures[order(exposures$personId, exposures$cohortStartDate), ]
@@ -715,7 +716,7 @@ fitModel <- function(task,
     fit <- fit$return_flag
   }
   if (is.character(fit)) {
-    writeLines(paste("Unable to fit model for outcome", task$outcomeId, ":", fit))
+    ParallelLogger::logInfo(paste("Unable to fit model for outcome", task$outcomeId, ":", fit))
     dir.create(task$modelFolder)
     write.csv(fit, file.path(task$modelFolder, "Error.txt"))
   } else {
@@ -747,6 +748,7 @@ generateOutcomes <- function(task,
                              precision,
                              workFolder,
                              addIntentToTreat) {
+  ParallelLogger::logInfo("Generating outcomes for exposure ", task$exposureId, " and outcome ", task$outcomeId)
   resultSubset <- result[result$exposureId == task$exposureId & result$outcomeId == task$outcomeId, ]
   if (file.exists(file.path(task$modelFolder, "Error.txt"))) {
     return(resultSubset)
@@ -804,7 +806,7 @@ generateOutcomes <- function(task,
             if (length(ratios) == 100) {
               multiplier <- multiplier * 1/mean(ratios)
               ratios <- c()
-              writeLines(paste("Unable to achieve target RR using model as is. Adding multiplier of", multiplier, "to force target"))
+              ParallelLogger::logDebug(paste("Unable to achieve target RR using model as is. Adding multiplier of", multiplier, "to force target"))
             }
           }
           idx <- which(newOutcomeCounts != 0)
@@ -840,7 +842,7 @@ generateOutcomes <- function(task,
           injectedRrItt <- result$injectedRrItt
           newOutcomes <- result$newOutcomes}
       }
-      writeLines(paste("Target RR =",
+      ParallelLogger::logInfo(paste("Target RR =",
                        effectSize,
                        ", injected RR =",
                        injectedRr,
@@ -879,20 +881,27 @@ injectSurvival <- function(exposures, effectSize, precision, addIntentToTreat) {
   ratios <- c()
   multiplier <- 1
   hasNewOutcome <- c()
-  writeLines("Generating outcomes during time-at-risk")
+  ParallelLogger::logTrace("Generating outcomes during time-at-risk")
   while (round(abs(sum(hasNewOutcome) - correctedTargetCount)) > precision * correctedTargetCount) {
-    timeToNewOutcome <- round(rexp(nrow(exposures), multiplier * exposures$prediction * (effectSize - 1)))
+    timeToNewOutcome <- round(rexp(nrow(exposures), multiplier * exposures$prediction * (effectSize - 1))) 
     hasNewOutcome <- timeToNewOutcome < survivalTime
     # Correct for censored time and outcomes:
-    correctedTargetCount <- (observedCount / sum(survivalTime)) * (sum(survivalTime[!hasNewOutcome]) + sum(timeToNewOutcome[hasNewOutcome] + 1)) * effectSize - sum(hasOutcome[!hasNewOutcome])
-    ratios <- c(ratios, sum(hasNewOutcome) / correctedTargetCount)
+    observedRate <- (observedCount / sum(survivalTime)) 
+    timeCensoringAtNewEvents <- (sum(survivalTime[!hasNewOutcome]) + sum(timeToNewOutcome[hasNewOutcome] + 1))
+    requiredTotalEvents <- observedRate * timeCensoringAtNewEvents * effectSize
+    correctedTargetCount <- requiredTotalEvents - sum(hasOutcome[!hasNewOutcome])
+    if (correctedTargetCount < 0) {
+      warning("Correct target count became negative. ")
+    } else {
+      ratios <- c(ratios, sum(hasNewOutcome) / correctedTargetCount)  
+    }
     if (length(ratios) == 100) {
-      writeLines(paste("Unable to achieve target RR using model as is. Correcting multiplier by", 1/mean(ratios), "to force target"))
-      multiplier <- multiplier * 1/mean(ratios)
+      ParallelLogger::logDebug(paste("Unable to achieve target RR using model as is. Correcting multiplier by", 1/mean(ratios), "to force target"))
+      multiplier <- mean(c(multiplier, multiplier * 1/mean(ratios)))
       ratios <- c()
     }
     if (is.na(round(abs(sum(hasNewOutcome) - correctedTargetCount)))) {
-      writeLines("Problem")
+      warning("NAs produced when generating outcomes")
     }
   }
   rateBefore <- observedCount / sum(survivalTime)
@@ -926,19 +935,22 @@ injectSurvival <- function(exposures, effectSize, precision, addIntentToTreat) {
     ratios <- c()
     multiplier <- rateBeforeItt / rateBefore # Adjust for fact that background rate may differ in ITT 
     hasNewOutcomeItt <- c()
-    writeLines("Generating outcomes for intent-to-treat")
+    ParallelLogger::logTrace("Generating outcomes for intent-to-treat")
     while (round(abs(sum(hasNewOutcomeItt) + sum(hasNewOutcome) - correctedTargetCount)) > precision * correctedTargetCount) {
       timeToNewOutcomeItt <- round(rexp(nrow(exposures), multiplier * exposures$prediction * (effectSize - 1)))
       hasNewOutcomeItt <- timeToNewOutcomeItt > exposures$daysAtRisk & timeToNewOutcomeItt < survivalTimeIttNew
       # Correct for censored time and outcomes:
       correctedTargetCount <- (observedCountItt / sum(survivalTimeItt)) * (sum(survivalTimeIttNew[!hasNewOutcomeItt]) + sum(timeToNewOutcomeItt[hasNewOutcomeItt] + 1)) * effectSize - 
         sum(hasOutcomeItt[!hasNewOutcomeItt]) 
-      ratios <- c(ratios, (sum(hasNewOutcomeItt) + sum(hasNewOutcome)) / correctedTargetCount)
+      if (correctedTargetCount < 0) {
+        warning("Correct target count became negative. ")
+      } else {
+        ratios <- c(ratios, (sum(hasNewOutcomeItt) + sum(hasNewOutcome)) / correctedTargetCount)
+      }
       if (length(ratios) == 100) {
-        writeLines(paste("Unable to achieve target RR using model as is. Correcting multiplier by", 1/mean(ratios), "to force target"))
-        multiplier <- multiplier * 1/mean(ratios)
+        ParallelLogger::logDebug(paste("Unable to achieve target RR using model as is. Correcting multiplier by", 1/mean(ratios), "to force target"))
+        multiplier <- mean(c(multiplier, multiplier * 1/mean(ratios)))
         ratios <- c()
-        
       }
       if (is.na(round(abs(sum(hasNewOutcome) - correctedTargetCount)))) {
         writeLines("Problem")
