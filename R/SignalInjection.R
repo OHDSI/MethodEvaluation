@@ -585,18 +585,16 @@ injectSignals <- function(connectionDetails,
   # Save summary -----------------------------------------------------------------
   summaryFile <- .createSummaryFileName(workFolder)
   saveRDS(result, summaryFile)
+  
+  if (!is.null(getOption("skipPositiveControlUpload") && getOption("skipPositiveControlUpload"))) {
+    return(result)
+  }
     
   # Insert outcomes into database ------------------------------------------------
   ParallelLogger::logInfo("Inserting additional outcomes into database")
   fileNames <- result$outcomesToInjectFile[result$outcomesToInjectFile != ""]
   outcomesToInject <- lapply(fileNames, readRDS)
   outcomesToInject <- do.call("rbind", outcomesToInject)
-  # outcomesToInject <- data.frame()
-  # for (i in 1:nrow(result)) {
-  #   if (result$outcomesToInjectFile[i] != "") {
-  #     outcomesToInject <- rbind(outcomesToInject, readRDS(result$outcomesToInjectFile[i]))
-  #   }
-  # }
   colnames(outcomesToInject) <- SqlRender::camelCaseToSnakeCase(colnames(outcomesToInject))
   if (Sys.getenv("USE_MPP_BULK_LOAD") == "TRUE") {
     tableName = paste0(outputDatabaseSchema, ".temp_outcomes_", paste(sample(letters, 5),collapse = ""))
