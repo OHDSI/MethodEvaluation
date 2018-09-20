@@ -6,9 +6,10 @@
 \usage{
 computeMdrr(connectionDetails, cdmDatabaseSchema,
   oracleTempSchema = cdmDatabaseSchema, exposureOutcomePairs,
-  exposureDatabaseSchema = cdmDatabaseSchema, exposureTable = "drug_era",
-  outcomeDatabaseSchema = cdmDatabaseSchema, outcomeTable = "condition_era",
-  cdmVersion = "5")
+  exposureDatabaseSchema = cdmDatabaseSchema,
+  exposureTable = "drug_era",
+  outcomeDatabaseSchema = cdmDatabaseSchema,
+  outcomeTable = "condition_era", cdmVersion = "5")
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{ConnectionDetails} created using

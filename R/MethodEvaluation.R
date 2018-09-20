@@ -107,7 +107,7 @@ NULL
 #' @usage
 #' data(ohdsiNegativeControls)
 #' @format
-#' A data frame with 200 rows and 9 variables: \describe{ \item{targetID}{Cohort ID
+#' A data frame with 200 rows and 9 variables: \describe{ \item{targetId}{Cohort ID
 #' identifying the target exposure} \item{targetName}{Name of the target cohort} 
 #' \item{comparatorId}{Cohort ID identifying the comparator exposure} 
 #' \item{comparatorName}{Name of the comparator cohort}

@@ -24,7 +24,7 @@ Dependencies
  * SqlRender
  * FeatureExtraction
  * Cyclops
- * OhdsiRTools
+ * ParallelLogger
 
 Getting Started
 ===============
@@ -36,10 +36,6 @@ Getting Started
   ```r
   install.packages("devtools")
   library(devtools)
-  install_github("ohdsi/OHdsiRTools") 
-  install_github("ohdsi/SqlRender") 
-  install_github("ohdsi/DatabaseConnector") 
-  install_github("ohdsi/Cyclops") 
   install_github("ohdsi/FeatureExtraction") 
   install_github("ohdsi/MethodEvaluation") 
   ```

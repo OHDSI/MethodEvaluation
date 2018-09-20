@@ -472,8 +472,8 @@ injectSignals <- function(connectionDetails,
   }
   
   if (length(tasks) > 0) {
-    cluster <- OhdsiRTools::makeCluster(modelThreads)
-    OhdsiRTools::clusterApply(cluster,
+    cluster <- ParallelLogger::makeCluster(modelThreads)
+    ParallelLogger::clusterApply(cluster,
                               tasks,
                               fitModel,
                               result,
@@ -484,7 +484,7 @@ injectSignals <- function(connectionDetails,
                               modelType,
                               prior,
                               control)
-    OhdsiRTools::stopCluster(cluster)
+    ParallelLogger::stopCluster(cluster)
   }
   
   # Generate new outcomes -----------------------------------------
@@ -564,8 +564,8 @@ injectSignals <- function(connectionDetails,
   }
   tasks <- lapply(1:nrow(temp), createTask)
   if (length(tasks) > 0) {
-    cluster <- OhdsiRTools::makeCluster(generationThreads)
-    results <- OhdsiRTools::clusterApply(cluster,
+    cluster <- ParallelLogger::makeCluster(generationThreads)
+    results <- ParallelLogger::clusterApply(cluster,
                                          tasks,
                                          generateOutcomes,
                                          result,
@@ -578,7 +578,7 @@ injectSignals <- function(connectionDetails,
                                          precision,
                                          workFolder,
                                          addIntentToTreat)
-    OhdsiRTools::stopCluster(cluster)
+    ParallelLogger::stopCluster(cluster)
     result <- do.call("rbind", results)
   }
 
@@ -951,7 +951,7 @@ injectSurvival <- function(exposures, effectSize, precision, addIntentToTreat) {
         ratios <- c()
       }
       if (is.na(round(abs(sum(hasNewOutcome) - correctedTargetCount)))) {
-        writeLines("Problem")
+        ParallelLogger::logDebug("Problem")
       }
     }
     rateAfterItt <- (sum(hasOutcomeItt[!hasNewOutcome & !hasNewOutcomeItt]) + sum(hasNewOutcome) + sum(hasNewOutcomeItt)) / (sum(survivalTimeIttNew[!hasNewOutcomeItt]) + sum(timeToNewOutcomeItt[hasNewOutcomeItt] + 1))

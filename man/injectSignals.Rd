@@ -6,21 +6,24 @@
 \usage{
 injectSignals(connectionDetails, cdmDatabaseSchema,
   oracleTempSchema = cdmDatabaseSchema,
-  exposureDatabaseSchema = cdmDatabaseSchema, exposureTable = "drug_era",
+  exposureDatabaseSchema = cdmDatabaseSchema,
+  exposureTable = "drug_era",
   outcomeDatabaseSchema = cdmDatabaseSchema, outcomeTable = "cohort",
-  outputDatabaseSchema = outcomeDatabaseSchema, outputTable = outcomeTable,
-  createOutputTable = FALSE, exposureOutcomePairs, modelType = "poisson",
+  outputDatabaseSchema = outcomeDatabaseSchema,
+  outputTable = outcomeTable, createOutputTable = FALSE,
+  exposureOutcomePairs, modelType = "poisson",
   minOutcomeCountForModel = 100, minOutcomeCountForInjection = 25,
   covariateSettings = FeatureExtraction::createCovariateSettings(useDemographicsAgeGroup
   = TRUE, useDemographicsGender = TRUE, useDemographicsIndexYear = TRUE,
   useDemographicsIndexMonth = TRUE, useConditionGroupEraLongTerm = TRUE,
   useDrugGroupEraLongTerm = TRUE, useProcedureOccurrenceLongTerm = TRUE,
-  useMeasurementLongTerm = TRUE, useObservationLongTerm = TRUE, useCharlsonIndex
-  = TRUE, useDcsi = TRUE, useChads2Vasc = TRUE, longTermStartDays = 365, endDays
-  = 0), prior = createPrior("laplace", exclude = 0, useCrossValidation =
-  TRUE), control = createControl(cvType = "auto", startingVariance = 0.1,
-  noiseLevel = "quiet", threads = 10), firstExposureOnly = FALSE,
-  washoutPeriod = 183, riskWindowStart = 0, riskWindowEnd = 0,
+  useMeasurementLongTerm = TRUE, useObservationLongTerm = TRUE,
+  useCharlsonIndex = TRUE, useDcsi = TRUE, useChads2Vasc = TRUE,
+  longTermStartDays = 365, endDays = 0), prior = createPrior("laplace",
+  exclude = 0, useCrossValidation = TRUE), control = createControl(cvType
+  = "auto", startingVariance = 0.1, noiseLevel = "quiet", threads = 10),
+  firstExposureOnly = FALSE, washoutPeriod = 183,
+  riskWindowStart = 0, riskWindowEnd = 0,
   addExposureDaysToEnd = TRUE, addIntentToTreat = FALSE,
   firstOutcomeOnly = FALSE, removePeopleWithPriorOutcomes = FALSE,
   maxSubjectsForModel = 1e+05, effectSizes = c(1, 1.25, 1.5, 2, 4),
