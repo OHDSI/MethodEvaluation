@@ -586,7 +586,7 @@ injectSignals <- function(connectionDetails,
   summaryFile <- .createSummaryFileName(workFolder)
   saveRDS(result, summaryFile)
   
-  if (!is.null(getOption("skipPositiveControlUpload") && getOption("skipPositiveControlUpload"))) {
+  if (!is.null(getOption("skipPositiveControlUpload")) && getOption("skipPositiveControlUpload")) {
     return(result)
   }
     
