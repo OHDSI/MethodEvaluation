@@ -1,0 +1,130 @@
+---
+title: "Running the OHDSI Methods Benchmark"
+author: "Martijn J. Schuemie"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    number_sections: yes
+    toc: yes
+  html_document:
+    number_sections: yes
+    toc: yes
+vignette: >
+  %\VignetteIndexEntry{OHDSI Methods Benchmark}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+library(MethodEvaluation)
+knitr::opts_chunk$set(
+  cache = FALSE,
+  comment = "#>",
+  error = FALSE,
+  tidy = FALSE)
+```
+# Introduction
+
+When designing an observational study, there are many study designs to choose from, and many additional choices to make, and it is often unclear how these choices will affect the accuracy of the results. (e.g. If I match on propensity scores, will that lead to more or less bias than when I stratify? What about power?) The literature contains many papers evaluating one design choice at a time, but often with unsatisfactory scientific rigor; typically, a method is evaluated on one or two exemplar study from which we cannot generalize, or by using simulations which have an unclear relationship with the real world. 
+
+This vignette describes the OHDSI Methods Benchmark for evaluating population-level estimation methods, a benchmark that can inform on how a particular study design and set of analysis choices perform in general. The benchmark consists of a **gold standard** of research hypothesis where the truth is known, and a set of **metrics** for characterizing a methods performance when applied to the gold standard. We distinguish between two types of tasks: (1) estimation of the average effect of an exposure on an outcome relative to no exposure (effect estimation), and (2) estimation of the average effect of an exposure on an outcome relative to another exposure (comparative effect estimation). The benchmark allows evaluation of a method on either or both tasks. 
+
+This benchmark builds on previous efforts in EU-ADR, OMOP, and the WHO, adding the ability to evaluate methods on both tasks, and using synthetic positive controls as real positve controls have been observed to be problematic in the past.
+
+## Gold standard
+
+The gold standard in this benchmark consists of 800 entries, with each item specifying a target exposure, comparator exposure, outcome, nesting cohort, and true effect size. An example entry: target = Diclofenac, comparator = Celecoxib, outcome = Lyme disease, nesting cohort = Arthralgia, true effect size = 1. Each entry can be used for both tasks, since the true effect size holds both when comparing the target exposure to no exposure as well as when comparing the target exposure to the comparator exposure. The nesting cohort identifies a more homogeneous subgroup of a population, and can be used to evaluate methods such as the nested case-control design.
+
+A set of 200 entries are negative controls, where the relative risk is believed to be 1. These negative controls were selected by first picking four outcomes and four exposures of interest. Using these as starting point, we generated candidate lists of negative controls using LAERTES4, which draws on literature, product labels, and spontaneous reports. These candidates were used to construct target-comparator-outcome triplets where neither the target nor the exposure causes the outcome, and the target and comparator were either previously compared in a randomized trial per ClinicalTrials.gov, or both had the same 4-digit ATC code (same indication) but not the same 5-digit ATC code (different class). These candidates were ranked on prevalence of the exposures and outcome and manually reviewed until 25 were approved per initial outcome or exposure. Nesting cohorts were selected by manually reviewing the most prevalent conditions and procedures on the first day of the target or comparator treatment.
+
+The remaining 600 entries are positive controls, which were automatically derived from the 200 negative controls by adding synthetic additional outcomes during the target exposure until a desired incidence rate ratio was achieved between before and after injection of the synthetic outcomes. The target incidence rate ratios were 1.25, 2, and 4. To preserve (measured) confounding, predictive models were fitted for each outcome during target exposure and used to generate probabilities from which the synthetic outcomes were sampled.
+
+## Metrics
+
+Once a practical method has been used to produce estimates for the gold standard the following metrics are computed: 
+
+-	Area under the received operating curve, when comparing positive controls to negative controls
+-	Mean squared error
+-	Bias distribution
+-	Coverage of the confidence interval
+-	Type I and type II error
+
+These metrics are computed both overall, as well as stratified by true effect size and by each of the 4 initial outcomes and 4 initial exposures.
+
+
+# Running the benchmark
+
+This section will describe how to run methods against the benchmark on a particular observational healthcare database. The database needs to conform to the OMOP Common Data Model (CDM).
+
+## Specifying locations on the server and local file system
+
+We need to specify the following locations on the database server:
+
+- The database schema containing the observational healthcare data in **CDM** format. Only read access is required to this schema.
+- A database schema and table name where **outcome cohorts** can be instantiated. Write access is required to this schema.
+- A database schema and table name where **nesting cohorts** can be instantiated. Write access is required to this schema. 
+- *On Oracle only*: a schema where **temporary tables** can be created. Write access is required to this schema. This is required since Oracle doesn't fully support temp tables like other database platforms.
+
+We also need to specify on the local file system:
+
+- An **output folder** where all intermediary and final results can be written. This should not be a network drive, since that would severely slow down the analyses.
+
+Below is example code showing we specify how to connect to the database server, and the various required locations. `MethodEvaluation` uses the `DatabaseConnector` package, which provides the `createConnectionDetails` function. Type `?createConnectionDetails` for the specific settings required for the various database management systems (DBMS). 
+
+```{r tidy=FALSE,eval=FALSE}
+library(MethodEvaluation)
+connectionDetails <- createConnectionDetails(dbms = "postgresql", 
+                                             server = "localhost/ohdsi", 
+                                             user = "joe", 
+                                             password = "supersecret")
+
+cdmDatabaseSchema <- "my_cdm_data"
+oracleTempSchema <- NULL
+outcomeDatabaseSchema <- "scratch"
+outcomeTable <- "ohdsi_outcomes"
+nestingCohortDatabaseSchema <- "scratch"
+nestingCohortTable <- "ohdsi_nesting_cohorts"
+outputFolder <- "/home/benchmarkOutput"
+cdmVersion <- "5"
+```
+
+Note that for Microsoft SQL Server, database schemas need to specify both the database and the schema, so for example `cdmDatabaseSchema <- "my_cdm_data.dbo"`. 
+
+## Creating all necessary cohorts
+
+In order to run our population-level effect estimation method, we will need to identify the exposures and outcomes of interest. To identify exposures we will simlpy use the predefined exposure eras in the `drug_era` table in the CDM. However, for the outcomes custom cohorts need to be generated. In addition, some methods such as the nested case-control design require nesting cohorts to be defined. The negative control outcome and nesting cohorts can be generated using the following command:
+
+```{r tidy=FALSE,eval=FALSE}
+createReferenceSetCohorts(connectionDetails = connectionDetails,
+                          oracleTempSchema = oracleTempSchema,
+                          cdmDatabaseSchema = cdmDatabaseSchema,
+                          outcomeDatabaseSchema = outcomeDatabaseSchema,
+                          outcomeTable = outcomeTable,
+                          nestingDatabaseSchema = nestingCohortDatabaseSchema,
+                          nestingTable = nestingCohortTable,
+                          referenceSet = "ohdsiMethodsBenchmark")
+```
+
+This will automatically create the outcome and nesting cohort tables, and populate them.
+
+The nest step is to create the positive controls. These are generated by taking the negative controls, and adding synthetic outcomes during exposed time to achieve predefined relative risks greater than one. The synthetic outcomes are sampled based on models that are fitted for each negative control outcome, using predictors extracted from the data. These positive control outcomes are added to the outcome table.
+
+```{r tidy=FALSE,eval=FALSE}
+synthesizePositiveControls(connectionDetails = connectionDetails,
+                           oracleTempSchema = oracleTempSchema,
+                           cdmDatabaseSchema = cdmDatabaseSchema,
+                           outcomeDatabaseSchema = outcomeDatabaseSchema,
+                           outcomeTable = outcomeTable,
+                           maxCores = 10,
+                           workFolder = outputFolder,
+                           summaryFileName = file.path(outputFolder, "allControls.csv"),
+                           referenceSet = "ohdsiMethodsBenchmark")
+```
+
+Fitting the outcome models can take a while. It is recommend to set the `maxCores` argument to the number of CPU cores available in the machine to speed up the process.
+
+## Running the method to evaluate
+
+
+
