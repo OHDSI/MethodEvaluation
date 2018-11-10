@@ -664,9 +664,6 @@ fitModel <- function(task,
                      control) {
   ParallelLogger::logInfo("Fitting model for outcome ", task$outcomeId)
   exposures <- readRDS(exposuresFile)
-  # Dedupe exposures for model fitting, so we don't overfit:
-  exposures <- exposures[order(exposures$personId, exposures$cohortStartDate), ]
-  exposures <- exposures[!duplicated(exposures[, c("personId", "cohortStartDate")]), ]
 
   outcomes <- readRDS(outcomesFile)
   outcomes <- outcomes[outcomes$outcomeId == task$outcomeId, ]
@@ -678,6 +675,10 @@ fitModel <- function(task,
     exposures <- exposures[exposures$exposureId %in% task$groupExposureIds, ]
     outcomes <- outcomes[outcomes$rowId %in% exposures$rowId, ]
   }
+  # Dedupe exposures for model fitting, so we don't overfit:
+  exposures <- exposures[order(exposures$personId, exposures$cohortStartDate), ]
+  exposures <- exposures[!duplicated(exposures[, c("personId", "cohortStartDate")]), ]
+  
   covariates <- NULL
   covariateRef <- NULL
   ffbase::load.ffdf(task$covarFileName) # loads covariates and covariatesRef
@@ -914,9 +915,10 @@ injectSurvival <- function(exposures, effectSize, precision, addIntentToTreat) {
   } else {
     firstHasNewOutcome <- hasNewOutcome[exposures$eraNumber == 1]
     firstTimeToEvent <- timeToNewOutcome[exposures$eraNumber == 1]
-    firstHasOutcome <- hasOutcome[exposures$eraNumber == 1, ]
+    firstHasOutcome <- hasOutcome[exposures$eraNumber == 1]
     firstTime <- survivalTime[exposures$eraNumber == 1]
-    rateBeforeFirstExposure <- observedCount / sum(firstTime)
+    firstObservedCount <- sum(firstHasOutcome)
+    rateBeforeFirstExposure <- firstObservedCount / sum(firstTime)
     rateAfterFirstExposure <- (sum(firstHasOutcome[!firstHasNewOutcome]) + sum(firstHasNewOutcome)) / (sum(firstTime[!firstHasNewOutcome]) + sum(firstTimeToEvent[firstHasNewOutcome] + 1))
     injectedRrFirstExposure <- rateAfterFirstExposure / rateBeforeFirstExposure
   }
