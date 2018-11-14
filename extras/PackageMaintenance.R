@@ -41,7 +41,7 @@ save(euadrReferenceSet, file = "data/euadrReferenceSet.rda", compress = "xz")
 
 # OHDSI
 library(XLConnect)
-workbook <- loadWorkbook("C:/home/Research/Method evaluation task force/SearchForNegativeControls/FullSetOfNegativeControls28June2017.xlsx")
+workbook <- loadWorkbook("C:/home/Research/Method evaluation task force/SearchForNegativeControls/FullSetOfNegativeControls10November2017.xlsx")
 sheetNames <- getSheets(workbook)
 ohdsiNegativeControls <- data.frame()
 for (sheetName in sheetNames) {
