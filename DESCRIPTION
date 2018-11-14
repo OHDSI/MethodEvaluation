@@ -26,7 +26,10 @@ Imports:
     pROC,
     ggplot2,
     ParallelLogger,
-    methods
+    methods,
+    EmpiricalCalibration
 Suggests:
-    testthat
+    testthat,
+    DT,
+    shiny,
 RoxygenNote: 6.1.0

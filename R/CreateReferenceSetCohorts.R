@@ -182,7 +182,7 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
 #'                       can speed up the analyses.
 #' @param workFolder      Name of local folder to place intermediary results; make sure to use forward slashes (/).
 #'                       Do not use a folder on a network drive since this greatly impacts performance.  
-#' @param summaryFileName     The name of the file where to store the summary of the final set of positive and                     
+#' @param summaryFileName     The name of the CSV file where to store the summary of the final set of positive and                     
 #'                              negative controls.
 #'
 #' @export

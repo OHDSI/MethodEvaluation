@@ -37,7 +37,7 @@ can speed up the analyses.}
 \item{workFolder}{Name of local folder to place intermediary results; make sure to use forward slashes (/).
 Do not use a folder on a network drive since this greatly impacts performance.}
 
-\item{summaryFileName}{The name of the file where to store the summary of the final set of positive and
+\item{summaryFileName}{The name of the CSV file where to store the summary of the final set of positive and
 negative controls.}
 }
 \description{
