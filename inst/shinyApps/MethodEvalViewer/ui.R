@@ -25,7 +25,7 @@ shinyUI(
                                         tabPanel("Estimates", 
                                                  uiOutput("hoverInfoEstimates"),
                                                  plotOutput("estimates", 
-                                                            height = "200px",
+                                                            height = "270px",
                                                             hover = hoverOpts("plotHoverInfoEstimates", 
                                                                               delay = 100, 
                                                                               delayType = "debounce"))

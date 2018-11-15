@@ -34,9 +34,9 @@ This benchmark builds on previous efforts in EU-ADR, OMOP, and the WHO, adding t
 
 ## Gold standard
 
-The gold standard in this benchmark consists of 800 entries, with each item specifying a target exposure, comparator exposure, outcome, nesting cohort, and true effect size. An example entry: target = Diclofenac, comparator = Celecoxib, outcome = Lyme disease, nesting cohort = Arthralgia, true effect size = 1. Each entry can be used for both tasks, since the true effect size holds both when comparing the target exposure to no exposure as well as when comparing the target exposure to the comparator exposure. The nesting cohort identifies a more homogeneous subgroup of a population, and can be used to evaluate methods such as the nested case-control design.
+The gold standard comprises 800 entries, with each item specifying a target exposure, comparator exposure, outcome, nesting cohort, and true effect size. The true effect size refers to the absolute effect of the target on the outcome. Because the comparator is always believed to have no effect on the outcome, the true effect size also holds for the relative effect of the target compared to the comparator. Thus, each entry can be used for evaluating both effect estimation and comparative effect estimation. The nesting cohort identifies a more homogeneous subgroup of the population and can be used to evaluate methods such as the nested case-control design.
 
-A set of 200 entries are negative controls, where the relative risk is believed to be 1. These negative controls were selected by first picking four outcomes and four exposures of interest. Using these as starting point, we generated candidate lists of negative controls using LAERTES4, which draws on literature, product labels, and spontaneous reports. These candidates were used to construct target-comparator-outcome triplets where neither the target nor the exposure causes the outcome, and the target and comparator were either previously compared in a randomized trial per ClinicalTrials.gov, or both had the same 4-digit ATC code (same indication) but not the same 5-digit ATC code (different class). These candidates were ranked on prevalence of the exposures and outcome and manually reviewed until 25 were approved per initial outcome or exposure. Nesting cohorts were selected by manually reviewing the most prevalent conditions and procedures on the first day of the target or comparator treatment.
+Of the total set, 200 entries are real negative controls with a presumed true relative risk of 1. We select these negative controls by first picking four diverse outcomes (acute pancreatitis, gastrointestinal bleeding, inflammatory bowel disease, and stroke) and four diverse exposures (ciprofloxacin, diclofenac, metformin, and sertraline). For each of the four outcomes, we create 25 entries with target and comparator exposures that are not believed to cause the outcome. To aid the creation of these entries, we generate candidate lists of negative controls for each of the four main outcomes and four main exposures using an automated procedure, drawing on literature, product labels, and spontaneous reports. These candidates are used to construct target-comparator-outcome triplets where neither the target nor the exposure causes the outcome, and the target and comparator were either previously compared in a randomized trial per ClinicalTrials.gov, or both had the same four-digit ATC code (same indication) but not the same five-digit ATC code (different class). These candidates are ranked on prevalence of the exposures and outcome and manually reviewed until 25 were approved per initial outcome or exposure. Nesting cohorts were selected by manually reviewing the most prevalent conditions and procedures on the first day of the target or comparator treatment.
 
 The remaining 600 entries are positive controls, which were automatically derived from the 200 negative controls by adding synthetic additional outcomes during the target exposure until a desired incidence rate ratio was achieved between before and after injection of the synthetic outcomes. The target incidence rate ratios were 1.25, 2, and 4. To preserve (measured) confounding, predictive models were fitted for each outcome during target exposure and used to generate probabilities from which the synthetic outcomes were sampled.
 
@@ -122,9 +122,125 @@ synthesizePositiveControls(connectionDetails = connectionDetails,
                            referenceSet = "ohdsiMethodsBenchmark")
 ```
 
-Fitting the outcome models can take a while. It is recommend to set the `maxCores` argument to the number of CPU cores available in the machine to speed up the process.
+Fitting the outcome models can take a while. It is recommend to set the `maxCores` argument to the number of CPU cores available in the machine to speed up the process. Note that at the end, a file will be created called *allControls.csv* in the output folder containing the information on the controls.
 
 ## Running the method to evaluate
+
+Now that we have the controls in place, we can run the method we would like to evaluate. Here we will run the `SelfControlledCohort` package which implements the Self-Controlled Cohort (SCC) design. We first will first define some SCC analysis settings to evaluate. Here we define two analysis settings, one using the length of exposure as the time-at-risk, and one using the first 30 days after exposure start as the time-at-risk:
+
+```{r tidy=FALSE,eval=FALSE}
+library(SelfControlledCohort)
+runSccArgs1 <- createRunSelfControlledCohortArgs(addLengthOfExposureExposed = TRUE,
+                                                 riskWindowStartExposed = 0,
+                                                 riskWindowEndExposed = 0,
+                                                 riskWindowEndUnexposed = -1,
+                                                 addLengthOfExposureUnexposed = TRUE,
+                                                 riskWindowStartUnexposed = -1,
+                                                 washoutPeriod = 365)
+
+sccAnalysis1 <- createSccAnalysis(analysisId = 1,
+                                  description = "Length of exposure",
+                                  runSelfControlledCohortArgs = runSccArgs1)
+
+runSccArgs2 <- createRunSelfControlledCohortArgs(addLengthOfExposureExposed = FALSE,
+                                                 riskWindowStartExposed = 0,
+                                                 riskWindowEndExposed = 30,
+                                                 riskWindowEndUnexposed = -1,
+                                                 addLengthOfExposureUnexposed = FALSE,
+                                                 riskWindowStartUnexposed = -30,
+                                                 washoutPeriod = 365)
+
+sccAnalysis2 <- createSccAnalysis(analysisId = 2,
+                                  description = "30 days of each exposure",
+                                  runSelfControlledCohortArgs = runSccArgs2)
+sccAnalysisList <- list(sccAnalysis1, sccAnalysis2)
+```
+                        
+Next, we specify all exposure-outcome pairs we want to apply the SCC design to. Note that we only use the `targetId` and `outcomeId` fields of the controls, because the SCC design can only be used for effect estimation, and does not support nesting:
+
+```{r tidy=FALSE,eval=FALSE}
+allControls <- read.csv(file.path(outputFolder , "allControls.csv"))
+eos <- list()
+for (i in 1:nrow(allControls)) {
+  eos[[length(eos) + 1]] <- createExposureOutcome(exposureId = allControls$targetId[i],
+                                                  outcomeId = allControls$outcomeId[i])
+}
+```
+
+Then, we run the SCC method. The following command will execute the SCC with the specified analysis settings against the exposure-outcome pairs:
+
+```{r tidy=FALSE,eval=FALSE}
+sccResult <- runSccAnalyses(connectionDetails = connectionDetails,
+                            cdmDatabaseSchema = cdmDatabaseSchema,
+                            oracleTempSchema = oracleTempSchema,
+                            exposureTable = "drug_era",
+                            outcomeDatabaseSchema = outcomeDatabaseSchema,
+                            outcomeTable = outcomeTable,
+                            sccAnalysisList = sccAnalysisList,
+                            exposureOutcomeList = eos,
+                            outputFolder = outputFolder)
+sccSummary <- summarizeAnalyses(sccResult, outputFolder)
+write.csv(sccSummary, file.path(outputFolder, "sccSummary.csv"), row.names = FALSE)
+```
+
+This produces a file called *sccSummary.csv* which contains the effect size estimates for each analysisId-exposureId-outcomeId combination. 
+
+## Packaging the evaluation results
+
+Now that we have the estimates, we need to feed them back into the `MethodEvaluation` package. To do that we need to create two data frames, one specifying the effect size estimates, the other providing details on the various analyses.
+
+First, we specify the estimates:
+
+```{r tidy=FALSE,eval=FALSE}
+estimates <- readRDS(file.path(outputFolder, "sccSummary.csv"))
+estimates <- data.frame(analysisId = estimates$analysisId,
+                        targetId = estimates$exposureId,
+                        outcomeId = estimates$outcomeId,
+                        logRr = estimates$logRr,
+                        seLogRr = estimates$seLogRr,
+                        ci95Lb = estimates$irrLb95,
+                        ci95Ub = estimates$irrUb95)
+head(estimates)
+```
+```{r echo=FALSE,message=FALSE}
+writeLines("  analysisId targetId outcomeId      logRr   seLogRr    ci95Lb    ci95Ub
+1          1  1110942         1 -1.5000000        NA        NA 13.177433
+2          1  1140088         1         NA        NA        NA        NA
+3          1   943634         1         NA        NA        NA        NA
+4          1 40163718         1 -0.4054651 0.6926191 0.1479317  2.234489
+5          1  1350310         1 -0.2876821 0.7038381 0.1642789  2.592973
+6          1  1311276         1 -0.1823216 0.5451585 0.2651910  2.247182")
+```
+
+Next, we create the analysis reference:
+```{r tidy=FALSE}
+# Create a reference of the analysis settings:
+analysisRef <- data.frame(method = "SelfControlledCohort",
+                          analysisId = c(1, 2),
+                          description = c("Length of exposure", 
+                                          "30 days of each exposure"),
+                          details = "",
+                          comparative = FALSE,
+                          nesting = FALSE,
+                          firstExposureOnly = FALSE)
+head(analysisRef)
+```
+
+Finally, we supply these two data frames, together with the data frame with controls to the `packageOhdsiBenchmarkResults` function:
+
+```{r tidy=FALSE,eval=FALSE}
+allControls <- read.csv(file.path(outputFolder , "allControls.csv"))
+packageOhdsiBenchmarkResults(estimates = estimates,
+                             controlSummary = allControls,
+                             analysisRef = analysisRef,
+                             databaseName = databaseName,
+                             exportFolder = file.path(outputFolder, "export"))
+```
+
+## Viewing the results
+
+
+
 
 
 
