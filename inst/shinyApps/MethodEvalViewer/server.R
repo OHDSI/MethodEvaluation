@@ -55,9 +55,7 @@ shinyServer(function(input, output, session) {
         forEval <- subset[subset$method == combis$method[i] & subset$analysisId == combis$analysisId[i], ]
         roc <- pROC::roc(forEval$targetEffectSize > 1, forEval$logRr, algorithm = 3)
         auc <- round(pROC::auc(roc), 2)
-        # mse <- round(mean((forEval$logRr - log(forEval$targetEffectSize))^2), 2)
         mse <- round(mean((forEval$logRr - log(forEval$trueEffectSize))^2), 2)
-        # coverage <- round(mean(forEval$ci95Lb < forEval$targetEffectSize & forEval$ci95Ub > forEval$targetEffectSize), 2)
         coverage <- round(mean(forEval$ci95Lb < forEval$trueEffectSize & forEval$ci95Ub > forEval$trueEffectSize), 2)
         meanP <- round(mean(1/(forEval$seLogRr^2)), 2)
         type1 <- round(mean(forEval$p[forEval$targetEffectSize == 1] < 0.05), 2)
@@ -69,9 +67,7 @@ shinyServer(function(input, output, session) {
     } else {
       # trueRr <- input$trueRr
       computeMetrics <- function(i) {
-        forEval <- subset[subset$method == combis$method[i] & subset$analysisId == combis$analysisId[i] & subset$targetEffectSize == trueRr, ]
-        # mse <- round(mean((forEval$logRr - log(forEval$targetEffectSize))^2), 2)
-        # coverage <- round(mean(forEval$ci95Lb < forEval$targetEffectSize & forEval$ci95Ub > forEval$targetEffectSize), 2)
+        forEval <- subset[subset$method == combis$method[i] & subset$analysisId == combis$analysisId[i] & subset$targetEffectSize == input$trueRr, ]
         mse <- round(mean((forEval$logRr - log(forEval$trueEffectSize))^2), 2)
         coverage <- round(mean(forEval$ci95Lb < forEval$trueEffectSize & forEval$ci95Ub > forEval$trueEffectSize), 2)
         meanP <- round(mean(1/(forEval$seLogRr^2)), 2)
@@ -81,7 +77,7 @@ shinyServer(function(input, output, session) {
           type2 <- NA
           missing <- round(mean(forEval$seLogRr == 999), 2)
         } else {
-          negAndPos <- subset[subset$method == combis$method[i] & subset$analysisId == combis$analysisId[i] & (subset$targetEffectSize == trueRr | subset$targetEffectSize == 1), ]
+          negAndPos <- subset[subset$method == combis$method[i] & subset$analysisId == combis$analysisId[i] & (subset$targetEffectSize == input$trueRr | subset$targetEffectSize == 1), ]
           roc <- pROC::roc(negAndPos$targetEffectSize > 1, negAndPos$logRr, algorithm = 3)
           auc <- round(pROC::auc(roc), 2)
           type1 <- NA
@@ -165,10 +161,10 @@ shinyServer(function(input, output, session) {
     method <- as.character(performanceMetrics()$Method[input$performanceMetrics_rows_selected])
     analysisId <- performanceMetrics()$ID[input$performanceMetrics_rows_selected]
     description <- analysisRef$description[analysisRef$method == method & analysisRef$analysisId == analysisId]
-    json <- analysisRef$json[analysisRef$method == method & analysisRef$analysisId == analysisId]
+    details <- analysisRef$details[analysisRef$method == method & analysisRef$analysisId == analysisId]
     showModal(modalDialog(
       title = paste0(method , " analysis. ", analysisId, ": ", description),
-      pre(json),
+      pre(details),
       easyClose = TRUE,
       footer = NULL,
       size = "l"

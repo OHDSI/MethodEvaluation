@@ -1,4 +1,4 @@
-if (is.null(shinySettings)) {
+if (length(ls(pattern = "shinySettings")) == 0) {
   exportFolder <- "data"
 } else {
   exportFolder <- shinySettings$exportFolder
@@ -37,3 +37,4 @@ analysisRef <- do.call("rbind", analysisRef)
 trueRrs <- unique(estimates$targetEffectSize)
 trueRrs <- trueRrs[order(trueRrs)]
 trueRrs <- c("Overall", trueRrs)
+
