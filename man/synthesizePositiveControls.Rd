@@ -6,7 +6,8 @@
 \usage{
 synthesizePositiveControls(connectionDetails, cdmDatabaseSchema,
   oracleTempSchema = NULL, outcomeDatabaseSchema = cdmDatabaseSchema,
-  outcomeTable = "cohort", referenceSet = "ohdsiMethodsBenchmark",
+  outcomeTable = "cohort", exposureDatabaseSchema = cdmDatabaseSchema,
+  exposureTable = "drug_era", referenceSet = "ohdsiMethodsBenchmark",
   maxCores = 1, workFolder, summaryFileName = file.path(workFolder,
   "allControls.csv"))
 }
@@ -27,6 +28,17 @@ SQL Server, both the database and schema should be specified, e.g.
 'cdm_schema.dbo'}
 
 \item{outcomeTable}{The name of the table where the outcomes will be stored.}
+
+\item{exposureDatabaseSchema}{The name of the database schema that is the location where
+the exposure data used to define the exposure cohorts is
+available.  If exposureTable = DRUG_ERA,
+exposureDatabaseSchema is not used and assumed to be
+cdmDatabaseSchema.  Requires read permissions to this database.}
+
+\item{exposureTable}{The tablename that contains the exposure cohorts.  If
+exposureTable <> DRUG_ERA, then expectation is exposureTable
+has format of COHORT table: COHORT_DEFINITION_ID,
+SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
 
 \item{referenceSet}{The name of the reference set for which positive controls need to be synthesized.
 Currently supported are "ohdsiMethodsBenchmark".}

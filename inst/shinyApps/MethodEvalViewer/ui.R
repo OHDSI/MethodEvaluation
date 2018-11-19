@@ -6,7 +6,7 @@ shinyUI(
             titlePanel("OHDSI Population-Level Estimation Method Evaluation"),
             fluidRow(
               column(2,
-                     selectInput("evalType", label = span("Evaluation type", title = "Type of task to evaluate."), choices = c("Effect est.", "Comparative effect est.")),
+                     selectInput("evalType", label = span("Evaluation type", title = "Type of task to evaluate."), choices = c("Effect estimation", "Comparative effect estimation")),
                      selectInput("calibrated", label = span("Empirical calibration", title = "Should empirical calibration be applied before computing performance metrics?"), choices = c("Uncalibrated", "Calibrated")),
                      selectInput("mdrr", label = span("Minimum Detectable RR", title = "Minimum detectable relative risk used to filter the controls before computing performance metrics."), choices = c("All", "4", "2", "1.5", "1.25"), selected = "1.25"),
                      selectInput("database", label = span("Database", title = "The database on which the methods were executed"), choices = dbs),

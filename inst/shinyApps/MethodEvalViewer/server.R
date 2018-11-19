@@ -6,7 +6,7 @@ source("plots.R")
 shinyServer(function(input, output, session) {
   
   observe({
-    if (input$evalType == "Comparative effect est.") {
+    if (input$evalType == "Comparative effect estimation") {
       choices = methods$method[methods$comparative == TRUE]
     } else {
       choices = methods$method
@@ -18,7 +18,7 @@ shinyServer(function(input, output, session) {
     subset <- estimates[estimates$database == input$database, ]
     if (input$mdrr != "All") {
       subset <- subset[!is.na(subset$mdrrTarget) & subset$mdrrTarget < as.numeric(input$mdrr), ]
-      if (input$evalType == "Comparative effect est.") {
+      if (input$evalType == "Comparative effect estimation") {
         subset <- subset[!is.na(subset$mdrrComparator) & subset$mdrrComparator < as.numeric(input$mdrr), ]
       }
     }
@@ -33,6 +33,22 @@ shinyServer(function(input, output, session) {
       subset$ci95Ub <- subset$calCi95Ub
       subset$p <- subset$calP
     }
+    return(subset)
+  })
+  
+  selectedEstimates <- reactive({
+    if (is.null(input$performanceMetrics_rows_selected)) {
+      return(NULL)
+    } 
+    subset <- filterEstimates()
+    if (nrow(subset) == 0) {
+      return(NULL)
+    }
+    subset <- subset[subset$method == performanceMetrics()$Method[input$performanceMetrics_rows_selected] & 
+                       subset$analysisId == performanceMetrics()$'<span title=\"Analysis variant ID\">ID</span>'[input$performanceMetrics_rows_selected], ]
+    if (nrow(subset) == 0) {
+      return(NULL)
+    } 
     return(subset)
   })
   
@@ -89,14 +105,14 @@ shinyServer(function(input, output, session) {
       combis <- cbind(combis, as.data.frame(t(sapply(1:nrow(combis), computeMetrics))))
     }
     colnames(combis) <- c("Method", 
-                          "ID", 
+                          "<span title=\"Analysis variant ID\">ID</span>", 
                           "<span title=\"Area under the receiver operator curve\">AUC</span>", 
-                          "<span title=\"Coverage of the 95% confidence interval\">Cov</span>", 
-                          "<span title=\"Mean precision (1/SE^2)\">MPr</span>", 
+                          "<span title=\"Coverage of the 95% confidence interval\">Coverage</span>", 
+                          "<span title=\"Mean precision (1/SE^2)\">Mean Precision</span>", 
                           "<span title=\"Mean Squared Error\">MSE</span>", 
-                          "<span title=\"Type 1 Error\">T1E</span>", 
-                          "<span title=\"Type 2 Error\">T2E</span>", 
-                          "<span title=\"Fraction with missing estimates\">Mis</span>")
+                          "<span title=\"Type I Error\">Type I error</span>", 
+                          "<span title=\"Type II Error\">Type II error</span>", 
+                          "<span title=\"Fraction with missing estimates\">Missing</span>")
     return(combis)
   })
   
@@ -132,34 +148,31 @@ shinyServer(function(input, output, session) {
   })
   
   output$estimates <- renderPlot({
-    if (is.null(input$performanceMetrics_rows_selected)) {
+    subset <- selectedEstimates()
+    if (is.null(subset)) {
       return(NULL)
-    } else {
-      subset <- filterEstimates()
-      subset <- subset[subset$method == performanceMetrics()$Method[input$performanceMetrics_rows_selected] & subset$analysisId == performanceMetrics()$ID[input$performanceMetrics_rows_selected], ]
-      if (nrow(subset) == 0) {
-        return(NULL)
-      }
+    }  else {
       subset$Group <- as.factor(paste("True hazard ratio =", subset$targetEffectSize))
       return(plotScatter(subset))
     }
-    
   })
   
   output$details <- renderText({
-    if (is.null(input$performanceMetrics_rows_selected)) {
+    subset <- selectedEstimates()
+    if (is.null(subset)) {
       return(NULL)
-    } else {
-      method <- as.character(performanceMetrics()$Method[input$performanceMetrics_rows_selected])
-      analysisId <- performanceMetrics()$ID[input$performanceMetrics_rows_selected]
+    }  else {
+      method <- as.character(subset$method[1])
+      analysisId <- subset$analysisId[1]
       description <- analysisRef$description[analysisRef$method == method & analysisRef$analysisId == analysisId]
-      return(paste0(method , " analysis. ", analysisId, ": ", description))
+      return(paste0(method , " analysis ", analysisId, ": ", description))
     }
   })
   
   observeEvent(input$showSettings, {
-    method <- as.character(performanceMetrics()$Method[input$performanceMetrics_rows_selected])
-    analysisId <- performanceMetrics()$ID[input$performanceMetrics_rows_selected]
+    subset <- selectedEstimates()
+    method <- as.character(subset$Method[1])
+    analysisId <- subset$analysisId[1]
     description <- analysisRef$description[analysisRef$method == method & analysisRef$analysisId == analysisId]
     details <- analysisRef$details[analysisRef$method == method & analysisRef$analysisId == analysisId]
     showModal(modalDialog(
@@ -172,14 +185,10 @@ shinyServer(function(input, output, session) {
   })
   
   output$rocCurves <- renderPlot({
-    if (is.null(input$performanceMetrics_rows_selected)) {
+    subset <- selectedEstimates()
+    if (is.null(subset)) {
       return(NULL)
     } else {
-      subset <- filterEstimates()
-      subset <- subset[subset$method == performanceMetrics()$Method[input$performanceMetrics_rows_selected] & subset$analysisId == performanceMetrics()$ID[input$performanceMetrics_rows_selected], ]
-      if (nrow(subset) == 0) {
-        return(NULL)
-      }
       subset$trueLogRr <- log(subset$targetEffectSize)
       return(plotRocsInjectedSignals(logRr = subset$logRr, trueLogRr = subset$trueLogRr, showAucs = TRUE))
     }
@@ -188,15 +197,10 @@ shinyServer(function(input, output, session) {
   
   output$hoverInfoEstimates <- renderUI({
     # Hover-over adapted from https://gitlab.com/snippets/16220
-    if (is.null(input$performanceMetrics_rows_selected)) {
+    subset <- selectedEstimates()
+    if (is.null(subset)) {
       return(NULL)
-    }
-    subset <- filterEstimates()
-    subset <- subset[subset$method == performanceMetrics()$Method[input$performanceMetrics_rows_selected] & subset$analysisId == performanceMetrics()$ID[input$performanceMetrics_rows_selected], ]
-    if (nrow(subset) == 0) {
-      return(NULL)
-    }
-    
+    } 
     subset$Group <- as.factor(paste("True hazard ratio =", subset$targetEffectSize))
     hover <- input$plotHoverInfoEstimates
     
