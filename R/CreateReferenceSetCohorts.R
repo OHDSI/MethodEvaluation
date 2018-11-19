@@ -176,6 +176,15 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
 #'                               SQL Server, both the database and schema should be specified, e.g.
 #'                               'cdm_schema.dbo'
 #' @param outcomeTable            The name of the table where the outcomes will be stored.
+#' @param exposureDatabaseSchema           The name of the database schema that is the location where
+#'                                         the exposure data used to define the exposure cohorts is
+#'                                         available.  If exposureTable = DRUG_ERA,
+#'                                         exposureDatabaseSchema is not used and assumed to be
+#'                                         cdmDatabaseSchema.  Requires read permissions to this database.
+#' @param exposureTable                    The tablename that contains the exposure cohorts.  If
+#'                                         exposureTable <> DRUG_ERA, then expectation is exposureTable
+#'                                         has format of COHORT table: COHORT_DEFINITION_ID,
+#'                                         SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.
 #' @param referenceSet           The name of the reference set for which positive controls need to be synthesized.
 #'                               Currently supported are "ohdsiMethodsBenchmark".
 #' @param maxCores       How many parallel cores should be used? If more cores are made available this
@@ -191,6 +200,8 @@ synthesizePositiveControls <- function(connectionDetails,
                                        oracleTempSchema = NULL,
                                        outcomeDatabaseSchema = cdmDatabaseSchema,
                                        outcomeTable = "cohort",
+                                       exposureDatabaseSchema = cdmDatabaseSchema,
+                                       exposureTable = "drug_era",
                                        referenceSet = "ohdsiMethodsBenchmark",
                                        maxCores = 1,
                                        workFolder,
@@ -232,37 +243,37 @@ synthesizePositiveControls <- function(connectionDetails,
                                                                     longTermStartDays = 365,
                                                                     endDays = 0)
     
-    result <- MethodEvaluation::injectSignals(connectionDetails,
-                                              cdmDatabaseSchema = cdmDatabaseSchema,
-                                              oracleTempSchema = oracleTempSchema,
-                                              exposureDatabaseSchema = cdmDatabaseSchema,
-                                              exposureTable = "drug_era",
-                                              outcomeDatabaseSchema = outcomeDatabaseSchema,
-                                              outcomeTable = outcomeTable,
-                                              outputDatabaseSchema = outcomeDatabaseSchema,
-                                              outputTable = outcomeTable,
-                                              createOutputTable = FALSE,
-                                              outputIdOffset = 10000,
-                                              exposureOutcomePairs = exposureOutcomePairs,
-                                              firstExposureOnly = FALSE,
-                                              firstOutcomeOnly = TRUE,
-                                              removePeopleWithPriorOutcomes = TRUE,
-                                              modelType = "survival",
-                                              washoutPeriod = 365,
-                                              riskWindowStart = 0,
-                                              riskWindowEnd = 0,
-                                              addExposureDaysToEnd = TRUE,
-                                              effectSizes = c(1.5, 2, 4),
-                                              precision = 0.01,
-                                              prior = prior,
-                                              control = control,
-                                              maxSubjectsForModel = 250000,
-                                              minOutcomeCountForModel = 100,
-                                              minOutcomeCountForInjection = 25,
-                                              workFolder = injectionFolder,
-                                              modelThreads = max(1, round(maxCores/8)),
-                                              generationThreads = min(6, maxCores),
-                                              covariateSettings = covariateSettings)
+    result <- injectSignals(connectionDetails,
+                            cdmDatabaseSchema = cdmDatabaseSchema,
+                            oracleTempSchema = oracleTempSchema,
+                            exposureDatabaseSchema = exposureDatabaseSchema,
+                            exposureTable = exposureTable,
+                            outcomeDatabaseSchema = outcomeDatabaseSchema,
+                            outcomeTable = outcomeTable,
+                            outputDatabaseSchema = outcomeDatabaseSchema,
+                            outputTable = outcomeTable,
+                            createOutputTable = FALSE,
+                            outputIdOffset = 10000,
+                            exposureOutcomePairs = exposureOutcomePairs,
+                            firstExposureOnly = FALSE,
+                            firstOutcomeOnly = TRUE,
+                            removePeopleWithPriorOutcomes = TRUE,
+                            modelType = "survival",
+                            washoutPeriod = 365,
+                            riskWindowStart = 0,
+                            riskWindowEnd = 0,
+                            addExposureDaysToEnd = TRUE,
+                            effectSizes = c(1.5, 2, 4),
+                            precision = 0.01,
+                            prior = prior,
+                            control = control,
+                            maxSubjectsForModel = 250000,
+                            minOutcomeCountForModel = 100,
+                            minOutcomeCountForInjection = 25,
+                            workFolder = injectionFolder,
+                            modelThreads = max(1, round(maxCores/8)),
+                            generationThreads = min(6, maxCores),
+                            covariateSettings = covariateSettings)
     saveRDS(result, injectionSummaryFile)
   }
   ohdsiNegativeControls <- readRDS(system.file("ohdsiNegativeControls.rds", package = "MethodEvaluation"))
@@ -284,15 +295,15 @@ synthesizePositiveControls <- function(connectionDetails,
   exposureOutcomes <- rbind(exposureOutcomes, data.frame(exposureId = allControls$comparatorId,
                                                          outcomeId = allControls$outcomeId))
   exposureOutcomes <- unique(exposureOutcomes)
-  mdrr <- MethodEvaluation::computeMdrr(connectionDetails = connectionDetails,
-                                        cdmDatabaseSchema = cdmDatabaseSchema,
-                                        oracleTempSchema = oracleTempSchema,
-                                        exposureOutcomePairs = exposureOutcomes,
-                                        exposureDatabaseSchema = cdmDatabaseSchema,
-                                        exposureTable = "drug_era",
-                                        outcomeDatabaseSchema = outcomeDatabaseSchema,
-                                        outcomeTable = outcomeTable,
-                                        cdmVersion = cdmVersion)
+  mdrr <- computeMdrr(connectionDetails = connectionDetails,
+                      cdmDatabaseSchema = cdmDatabaseSchema,
+                      oracleTempSchema = oracleTempSchema,
+                      exposureOutcomePairs = exposureOutcomes,
+                      exposureDatabaseSchema = exposureDatabaseSchema,
+                      exposureTable = exposureTable,
+                      outcomeDatabaseSchema = outcomeDatabaseSchema,
+                      outcomeTable = outcomeTable,
+                      cdmVersion = cdmVersion)
   allControls <- merge(allControls, data.frame(targetId = mdrr$exposureId,
                                                outcomeId = mdrr$outcomeId,
                                                mdrrTarget = mdrr$mdrr))
