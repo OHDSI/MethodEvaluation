@@ -18,9 +18,9 @@ shinyUI(
               column(10,
                      textOutput("controlCount"),
                      dataTableOutput("performanceMetrics"),
-                     div(style = "display:inline-block", h4(textOutput("details"))), 
-                     div(style = "display:inline-block", actionLink("showSettings", "Details")),
                      conditionalPanel(condition = "output.details",
+                                      div(style = "display:inline-block", h4(textOutput("details"))), 
+                                      div(style = "display:inline-block", actionLink("showSettings", "Details")),
                                       tabsetPanel(
                                         tabPanel("Estimates", 
                                                  uiOutput("hoverInfoEstimates"),

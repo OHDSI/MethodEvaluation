@@ -169,9 +169,11 @@ shinyServer(function(input, output, session) {
     }
   })
   
+  outputOptions(output, "details", suspendWhenHidden = FALSE)
+  
   observeEvent(input$showSettings, {
     subset <- selectedEstimates()
-    method <- as.character(subset$Method[1])
+    method <- as.character(subset$method[1])
     analysisId <- subset$analysisId[1]
     description <- analysisRef$description[analysisRef$method == method & analysisRef$analysisId == analysisId]
     details <- analysisRef$details[analysisRef$method == method & analysisRef$analysisId == analysisId]

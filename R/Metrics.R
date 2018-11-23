@@ -298,3 +298,118 @@ packageOhdsiBenchmarkResults <- function(estimates,
   ParallelLogger::logInfo("Estimates have been written to ", estimatesFileName)
   ParallelLogger::logInfo("Analysis reference has been written to ", estimatesFileName)
 }
+
+# exportFolder <- "r:/MethodsLibraryPleEvaluation_ccae/export"
+
+#' Generate perfomance metrics for the OHDSI Methods Benchmark
+#'
+#' @param exportFolder    The folder containing the CSV files created using the \code{\link{packageOhdsiBenchmarkResults}}
+#'                        function. This folder can contain results from various methods, analyses, and databases.
+#' @param mdrr            The minimum detectable relative risk (MDRR). Only controls with this MDRR will be used to compute
+#'                        the performance metrics. Set to "All" to include all controls.
+#' @param stratum         The stratum for which to compute the metrics, e.g. 'Acute Pancreatitis'. Set to 'All' to use all
+#'                        controls.
+#' @param trueEffectSize  Should the analysis be limited to a specific true effect size? Set to "Overall" to include all.
+#' @param calibrated      Should confidence intervals and p-values be empirically calibrated before computing the metrics?
+#' @param comparative     Should the methods be evaluated on the task of comprative effect estimation? If FALSE, they will
+#'                        be evaluated on the task of effect estimation.
+#'
+#' @return
+#' A data frame with the various metrics per method - analysisId - database combination.
+#' 
+#' @export
+computeOhdsiBenchmarkMetrics <- function(exportFolder, mdrr = 1.25, stratum = "All", trueEffectSize = "Overall", calibrated = FALSE, comparative = FALSE) {
+  
+  # Load and prepare estimates of all methods
+  files <- list.files(exportFolder, "estimates.*csv", full.names = TRUE)
+  estimates <- lapply(files, read.csv)
+  estimates <- do.call("rbind", estimates)
+  estimates$trueEffectSize[estimates$firstExposureOnly] <- estimates$trueEffectSizeFirstExposure[estimates$firstExposureOnly]
+  estimates$trueEffectSize[is.na(estimates$trueEffectSize)] <- estimates$targetEffectSize[is.na(estimates$trueEffectSize)]
+  z <- estimates$logRr/estimates$seLogRr
+  estimates$p <- 2 * pmin(pnorm(z), 1 - pnorm(z))
+  idx <- is.na(estimates$logRr) | is.infinite(estimates$logRr) | is.na(estimates$seLogRr) | is.infinite(estimates$seLogRr)
+  estimates$logRr[idx] <- 0
+  estimates$seLogRr[idx] <- 999
+  estimates$ci95Lb[idx] <- 0
+  estimates$ci95Ub[idx] <- 999
+  estimates$p[idx] <- 1
+  idx <- is.na(estimates$calLogRr) | is.infinite(estimates$calLogRr) | is.na(estimates$calSeLogRr) | is.infinite(estimates$calSeLogRr)
+  estimates$calLogRr[idx] <- 0
+  estimates$calSeLogRr[idx] <- 999
+  estimates$calCi95Lb[idx] <- 0
+  estimates$calCi95Ub[idx] <- 999
+  estimates$calP[is.na(estimates$calP)] <- 1
+
+  # Load and prepare analysis refs
+  files <- list.files(exportFolder, "analysisRef.*csv", full.names = TRUE)
+  analysisRef <- lapply(files, read.csv)
+  analysisRef <- do.call("rbind", analysisRef)
+  
+  # Apply selection criteria
+  subset <- estimates
+  if (mdrr != "All") {
+    subset <- subset[!is.na(subset$mdrrTarget) & subset$mdrrTarget < as.numeric(mdrr), ]
+    if (comparative) {
+      subset <- subset[!is.na(subset$mdrrComparator) & subset$mdrrComparator < as.numeric(input$mdrr), ]
+    }
+  }
+  if (stratum != "All") {
+    subset <- subset[subset$stratum == stratum, ]
+  }
+  if (calibrated) {
+    subset$logRr <- subset$calLogRr
+    subset$seLogRr <- subset$calSeLogRr
+    subset$ci95Lb <- subset$calCi95Lb
+    subset$ci95Ub <- subset$calCi95Ub
+    subset$p <- subset$calP
+  }
+  
+  # Compute metrics
+  combis <- unique(subset[, c("database", "method", "analysisId")])
+  if (trueEffectSize == "Overall") {
+    computeMetrics <- function(i) {
+      forEval <- subset[subset$method == combis$method[i] & subset$analysisId == combis$analysisId[i], ]
+      roc <- pROC::roc(forEval$targetEffectSize > 1, forEval$logRr, algorithm = 3)
+      auc <- round(pROC::auc(roc), 2)
+      mse <- round(mean((forEval$logRr - log(forEval$trueEffectSize))^2), 2)
+      coverage <- round(mean(forEval$ci95Lb < forEval$trueEffectSize & forEval$ci95Ub > forEval$trueEffectSize), 2)
+      meanP <- round(mean(1/(forEval$seLogRr^2)), 2)
+      type1 <- round(mean(forEval$p[forEval$targetEffectSize == 1] < 0.05), 2)
+      type2 <- round(mean(forEval$p[forEval$targetEffectSize > 1] >= 0.05), 2)
+      missing <- round(mean(forEval$seLogRr == 999), 2)
+      return(c(auc = auc, coverage = coverage, meanP = meanP, mse = mse, type1 = type1, type2 = type2, missing = missing))
+    }
+    combis <- cbind(combis, as.data.frame(t(sapply(1:nrow(combis), computeMetrics))))
+  } else {
+    # trueRr <- input$trueRr
+    computeMetrics <- function(i) {
+      forEval <- subset[subset$method == combis$method[i] & subset$analysisId == combis$analysisId[i] & subset$targetEffectSize == trueEffectSize, ]
+      mse <- round(mean((forEval$logRr - log(forEval$trueEffectSize))^2), 2)
+      coverage <- round(mean(forEval$ci95Lb < forEval$trueEffectSize & forEval$ci95Ub > forEval$trueEffectSize), 2)
+      meanP <- round(mean(1/(forEval$seLogRr^2)), 2)
+      if (trueEffectSize == 1) {
+        auc <- NA
+        type1 <- round(mean(forEval$p < 0.05), 2)  
+        type2 <- NA
+        missing <- round(mean(forEval$seLogRr == 999), 2)
+      } else {
+        negAndPos <- subset[subset$method == combis$method[i] & subset$analysisId == combis$analysisId[i] & (subset$targetEffectSize == trueEffectSize | subset$targetEffectSize == 1), ]
+        roc <- pROC::roc(negAndPos$targetEffectSize > 1, negAndPos$logRr, algorithm = 3)
+        auc <- round(pROC::auc(roc), 2)
+        type1 <- NA
+        type2 <- round(mean(forEval$p[forEval$targetEffectSize > 1] >= 0.05), 2)  
+        missing <- round(mean(forEval$seLogRr == 999), 2)
+      }
+      return(c(auc = auc, coverage = coverage, meanP = meanP, mse = mse, type1 = type1, type2 = type2, missing = missing))
+    }
+    combis <- cbind(combis, as.data.frame(t(sapply(1:nrow(combis), computeMetrics))))
+  }
+  result <- merge(combis, analysisRef[, c("method", "analysisId", "description")])
+  result <- result[order(result$database, result$method, result$analysisId), ]
+  result <- result[, c("database", "method", "analysisId", "description", "auc", "coverage", "meanP", "mse", "type1", "type2", "missing")]
+  return(result)
+}
+
+
+# write.csv(result, "r:/MethodsLibraryPleEvaluation_ccae/metrics.csv", row.names = FALSE)

@@ -122,7 +122,28 @@ synthesizePositiveControls(connectionDetails = connectionDetails,
                            referenceSet = "ohdsiMethodsBenchmark")
 ```
 
-Fitting the outcome models can take a while. It is recommend to set the `maxCores` argument to the number of CPU cores available in the machine to speed up the process. Note that at the end, a file will be created called *allControls.csv* in the output folder containing the information on the controls.
+Fitting the outcome models can take a while. It is recommend to set the `maxCores` argument to the number of CPU cores available in the machine to speed up the process. Note that at the end, a file will be created called *allControls.csv* in the output folder containing the information on the controls:
+
+```{r tidy=FALSE,eval=FALSE}
+allControls <- read.csv(file.path(outputFolder, "allControls.csv"))
+head(allControls)
+```
+```{r echo=FALSE,message=FALSE}
+writeLines(" outcomeId comparatorId targetId targetName comparatorName nestingId                  nestingName        outcomeName             type targetEffectSize trueEffectSize trueEffectSizeFirstExposure oldOutcomeId mdrrTarget
+1         1      1105775  1110942 omalizumab  Aminophylline  37203741 Bronchospasm and obstruction Acute pancreatitis Exposure control                1              1                           1            1   1.421960
+2         1      1110942  1140088 Dyphylline     omalizumab  37203741 Bronchospasm and obstruction Acute pancreatitis Exposure control                1              1                           1            1   1.420173
+3         1      1136422   943634 epinastine levocetirizine  36009773            Rhinitis allergic Acute pancreatitis Exposure control                1              1                           1            1   1.217681
+4         1      1315865 40163718  prasugrel   fondaparinux  37622411              Phlebosclerosis Acute pancreatitis Exposure control                1              1                           1            1   1.196514
+5         1      1315865  1350310 cilostazol   fondaparinux  37622411              Phlebosclerosis Acute pancreatitis Exposure control                1              1                           1            1   1.233415
+6         1      1336926  1311276 vardenafil      tadalafil  36919202           Sexual dysfunction Acute pancreatitis Exposure control                1              1                           1            1   1.097112
+  mdrrComparator
+1       1.177202
+2       1.421960
+3       1.085877
+4       1.278911
+5       1.278911
+6       1.060737")
+```
 
 ## Running the method to evaluate
 
@@ -237,7 +258,12 @@ packageOhdsiBenchmarkResults(estimates = estimates,
                              exportFolder = file.path(outputFolder, "export"))
 ```
 
-## Viewing the results
+This will generate two CSV files in the export folder. Results from different methods and databases can all be written to the same export folder.
+
+## Computing metrics
+
+
+
 
 
 
