@@ -377,8 +377,8 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder, mdrr = 1.25, stratum = "A
       meanP <- round(mean(1/(forEval$seLogRr^2)), 2)
       type1 <- round(mean(forEval$p[forEval$targetEffectSize == 1] < 0.05), 2)
       type2 <- round(mean(forEval$p[forEval$targetEffectSize > 1] >= 0.05), 2)
-      missing <- round(mean(forEval$seLogRr == 999), 2)
-      return(c(auc = auc, coverage = coverage, meanP = meanP, mse = mse, type1 = type1, type2 = type2, missing = missing))
+      nonEstimable <- round(mean(forEval$seLogRr == 999), 2)
+      return(c(auc = auc, coverage = coverage, meanP = meanP, mse = mse, type1 = type1, type2 = type2, nonEstimable = nonEstimable))
     }
     combis <- cbind(combis, as.data.frame(t(sapply(1:nrow(combis), computeMetrics))))
   } else {
@@ -392,22 +392,22 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder, mdrr = 1.25, stratum = "A
         auc <- NA
         type1 <- round(mean(forEval$p < 0.05), 2)  
         type2 <- NA
-        missing <- round(mean(forEval$seLogRr == 999), 2)
+        nonEstimable <- round(mean(forEval$seLogRr == 999), 2)
       } else {
         negAndPos <- subset[subset$method == combis$method[i] & subset$analysisId == combis$analysisId[i] & (subset$targetEffectSize == trueEffectSize | subset$targetEffectSize == 1), ]
         roc <- pROC::roc(negAndPos$targetEffectSize > 1, negAndPos$logRr, algorithm = 3)
         auc <- round(pROC::auc(roc), 2)
         type1 <- NA
         type2 <- round(mean(forEval$p[forEval$targetEffectSize > 1] >= 0.05), 2)  
-        missing <- round(mean(forEval$seLogRr == 999), 2)
+        nonEstimable <- round(mean(forEval$seLogRr == 999), 2)
       }
-      return(c(auc = auc, coverage = coverage, meanP = meanP, mse = mse, type1 = type1, type2 = type2, missing = missing))
+      return(c(auc = auc, coverage = coverage, meanP = meanP, mse = mse, type1 = type1, type2 = type2, nonEstimable = nonEstimable))
     }
     combis <- cbind(combis, as.data.frame(t(sapply(1:nrow(combis), computeMetrics))))
   }
   result <- merge(combis, analysisRef[, c("method", "analysisId", "description")])
   result <- result[order(result$database, result$method, result$analysisId), ]
-  result <- result[, c("database", "method", "analysisId", "description", "auc", "coverage", "meanP", "mse", "type1", "type2", "missing")]
+  result <- result[, c("database", "method", "analysisId", "description", "auc", "coverage", "meanP", "mse", "type1", "type2", "nonEstimable")]
   return(result)
 }
 
