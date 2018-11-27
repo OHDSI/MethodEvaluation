@@ -51,7 +51,8 @@ for (sheetName in sheetNames) {
 save(ohdsiNegativeControls, file = "data/ohdsiNegativeControls.rda", compress = "xz")
 saveRDS(ohdsiNegativeControls, file = "inst/ohdsiNegativeControls.rds")
 
-OhdsiRTools::insertCohortDefinitionInPackage(152767, "acute_pancreatitis", baseUrl = "http://api.ohdsi.org/WebAPI")
-OhdsiRTools::insertCohortDefinitionInPackage(152768, "gi_bleed", baseUrl = "http://api.ohdsi.org/WebAPI")
-OhdsiRTools::insertCohortDefinitionInPackage(152769, "ibd", baseUrl = "http://api.ohdsi.org/WebAPI")
-OhdsiRTools::insertCohortDefinitionInPackage(152772, "stroke", baseUrl = "http://api.ohdsi.org/WebAPI")
+38000184
+OhdsiRTools::insertCohortDefinitionInPackage(152767, "acute_pancreatitis", baseUrl = "http://api.ohdsi.org:80/WebAPI")
+OhdsiRTools::insertCohortDefinitionInPackage(152768, "gi_bleed", baseUrl = "http://api.ohdsi.org:80/WebAPI")
+OhdsiRTools::insertCohortDefinitionInPackage(152769, "ibd", baseUrl = "http://api.ohdsi.org:80/WebAPI")
+OhdsiRTools::insertCohortDefinitionInPackage(152772, "stroke", baseUrl = "http://api.ohdsi.org:80/WebAPI")

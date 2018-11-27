@@ -120,6 +120,7 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
                                              dbms = connectionDetails$dbms,
                                              oracleTempSchema = oracleTempSchema,
                                              cdm_database_schema = cdmDatabaseSchema,
+                                             vocabulary_database_schema = cdmDatabaseSchema,
                                              target_database_schema = outcomeDatabaseSchema,
                                              target_cohort_table = outcomeTable,
                                              target_cohort_id = cohortsToCreate$id[i])
