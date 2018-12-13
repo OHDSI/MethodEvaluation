@@ -247,7 +247,7 @@ packageOhdsiBenchmarkResults <- function(estimates,
 
   # Merge estimates into full grid:
   analysisIds <- unique(analysisRef$analysisId)
-  fullGrid <- do.call("rbind", replicate(length(analysisId), allControls, simplify = FALSE))
+  fullGrid <- do.call("rbind", replicate(length(analysisIds), allControls, simplify = FALSE))
   fullGrid$analysisId <- rep(analysisIds, each = nrow(allControls))
   estimates <- merge(fullGrid, estimates[, c("targetId", "outcomeId", "analysisId", "logRr", "seLogRr", "ci95Lb", "ci95Ub")], all.x = TRUE)
   
@@ -258,7 +258,11 @@ packageOhdsiBenchmarkResults <- function(estimates,
   # Perform empirical calibration:
   combis <- unique(estimates[, c("method", "analysisId", "stratum")])
   calibrate <- function(i , combis, estimates) {
-    subset <- estimates[estimates$method == combis$method[i] & estimates$analysisId == combis$analysisId[i] & estimates$stratum == combis$stratum[i], ]
+    subset <- estimates[estimates$method == combis$method[i] & 
+                          estimates$analysisId == combis$analysisId[i] & 
+                          estimates$stratum == combis$stratum[i], ]
+    subset$rootOutcomeName <- gsub(", RR.*$", "", as.character(subset$outcomeName))
+    subset$leaveOutUnit <- paste(subset$targetId, subset$rootOutcomeName)
     filterSubset <- subset[!is.na(subset$seLogRr) & !is.infinite(subset$seLogRr), ]
     if (nrow(filterSubset) < 5 || length(unique(filterSubset$targetEffectSize)) < 2) {
       subset$calLogRr <- rep(NA, nrow(subset))
@@ -267,28 +271,47 @@ packageOhdsiBenchmarkResults <- function(estimates,
       subset$calCi95Ub <- rep(NA, nrow(subset))
       subset$calP <- rep(NA, nrow(subset))
     } else {
-      model <- EmpiricalCalibration::fitSystematicErrorModel(logRr = filterSubset$logRr,
-                                                             seLogRr = filterSubset$seLogRr,
-                                                             trueLogRr = log(filterSubset$targetEffectSize),
-                                                             estimateCovarianceMatrix = FALSE)
-      caliCi <- EmpiricalCalibration::calibrateConfidenceInterval(logRr = subset$logRr,
-                                                                  seLogRr = subset$seLogRr,
-                                                                  model = model)
-      null <- EmpiricalCalibration::fitNull(logRr = filterSubset$logRr[filterSubset$targetEffectSize == 1],
-                                            seLogRr = filterSubset$seLogRr[filterSubset$targetEffectSize == 1])
-      caliP <- EmpiricalCalibration::calibrateP(null = null,
-                                                logRr = subset$logRr,
-                                                seLogRr = subset$seLogRr)
-      subset$calLogRr <- caliCi$logRr
-      subset$calSeLogRr <- caliCi$seLogRr
-      subset$calCi95Lb <- exp(caliCi$logLb95Rr)
-      subset$calCi95Ub <- exp(caliCi$logUb95Rr)
-      subset$calP <- caliP
+      # Use leave-one out when calibrating to not overestimate
+      
+      calibrateLeaveOneOut <- function(leaveOutUnit) {
+        subsetMinusOne <- filterSubset[filterSubset$leaveOutUnit != leaveOutUnit, ]
+        one <- subset[subset$leaveOutUnit == leaveOutUnit, ]
+        model <- EmpiricalCalibration::fitSystematicErrorModel(logRr = subsetMinusOne$logRr,
+                                                               seLogRr = subsetMinusOne$seLogRr,
+                                                               trueLogRr = log(subsetMinusOne$targetEffectSize),
+                                                               estimateCovarianceMatrix = FALSE)
+        caliCi <- EmpiricalCalibration::calibrateConfidenceInterval(logRr = one$logRr,
+                                                                    seLogRr = one$seLogRr,
+                                                                    model = model)
+        null <- EmpiricalCalibration::fitNull(logRr = subsetMinusOne$logRr[subsetMinusOne$targetEffectSize == 1],
+                                              seLogRr = subsetMinusOne$seLogRr[subsetMinusOne$targetEffectSize == 1])
+        caliP <- EmpiricalCalibration::calibrateP(null = null,
+                                                  logRr = one$logRr,
+                                                  seLogRr = one$seLogRr)
+        one$calLogRr <- caliCi$logRr
+        one$calSeLogRr <- caliCi$seLogRr
+        one$calCi95Lb <- exp(caliCi$logLb95Rr)
+        one$calCi95Ub <- exp(caliCi$logUb95Rr)
+        one$calP <- caliP
+        return(one)
+      }
+      subset <- lapply(unique(subset$leaveOutUnit), calibrateLeaveOneOut)
+      subset <- do.call("rbind", subset)
     }
+    subset$leaveOutUnit <- NULL
+    subset$rootOutcomeName <- NULL
     return(subset)
   }
-  calibratedEstimates <- sapply(1:nrow(combis), calibrate, combis = combis, estimates = estimates, simplify = FALSE)
+  ParallelLogger::logInfo("Calibrating estimates using leave-one-out")
+  cluster <- ParallelLogger::makeCluster(4)
+  # calibratedEstimates <- sapply(1:nrow(combis), calibrate, combis = combis, estimates = estimates, simplify = FALSE)
+  calibratedEstimates <- ParallelLogger::clusterApply(cluster,
+                                                      1:nrow(combis), 
+                                                      calibrate, 
+                                                      combis = combis, 
+                                                      estimates = estimates)
   calibratedEstimates <- do.call("rbind", calibratedEstimates)
+  ParallelLogger::stopCluster(cluster)
   normMethod <- gsub("[^a-zA-Z]", "", analysisRef$method[1])
   normDatabase <- gsub("[^a-zA-Z]", "", databaseName)
   estimatesFileName <- file.path(exportFolder, sprintf("estimates_%s_%s.csv", normMethod, normDatabase))
@@ -370,15 +393,27 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder, mdrr = 1.25, stratum = "A
   if (trueEffectSize == "Overall") {
     computeMetrics <- function(i) {
       forEval <- subset[subset$method == combis$method[i] & subset$analysisId == combis$analysisId[i], ]
+      nonEstimable <- round(mean(forEval$seLogRr >= 99), 2)
       roc <- pROC::roc(forEval$targetEffectSize > 1, forEval$logRr, algorithm = 3)
       auc <- round(pROC::auc(roc), 2)
       mse <- round(mean((forEval$logRr - log(forEval$trueEffectSize))^2), 2)
       coverage <- round(mean(forEval$ci95Lb < forEval$trueEffectSize & forEval$ci95Ub > forEval$trueEffectSize), 2)
-      meanP <- round(mean(1/(forEval$seLogRr^2)), 2)
+      meanP <- round(-1 + exp(mean(log(1 + (1/(forEval$seLogRr^2))))), 2)
       type1 <- round(mean(forEval$p[forEval$targetEffectSize == 1] < 0.05), 2)
       type2 <- round(mean(forEval$p[forEval$targetEffectSize > 1] >= 0.05), 2)
-      nonEstimable <- round(mean(forEval$seLogRr == 999), 2)
-      return(c(auc = auc, coverage = coverage, meanP = meanP, mse = mse, type1 = type1, type2 = type2, nonEstimable = nonEstimable))
+      # idx <- forEval$seLogRr < 99
+      # meanVarEstimable <- mean(log(forEval$seLogRr[idx] ^ 2))
+      # errors <- forEval$logRr[idx] - log(forEval$trueEffectSize[idx])
+      # mseEstimable <-  mean(errors^2)
+      # varErrorEstimable <- mean((errors - mean(errors)) ^ 2)
+      # biasEstimable <- sqrt(mseEstimable - varErrorEstimable)
+      return(c(auc = auc, 
+               coverage = coverage, 
+               meanP = meanP, 
+               mse = mse, 
+               type1 = type1, 
+               type2 = type2, 
+               nonEstimable = nonEstimable))
     }
     combis <- cbind(combis, as.data.frame(t(sapply(1:nrow(combis), computeMetrics))))
   } else {
@@ -387,7 +422,7 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder, mdrr = 1.25, stratum = "A
       forEval <- subset[subset$method == combis$method[i] & subset$analysisId == combis$analysisId[i] & subset$targetEffectSize == trueEffectSize, ]
       mse <- round(mean((forEval$logRr - log(forEval$trueEffectSize))^2), 2)
       coverage <- round(mean(forEval$ci95Lb < forEval$trueEffectSize & forEval$ci95Ub > forEval$trueEffectSize), 2)
-      meanP <- round(mean(1/(forEval$seLogRr^2)), 2)
+      meanP <- round(-1 + exp(mean(log(1 + (1/(forEval$seLogRr^2))))), 2)
       if (trueEffectSize == 1) {
         auc <- NA
         type1 <- round(mean(forEval$p < 0.05), 2)  

@@ -52,12 +52,12 @@ shinyServer(function(input, output, session) {
     return(subset)
   })
   
-  output$controlCount <- renderText({
+  output$tableCaption <- renderUI({
     subset <- filterEstimates()
     subset <- unique(subset[, c("targetId", "comparatorId", "oldOutcomeId", "targetEffectSize")])
     ncCount <- sum(subset$targetEffectSize == 1)
     pcCount <- sum(subset$targetEffectSize != 1)
-    return(paste0("Metrics based on ", ncCount, " negative and ", pcCount, " positive controls"))
+    return(HTML(paste0("<strong>Table S.1</strong> Metrics based on ", ncCount, " negative and ", pcCount, " positive controls")))
   })
   
   performanceMetrics <- reactive({
@@ -69,14 +69,15 @@ shinyServer(function(input, output, session) {
     if (input$trueRr == "Overall") {
       computeMetrics <- function(i) {
         forEval <- subset[subset$method == combis$method[i] & subset$analysisId == combis$analysisId[i], ]
+        nonEstimable <- round(mean(forEval$seLogRr >= 99), 2)
+        # forEval <- forEval[forEval$seLogRr < 99, ]
         roc <- pROC::roc(forEval$targetEffectSize > 1, forEval$logRr, algorithm = 3)
         auc <- round(pROC::auc(roc), 2)
         mse <- round(mean((forEval$logRr - log(forEval$trueEffectSize))^2), 2)
         coverage <- round(mean(forEval$ci95Lb < forEval$trueEffectSize & forEval$ci95Ub > forEval$trueEffectSize), 2)
-        meanP <- round(mean(1/(forEval$seLogRr^2)), 2)
+        meanP <- round(-1 + exp(mean(log(1 + (1/(forEval$seLogRr^2))))), 2)
         type1 <- round(mean(forEval$p[forEval$targetEffectSize == 1] < 0.05), 2)
         type2 <- round(mean(forEval$p[forEval$targetEffectSize > 1] >= 0.05), 2)
-        nonEstimable <- round(mean(forEval$seLogRr == 999), 2)
         return(c(auc = auc, coverage = coverage, meanP = meanP, mse = mse, type1 = type1, type2 = type2, nonEstimable = nonEstimable))
       }
       combis <- cbind(combis, as.data.frame(t(sapply(1:nrow(combis), computeMetrics))))
@@ -84,21 +85,21 @@ shinyServer(function(input, output, session) {
       # trueRr <- input$trueRr
       computeMetrics <- function(i) {
         forEval <- subset[subset$method == combis$method[i] & subset$analysisId == combis$analysisId[i] & subset$targetEffectSize == input$trueRr, ]
+        nonEstimable <- round(mean(forEval$seLogRr >= 99), 2)
+        # forEval <- forEval[forEval$seLogRr < 99, ]
         mse <- round(mean((forEval$logRr - log(forEval$trueEffectSize))^2), 2)
         coverage <- round(mean(forEval$ci95Lb < forEval$trueEffectSize & forEval$ci95Ub > forEval$trueEffectSize), 2)
-        meanP <- round(mean(1/(forEval$seLogRr^2)), 2)
+        meanP <- round(-1 + exp(mean(log(1 + (1/(forEval$seLogRr^2))))), 2)
         if (input$trueRr == "1") {
           auc <- NA
           type1 <- round(mean(forEval$p < 0.05), 2)  
           type2 <- NA
-          nonEstimable <- round(mean(forEval$seLogRr == 999), 2)
         } else {
           negAndPos <- subset[subset$method == combis$method[i] & subset$analysisId == combis$analysisId[i] & (subset$targetEffectSize == input$trueRr | subset$targetEffectSize == 1), ]
           roc <- pROC::roc(negAndPos$targetEffectSize > 1, negAndPos$logRr, algorithm = 3)
           auc <- round(pROC::auc(roc), 2)
           type1 <- NA
           type2 <- round(mean(forEval$p[forEval$targetEffectSize > 1] >= 0.05), 2)  
-          nonEstimable <- round(mean(forEval$seLogRr == 999), 2)
         }
         return(c(auc = auc, coverage = coverage, meanP = meanP, mse = mse, type1 = type1, type2 = type2, nonEstimable = nonEstimable))
       }
@@ -108,7 +109,7 @@ shinyServer(function(input, output, session) {
                           "<span title=\"Analysis variant ID\">ID</span>", 
                           "<span title=\"Area under the receiver operator curve\">AUC</span>", 
                           "<span title=\"Coverage of the 95% confidence interval\">Coverage</span>", 
-                          "<span title=\"Mean precision (1/SE^2)\">Mean Precision</span>", 
+                          "<span title=\"Geometric mean precision (1/SE^2)\">Mean Precision</span>", 
                           "<span title=\"Mean Squared Error\">MSE</span>", 
                           "<span title=\"Type I Error\">Type I error</span>", 
                           "<span title=\"Type II Error\">Type II error</span>", 
@@ -120,7 +121,7 @@ shinyServer(function(input, output, session) {
     selection = list(mode = "single", target = "row")
     options = list(pageLength = 10, 
                    searching = FALSE, 
-                   lengthChange = FALSE)
+                   lengthChange = TRUE)
     isolate(
       if (!is.null(input$performanceMetrics_rows_selected)) {
         selection$selected = input$performanceMetrics_rows_selected

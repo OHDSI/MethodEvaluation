@@ -53,7 +53,7 @@ createReferenceSetCohorts <- function(connectionDetails,
                                       referenceSet = "ohdsiMethodsBenchmark") {
   
   if (referenceSet == "omopReferenceSet") {
-    writeLines("Generating HOIs for the OMOP reference set")
+    ParallelLogger::logInfo("Generating HOIs for the OMOP reference set")
     renderedSql <- SqlRender::loadRenderTranslateSql("CreateOmopHois.sql",
                                                      packageName = "MethodEvaluation",
                                                      dbms = connectionDetails$dbms,
@@ -62,13 +62,13 @@ createReferenceSetCohorts <- function(connectionDetails,
                                                      outcome_table = outcomeTable)
     conn <- DatabaseConnector::connect(connectionDetails)
     DatabaseConnector::executeSql(conn, renderedSql)
-    writeLines("Done")
+    ParallelLogger::logInfo("Done")
     DatabaseConnector::disconnect(conn)
   } else if (referenceSet == "euadrReferenceSet") {
-    writeLines("Generating HOIs for the EU-ADR reference set")
+    ParallelLogger::logInfo("Generating HOIs for the EU-ADR reference set")
     # TODO: add code for creating the EU-ADR HOIs
   } else if (referenceSet == "ohdsiMethodsBenchmark") {
-    writeLines("Generating HOIs and nesting cohorts for the OHDSI Methods Benchmark")
+    ParallelLogger::logInfo("Generating HOIs and nesting cohorts for the OHDSI Methods Benchmark")
     if (outcomeDatabaseSchema == nestingDatabaseSchema && outcomeTable == nestingTable)
       stop("Outcome and nesting cohorts cannot be created in the same table")
     createOhdsiNegativeControlCohorts(connectionDetails = connectionDetails,
@@ -114,7 +114,7 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
   cohortsToCreate <- data.frame(name = c("acute_pancreatitis", "gi_bleed", "stroke", "ibd"),
                                 id = c(1,2,3,4))
   for (i in 1:nrow(cohortsToCreate)) {
-    writeLines(paste("Creating outcome:", cohortsToCreate$name[i]))
+    ParallelLogger::logInfo(paste("Creating outcome:", cohortsToCreate$name[i]))
     sql <- SqlRender::loadRenderTranslateSql(sqlFilename = paste0(cohortsToCreate$name[i], ".sql"),
                                              packageName = "MethodEvaluation",
                                              dbms = connectionDetails$dbms,
@@ -126,7 +126,7 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
                                              target_cohort_id = cohortsToCreate$id[i])
     DatabaseConnector::executeSql(connection, sql)
   } 
-  writeLines("Creating other negative control outcomes")
+  ParallelLogger::logInfo("Creating other negative control outcomes")
   negativeControlIds <- ohdsiNegativeControls$outcomeId[ohdsiNegativeControls$outcomeId > 4]
   sql <- SqlRender::loadRenderTranslateSql("NegativeControls.sql",
                                            "MethodEvaluation",
@@ -138,7 +138,7 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
                                            outcome_ids = negativeControlIds)
   DatabaseConnector::executeSql(connection, sql)
   
-  writeLines("Creating nesting cohorts")
+  ParallelLogger::logInfo("Creating nesting cohorts")
   nestingIds <- ohdsiNegativeControls$nestingId
   sql <- SqlRender::loadRenderTranslateSql("NestingCohorts.sql",
                                            "MethodEvaluation",
@@ -149,6 +149,9 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
                                            target_cohort_table = nestingTable,
                                            nesting_ids = nestingIds)
   DatabaseConnector::executeSql(connection, sql)
+  
+  ParallelLogger::logInfo("Counting cohorts")
+  
 }
 
 

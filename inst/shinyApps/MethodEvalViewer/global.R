@@ -3,7 +3,7 @@ if (length(ls(pattern = "shinySettings")) == 0) {
 } else {
   exportFolder <- shinySettings$exportFolder
 }
-# exportFolder <- "r:/MethodsLibraryPleEvaluation_panther/export"
+# exportFolder <- "r:/MethodsLibraryPleEvaluation_ccae/export"
 files <- list.files(exportFolder, "estimates.*csv", full.names = TRUE)
 estimates <- lapply(files, read.csv)
 estimates <- do.call("rbind", estimates)
