@@ -39,3 +39,4 @@ Suggests:
     shiny,
     knitr
 RoxygenNote: 6.1.1
+Encoding: UTF-8
