@@ -23,10 +23,17 @@ OhdsiRTools::checkUsagePackage("MethodEvaluation")
 OhdsiRTools::updateCopyrightYearFolder()
 
 
-# Create manual -----------------------------------------------------------
-shell("rm man/MethodEvaluation.pdf")
-shell("R CMD Rd2pdf ./ --output=man/MethodEvaluation.pdf")
+# Create manual and vignettes ----------------------------------------------
+shell("rm extras/MethodEvaluation.pdf")
+shell("R CMD Rd2pdf ./ --output=extras/MethodEvaluation.pdf")
 
+rmarkdown::render("vignettes/OhdsiMethodsBenchmark.Rmd",
+                  output_file = "../inst/doc/OhdsiMethodsBenchmark.pdf",
+                  rmarkdown::pdf_document(latex_engine = "pdflatex",
+                                          toc = TRUE,
+                                          number_sections = TRUE))
+
+pkgdown::build_site()
 
 # Load reference sets -----------------------------------------------------
 # OMOP

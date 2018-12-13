@@ -307,7 +307,7 @@ synthesizePositiveControls <- function(connectionDetails,
                       exposureTable = exposureTable,
                       outcomeDatabaseSchema = outcomeDatabaseSchema,
                       outcomeTable = outcomeTable,
-                      cdmVersion = cdmVersion)
+                      cdmVersion = "5")
   allControls <- merge(allControls, data.frame(targetId = mdrr$exposureId,
                                                outcomeId = mdrr$outcomeId,
                                                mdrrTarget = mdrr$mdrr))

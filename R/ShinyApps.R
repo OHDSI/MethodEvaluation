@@ -19,8 +19,7 @@
 #' Launch the Method Evaluation Shiny app
 #' 
 #' @param exportFolder   A folder where the data files for the Method Evaluation app are stored. Use the
-#'                     \code{\link{prepareForEvidenceExplorer}} to populate this folder.
-#' @param blind        Should the user be blinded to the main results?
+#'                     \code{\link{packageOhdsiBenchmarkResults}} function to populate this folder.
 #' @param launch.browser    Should the app be launched in your default browser, or in a Shiny window.
 #'                          Note: copying to clipboard will not work in a Shiny window.
 #' 

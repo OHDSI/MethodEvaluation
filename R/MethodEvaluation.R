@@ -23,7 +23,7 @@
 #' @importFrom SqlRender loadRenderTranslateSql translateSql
 #' @importFrom grDevices rgb
 #' @importFrom stats aggregate coef pnorm predict qnorm quantile rexp rpois
-#' @importFrom utils write.csv
+#' @importFrom utils write.csv install.packages menu read.csv
 #' @importFrom methods is
 #' @import Cyclops
 #' @import DatabaseConnector

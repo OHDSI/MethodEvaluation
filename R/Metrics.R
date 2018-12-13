@@ -374,7 +374,7 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder, mdrr = 1.25, stratum = "A
   if (mdrr != "All") {
     subset <- subset[!is.na(subset$mdrrTarget) & subset$mdrrTarget < as.numeric(mdrr), ]
     if (comparative) {
-      subset <- subset[!is.na(subset$mdrrComparator) & subset$mdrrComparator < as.numeric(input$mdrr), ]
+      subset <- subset[!is.na(subset$mdrrComparator) & subset$mdrrComparator < as.numeric(mdrr), ]
     }
   }
   if (stratum != "All") {

@@ -8,12 +8,10 @@ launchMethodEvaluationApp(exportFolder, launch.browser = TRUE)
 }
 \arguments{
 \item{exportFolder}{A folder where the data files for the Method Evaluation app are stored. Use the
-\code{\link{prepareForEvidenceExplorer}} to populate this folder.}
+\code{\link{packageOhdsiBenchmarkResults}} function to populate this folder.}
 
 \item{launch.browser}{Should the app be launched in your default browser, or in a Shiny window.
 Note: copying to clipboard will not work in a Shiny window.}
-
-\item{blind}{Should the user be blinded to the main results?}
 }
 \description{
 Launch the Method Evaluation Shiny app

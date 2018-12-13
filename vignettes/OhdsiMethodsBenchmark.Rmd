@@ -30,7 +30,7 @@ When designing an observational study, there are many study designs to choose fr
 
 This vignette describes the OHDSI Methods Benchmark for evaluating population-level estimation methods, a benchmark that can inform on how a particular study design and set of analysis choices perform in general. The benchmark consists of a **gold standard** of research hypothesis where the truth is known, and a set of **metrics** for characterizing a methods performance when applied to the gold standard. We distinguish between two types of tasks: (1) estimation of the average effect of an exposure on an outcome relative to no exposure (effect estimation), and (2) estimation of the average effect of an exposure on an outcome relative to another exposure (comparative effect estimation). The benchmark allows evaluation of a method on either or both tasks. 
 
-This benchmark builds on previous efforts in EU-ADR, OMOP, and the WHO, adding the ability to evaluate methods on both tasks, and using synthetic positive controls as real positve controls have been observed to be problematic in the past.
+This benchmark builds on previous efforts in EU-ADR, OMOP, and the WHO, adding the ability to evaluate methods on both tasks, and using synthetic positive controls as real positive controls have been observed to be problematic in the past.
 
 ## Gold standard
 
@@ -42,15 +42,20 @@ The remaining 600 entries are positive controls, which were automatically derive
 
 ## Metrics
 
-Once a practical method has been used to produce estimates for the gold standard the following metrics are computed: 
+Once a  method has been used to produce estimates for the gold standard the following metrics are computed: 
 
--	Area under the received operating curve, when comparing positive controls to negative controls
--	Mean squared error
--	Bias distribution
--	Coverage of the confidence interval
--	Type I and type II error
+- **AUC**: the ability to discriminate between positive controls and negative controls.
+- **Coverage**: how often the true effect size is within the 95% confidence interval.
+- **Mean precision**: Precision is computed as 1 / (standard error)2, higher precision means narrower confidence intervals. We use the geometric mean to account for the skewed distribution of the precision.
+- **Mean squared error** (MSE): Mean squared error between the log of the effect size point-estimate and the log of the true effect size.
+- **Type 1 error**: For negative controls, how often was the null rejected (at alpha = 0.05). This is equivalent to the false positive rate and 1 - specificity.
+- **Type 2 error**: For positive controls, how often was the null not rejected (at alpha = 0.05). This is equivalent to the false negative rate and 1 - sensitivity.
+- **Non-estimable**: For how many of the controls was the method unable to produce an estimate? There can be various reasons why an estimate cannot be produced, for example because there were no subjects left after propensity score matching, or because no subjects remained having the outcome.
 
-These metrics are computed both overall, as well as stratified by true effect size and by each of the 4 initial outcomes and 4 initial exposures.
+
+The Benchmark computes these metrics both overall, as well as stratified by true effect size, by each of the four initial outcomes and four initial exposures, and by amount of data as reflected by the minimum detectable relative risk (MDRR). When a method cannot estimate an effect, it returns an estimate of 1 with an infinite confidence interval.
+
+In prior work we described a method for empirically calibrating p-values and confidence intervals. Briefly, empirical calibration estimates a systematic error distribution based on the estimates produced for the negative and positive controls. This systematic error is then taken into consideration, in addition to the random error, when computing the confidence interval and p-value. We therefore also report the performance metrics listed above after calibration, using a leave-one-out approach: for each control the error distributions are fitted on all controls except the control being calibrated and its siblings. By siblings we mean the set of a negative control and the positive controls derived from that negative control.
 
 
 # Running the benchmark
@@ -262,7 +267,44 @@ This will generate two CSV files in the export folder. Results from different me
 
 ## Computing metrics
 
+There are two ways to view the method's performance metrics: using a Shiny app, and by generating a data frame.
 
+### Using the Shiny app
+
+Run the follow command to launch the Shiny app and view the metrics:
+
+```{r tidy=FALSE,eval=FALSE}
+exportFolder <- file.path(outputFolder, "export")
+launchMethodEvaluationApp(exportFolder)
+```
+
+This will launch a Shiny app as shown in Figure 1.
+
+![Method Benchmark Shiny app](shiny.png)
+
+Note that the export folder can hold results from multiple methods and multiple databases. 
+
+### Generating a data frame
+
+Alternatively, we can output the metrics to a data frame:
+
+```{r tidy=FALSE,eval=FALSE}
+exportFolder <- file.path(outputFolder, "export")
+metrics <- computeOhdsiBenchmarkMetrics(exportFolder, 
+                                        mdrr = 1.25, 
+                                        stratum = "All", 
+                                        trueEffectSize = "Overall", 
+                                        calibrated = FALSE, 
+                                        comparative = FALSE)
+head(metrics)
+```
+```{r echo=FALSE,message=FALSE}
+writeLines("   database               method analysisId                                           description  auc coverage   meanP  mse type1 type2 nonEstimable
+1     CCAE SelfControlledCohort          1                    Length of exposure 0.89     0.21 1048.97 0.30  0.66  0.08         0.01
+2     CCAE SelfControlledCohort          2                        30 days of each exposure 0.87     0.41  422.25 0.14  0.55  0.11         0.00")
+```
+
+See `?computeOhdsiBenchmarkMetrics` for information on the various arguments. 
 
 
 
