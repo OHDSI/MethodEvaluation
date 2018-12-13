@@ -35,8 +35,7 @@ rmarkdown::render("vignettes/OhdsiMethodsBenchmark.Rmd",
 
 pkgdown::build_site()
 
-# Load reference sets -----------------------------------------------------
-# OMOP
+# Load reference sets ----------------------------------------------------- OMOP
 omopReferenceSet <- read.csv("C:/home/Research/Method evaluation task force/OmopRefSet.csv")
 names(omopReferenceSet) <- SqlRender::snakeCaseToCamelCase(names(omopReferenceSet))
 save(omopReferenceSet, file = "data/omopReferenceSet.rda", compress = "xz")
@@ -52,14 +51,27 @@ workbook <- loadWorkbook("C:/home/Research/Method evaluation task force/SearchFo
 sheetNames <- getSheets(workbook)
 ohdsiNegativeControls <- data.frame()
 for (sheetName in sheetNames) {
-  sheet <-  readWorksheet(object = workbook, sheet = sheetName, startRow = 0, endRow = 0, startCol = 0, endCol = 0)
+  sheet <- readWorksheet(object = workbook,
+                         sheet = sheetName,
+                         startRow = 0,
+                         endRow = 0,
+                         startCol = 0,
+                         endCol = 0)
   ohdsiNegativeControls <- rbind(ohdsiNegativeControls, sheet)
 }
 save(ohdsiNegativeControls, file = "data/ohdsiNegativeControls.rda", compress = "xz")
 saveRDS(ohdsiNegativeControls, file = "inst/ohdsiNegativeControls.rds")
 
 38000184
-OhdsiRTools::insertCohortDefinitionInPackage(152767, "acute_pancreatitis", baseUrl = "http://api.ohdsi.org:80/WebAPI")
-OhdsiRTools::insertCohortDefinitionInPackage(152768, "gi_bleed", baseUrl = "http://api.ohdsi.org:80/WebAPI")
-OhdsiRTools::insertCohortDefinitionInPackage(152769, "ibd", baseUrl = "http://api.ohdsi.org:80/WebAPI")
-OhdsiRTools::insertCohortDefinitionInPackage(152772, "stroke", baseUrl = "http://api.ohdsi.org:80/WebAPI")
+OhdsiRTools::insertCohortDefinitionInPackage(152767,
+                                             "acute_pancreatitis",
+                                             baseUrl = "http://api.ohdsi.org:80/WebAPI")
+OhdsiRTools::insertCohortDefinitionInPackage(152768,
+                                             "gi_bleed",
+                                             baseUrl = "http://api.ohdsi.org:80/WebAPI")
+OhdsiRTools::insertCohortDefinitionInPackage(152769,
+                                             "ibd",
+                                             baseUrl = "http://api.ohdsi.org:80/WebAPI")
+OhdsiRTools::insertCohortDefinitionInPackage(152772,
+                                             "stroke",
+                                             baseUrl = "http://api.ohdsi.org:80/WebAPI")

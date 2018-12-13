@@ -14,35 +14,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-
 #' Launch the Method Evaluation Shiny app
-#' 
-#' @param exportFolder   A folder where the data files for the Method Evaluation app are stored. Use the
-#'                     \code{\link{packageOhdsiBenchmarkResults}} function to populate this folder.
-#' @param launch.browser    Should the app be launched in your default browser, or in a Shiny window.
-#'                          Note: copying to clipboard will not work in a Shiny window.
-#' 
-#' @details 
+#'
+#' @param exportFolder     A folder where the data files for the Method Evaluation app are stored. Use
+#'                         the \code{\link{packageOhdsiBenchmarkResults}} function to populate this
+#'                         folder.
+#' @param launch.browser   Should the app be launched in your default browser, or in a Shiny window.
+#'                         Note: copying to clipboard will not work in a Shiny window.
+#'
+#' @details
 #' Launches a Shiny app that allows the user to explore the results.
-#' 
+#'
 #' @export
 launchMethodEvaluationApp <- function(exportFolder, launch.browser = TRUE) {
   ensure_installed("DT")
   appDir <- system.file("shinyApps", "MethodEvalViewer", package = "MethodEvaluation")
   .GlobalEnv$shinySettings <- list(exportFolder = exportFolder)
   on.exit(rm(shinySettings, envir = .GlobalEnv))
-  shiny::runApp(appDir) 
+  shiny::runApp(appDir)
 }
 
-# Borrowed from devtools: https://github.com/hadley/devtools/blob/ba7a5a4abd8258c52cb156e7b26bb4bf47a79f0b/R/utils.r#L44
+# Borrowed from devtools:
+# https://github.com/hadley/devtools/blob/ba7a5a4abd8258c52cb156e7b26bb4bf47a79f0b/R/utils.r#L44
 is_installed <- function(pkg, version = 0) {
-  installed_version <- tryCatch(utils::packageVersion(pkg), 
-                                error = function(e) NA)
+  installed_version <- tryCatch(utils::packageVersion(pkg), error = function(e) NA)
   !is.na(installed_version) && installed_version >= version
 }
 
-# Borrowed and adapted from devtools: https://github.com/hadley/devtools/blob/ba7a5a4abd8258c52cb156e7b26bb4bf47a79f0b/R/utils.r#L74
+# Borrowed and adapted from devtools:
+# https://github.com/hadley/devtools/blob/ba7a5a4abd8258c52cb156e7b26bb4bf47a79f0b/R/utils.r#L74
 ensure_installed <- function(pkg) {
   if (!is_installed(pkg)) {
     msg <- paste0(sQuote(pkg), " must be installed for this functionality.")

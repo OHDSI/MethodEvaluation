@@ -17,21 +17,22 @@ function \code{createConnectionDetails} in the
 \item{oracleTempSchema}{Should be used in Oracle to specify a schema where the user has write
 priviliges for storing temporary tables.}
 
-\item{cdmDatabaseSchema}{A database schema containing health care data in the OMOP Commond Data
-Model. Note that for SQL Server, botth the database and schema should
-be specified, e.g. 'cdm_schema.dbo'}
+\item{cdmDatabaseSchema}{A database schema containing health care data in the OMOP Commond
+Data Model. Note that for SQL Server, botth the database and schema
+should be specified, e.g. 'cdm_schema.dbo'}
 
-\item{outcomeDatabaseSchema}{The database schema where the target outcome table is located. Note that for
-SQL Server, both the database and schema should be specified, e.g.
-'cdm_schema.dbo'}
+\item{outcomeDatabaseSchema}{The database schema where the target outcome table is located. Note
+that for SQL Server, both the database and schema should be
+specified, e.g. 'cdm_schema.dbo'}
 
 \item{outcomeTable}{The name of the table where the outcomes will be stored.}
 
-\item{nestingDatabaseSchema}{(For the OHDSI Methods Benchmark only) The database schema where the nesting outcome table is located. Note that for
-SQL Server, both the database and schema should be specified, e.g.
-'cdm_schema.dbo'.}
+\item{nestingDatabaseSchema}{(For the OHDSI Methods Benchmark only) The database schema where the
+nesting outcome table is located. Note that for SQL Server, both the
+database and schema should be specified, e.g. 'cdm_schema.dbo'.}
 
-\item{nestingTable}{(For the OHDSI Methods Benchmark only) The name of the table where the nesting cohorts will be stored.}
+\item{nestingTable}{(For the OHDSI Methods Benchmark only) The name of the table where
+the nesting cohorts will be stored.}
 
 \item{referenceSet}{The name of the reference set for which outcomes need to be created.
 Currently supported are "omopReferenceSet", "euadrReferenceSet", and
@@ -41,8 +42,7 @@ Currently supported are "omopReferenceSet", "euadrReferenceSet", and
 Create cohorts used in a reference set.
 }
 \details{
-This function will create the outcomes of interest and nesting cohorts referenced in the 
-various reference sets. The outcomes of interest are derives using information like 
-diagnoses, procedures, and drug prescriptions. The outcomes are stored in a table on 
-the database server.
+This function will create the outcomes of interest and nesting cohorts referenced in the various
+reference sets. The outcomes of interest are derives using information like diagnoses, procedures,
+and drug prescriptions. The outcomes are stored in a table on the database server.
 }

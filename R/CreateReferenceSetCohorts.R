@@ -17,30 +17,30 @@
 #' Create cohorts used in a reference set.
 #'
 #' @details
-#' This function will create the outcomes of interest and nesting cohorts referenced in the 
-#' various reference sets. The outcomes of interest are derives using information like 
-#' diagnoses, procedures, and drug prescriptions. The outcomes are stored in a table on 
-#' the database server.
+#' This function will create the outcomes of interest and nesting cohorts referenced in the various
+#' reference sets. The outcomes of interest are derives using information like diagnoses, procedures,
+#' and drug prescriptions. The outcomes are stored in a table on the database server.
 #'
-#' @param connectionDetails      An R object of type \code{ConnectionDetails} created using the
-#'                               function \code{createConnectionDetails} in the
-#'                               \code{DatabaseConnector} package.
-#' @param oracleTempSchema       Should be used in Oracle to specify a schema where the user has write
-#'                             priviliges for storing temporary tables.                               
-#' @param cdmDatabaseSchema      A database schema containing health care data in the OMOP Commond Data
-#'                               Model. Note that for SQL Server, botth the database and schema should
-#'                               be specified, e.g. 'cdm_schema.dbo'
-#' @param outcomeDatabaseSchema   The database schema where the target outcome table is located. Note that for
-#'                               SQL Server, both the database and schema should be specified, e.g.
-#'                               'cdm_schema.dbo'
+#' @param connectionDetails       An R object of type \code{ConnectionDetails} created using the
+#'                                function \code{createConnectionDetails} in the
+#'                                \code{DatabaseConnector} package.
+#' @param oracleTempSchema        Should be used in Oracle to specify a schema where the user has write
+#'                                priviliges for storing temporary tables.
+#' @param cdmDatabaseSchema       A database schema containing health care data in the OMOP Commond
+#'                                Data Model. Note that for SQL Server, botth the database and schema
+#'                                should be specified, e.g. 'cdm_schema.dbo'
+#' @param outcomeDatabaseSchema   The database schema where the target outcome table is located. Note
+#'                                that for SQL Server, both the database and schema should be
+#'                                specified, e.g. 'cdm_schema.dbo'
 #' @param outcomeTable            The name of the table where the outcomes will be stored.
-#' @param nestingDatabaseSchema   (For the OHDSI Methods Benchmark only) The database schema where the nesting outcome table is located. Note that for
-#'                               SQL Server, both the database and schema should be specified, e.g.
-#'                               'cdm_schema.dbo'. 
-#' @param nestingTable            (For the OHDSI Methods Benchmark only) The name of the table where the nesting cohorts will be stored.
-#' @param referenceSet           The name of the reference set for which outcomes need to be created.
-#'                               Currently supported are "omopReferenceSet", "euadrReferenceSet", and
-#'                               "ohdsiMethodsBenchmark".
+#' @param nestingDatabaseSchema   (For the OHDSI Methods Benchmark only) The database schema where the
+#'                                nesting outcome table is located. Note that for SQL Server, both the
+#'                                database and schema should be specified, e.g. 'cdm_schema.dbo'.
+#' @param nestingTable            (For the OHDSI Methods Benchmark only) The name of the table where
+#'                                the nesting cohorts will be stored.
+#' @param referenceSet            The name of the reference set for which outcomes need to be created.
+#'                                Currently supported are "omopReferenceSet", "euadrReferenceSet", and
+#'                                "ohdsiMethodsBenchmark".
 #'
 #' @export
 createReferenceSetCohorts <- function(connectionDetails,
@@ -90,7 +90,8 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
                                               nestingDatabaseSchema,
                                               nestingTable,
                                               oracleTempSchema) {
-  ohdsiNegativeControls <- readRDS(system.file("ohdsiNegativeControls.rds", package = "MethodEvaluation"))
+  ohdsiNegativeControls <- readRDS(system.file("ohdsiNegativeControls.rds",
+                                               package = "MethodEvaluation"))
   
   connection <- DatabaseConnector::connect(connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
@@ -112,7 +113,7 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
   DatabaseConnector::executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
   
   cohortsToCreate <- data.frame(name = c("acute_pancreatitis", "gi_bleed", "stroke", "ibd"),
-                                id = c(1,2,3,4))
+                                id = c(1, 2, 3, 4))
   for (i in 1:nrow(cohortsToCreate)) {
     ParallelLogger::logInfo(paste("Creating outcome:", cohortsToCreate$name[i]))
     sql <- SqlRender::loadRenderTranslateSql(sqlFilename = paste0(cohortsToCreate$name[i], ".sql"),
@@ -125,7 +126,7 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
                                              target_cohort_table = outcomeTable,
                                              target_cohort_id = cohortsToCreate$id[i])
     DatabaseConnector::executeSql(connection, sql)
-  } 
+  }
   ParallelLogger::logInfo("Creating other negative control outcomes")
   negativeControlIds <- ohdsiNegativeControls$outcomeId[ohdsiNegativeControls$outcomeId > 4]
   sql <- SqlRender::loadRenderTranslateSql("NegativeControls.sql",
@@ -151,52 +152,51 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
   DatabaseConnector::executeSql(connection, sql)
   
   ParallelLogger::logInfo("Counting cohorts")
-  
 }
 
 
 #' Synthesize positive controls based on negative controls
 #'
 #' @details
-#' This function will synthesize positive controls for a given reference set based on the real negative controls.
-#' Data from the database will be used to fit outcome models for each negative control outcome, and these models 
-#' will be used to sample additional synthetic outcomes during eposure to increase the true hazard ratio. 
-#' 
-#' The positive control outcome cohorts will be stored in the same database table as the negative control outcome
-#' cohorts.
+#' This function will synthesize positive controls for a given reference set based on the real
+#' negative controls. Data from the database will be used to fit outcome models for each negative
+#' control outcome, and these models will be used to sample additional synthetic outcomes during
+#' eposure to increase the true hazard ratio.
+#' The positive control outcome cohorts will be stored in the same database table as the negative
+#' control outcome cohorts.
+#' A summary file will be created listing all positive and negative controls. This list should then be
+#' used as input for the method under evaluation.
 #'
-#' A summary file will be created listing all positive and negative controls. This list should then be used as input
-#' for the method under evaluation.
-#'
-#' @param connectionDetails      An R object of type \code{ConnectionDetails} created using the
-#'                               function \code{createConnectionDetails} in the
-#'                               \code{DatabaseConnector} package.
-#' @param oracleTempSchema       Should be used in Oracle to specify a schema where the user has write
-#'                             priviliges for storing temporary tables.                               
-#' @param cdmDatabaseSchema      A database schema containing health care data in the OMOP Commond Data
-#'                               Model. Note that for SQL Server, botth the database and schema should
-#'                               be specified, e.g. 'cdm_schema.dbo'
-#' @param outcomeDatabaseSchema   The database schema where the target outcome table is located. Note that for
-#'                               SQL Server, both the database and schema should be specified, e.g.
-#'                               'cdm_schema.dbo'
-#' @param outcomeTable            The name of the table where the outcomes will be stored.
-#' @param exposureDatabaseSchema           The name of the database schema that is the location where
-#'                                         the exposure data used to define the exposure cohorts is
-#'                                         available.  If exposureTable = DRUG_ERA,
-#'                                         exposureDatabaseSchema is not used and assumed to be
-#'                                         cdmDatabaseSchema.  Requires read permissions to this database.
-#' @param exposureTable                    The tablename that contains the exposure cohorts.  If
-#'                                         exposureTable <> DRUG_ERA, then expectation is exposureTable
-#'                                         has format of COHORT table: COHORT_DEFINITION_ID,
-#'                                         SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.
-#' @param referenceSet           The name of the reference set for which positive controls need to be synthesized.
-#'                               Currently supported are "ohdsiMethodsBenchmark".
-#' @param maxCores       How many parallel cores should be used? If more cores are made available this
-#'                       can speed up the analyses.
-#' @param workFolder      Name of local folder to place intermediary results; make sure to use forward slashes (/).
-#'                       Do not use a folder on a network drive since this greatly impacts performance.  
-#' @param summaryFileName     The name of the CSV file where to store the summary of the final set of positive and                     
-#'                              negative controls.
+#' @param connectionDetails        An R object of type \code{ConnectionDetails} created using the
+#'                                 function \code{createConnectionDetails} in the
+#'                                 \code{DatabaseConnector} package.
+#' @param oracleTempSchema         Should be used in Oracle to specify a schema where the user has
+#'                                 write priviliges for storing temporary tables.
+#' @param cdmDatabaseSchema        A database schema containing health care data in the OMOP Commond
+#'                                 Data Model. Note that for SQL Server, botth the database and schema
+#'                                 should be specified, e.g. 'cdm_schema.dbo'
+#' @param outcomeDatabaseSchema    The database schema where the target outcome table is located. Note
+#'                                 that for SQL Server, both the database and schema should be
+#'                                 specified, e.g. 'cdm_schema.dbo'
+#' @param outcomeTable             The name of the table where the outcomes will be stored.
+#' @param exposureDatabaseSchema   The name of the database schema that is the location where the
+#'                                 exposure data used to define the exposure cohorts is available.  If
+#'                                 exposureTable = DRUG_ERA, exposureDatabaseSchema is not used and
+#'                                 assumed to be cdmDatabaseSchema.  Requires read permissions to this
+#'                                 database.
+#' @param exposureTable            The tablename that contains the exposure cohorts.  If exposureTable
+#'                                 <> DRUG_ERA, then expectation is exposureTable has format of COHORT
+#'                                 table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
+#'                                 COHORT_END_DATE.
+#' @param referenceSet             The name of the reference set for which positive controls need to be
+#'                                 synthesized. Currently supported are "ohdsiMethodsBenchmark".
+#' @param maxCores                 How many parallel cores should be used? If more cores are made
+#'                                 available this can speed up the analyses.
+#' @param workFolder               Name of local folder to place intermediary results; make sure to use
+#'                                 forward slashes (/). Do not use a folder on a network drive since
+#'                                 this greatly impacts performance.
+#' @param summaryFileName          The name of the CSV file where to store the summary of the final set
+#'                                 of positive and negative controls.
 #'
 #' @export
 synthesizePositiveControls <- function(connectionDetails,
@@ -219,18 +219,19 @@ synthesizePositiveControls <- function(connectionDetails,
   
   injectionSummaryFile <- file.path(workFolder, "injectionSummary.rds")
   if (!file.exists(injectionSummaryFile)) {
-    ohdsiNegativeControls <- readRDS(system.file("ohdsiNegativeControls.rds", package = "MethodEvaluation"))
+    ohdsiNegativeControls <- readRDS(system.file("ohdsiNegativeControls.rds",
+                                                 package = "MethodEvaluation"))
     exposureOutcomePairs <- data.frame(exposureId = ohdsiNegativeControls$targetId,
                                        outcomeId = ohdsiNegativeControls$outcomeId)
     exposureOutcomePairs <- unique(exposureOutcomePairs)
     
-    prior = Cyclops::createPrior("laplace", exclude = 0, useCrossValidation = TRUE)
+    prior <- Cyclops::createPrior("laplace", exclude = 0, useCrossValidation = TRUE)
     
-    control = Cyclops::createControl(cvType = "auto",
-                                     startingVariance = 0.01,
-                                     noiseLevel = "quiet",
-                                     cvRepetitions = 1,
-                                     threads = min(c(10, maxCores)))
+    control <- Cyclops::createControl(cvType = "auto",
+                                      startingVariance = 0.01,
+                                      noiseLevel = "quiet",
+                                      cvRepetitions = 1,
+                                      threads = min(c(10, maxCores)))
     
     covariateSettings <- FeatureExtraction::createCovariateSettings(useDemographicsAgeGroup = TRUE,
                                                                     useDemographicsGender = TRUE,
@@ -280,12 +281,15 @@ synthesizePositiveControls <- function(connectionDetails,
                             covariateSettings = covariateSettings)
     saveRDS(result, injectionSummaryFile)
   }
-  ohdsiNegativeControls <- readRDS(system.file("ohdsiNegativeControls.rds", package = "MethodEvaluation"))
+  ohdsiNegativeControls <- readRDS(system.file("ohdsiNegativeControls.rds",
+                                               package = "MethodEvaluation"))
   injectedSignals <- readRDS(injectionSummaryFile)
   injectedSignals$targetId <- injectedSignals$exposureId
   injectedSignals <- merge(injectedSignals, ohdsiNegativeControls)
   injectedSignals <- injectedSignals[injectedSignals$trueEffectSize != 0, ]
-  injectedSignals$outcomeName <- paste0(injectedSignals$outcomeName, ", RR=", injectedSignals$targetEffectSize)
+  injectedSignals$outcomeName <- paste0(injectedSignals$outcomeName,
+                                        ", RR=",
+                                        injectedSignals$targetEffectSize)
   injectedSignals$oldOutcomeId <- injectedSignals$outcomeId
   injectedSignals$outcomeId <- injectedSignals$newOutcomeId
   ohdsiNegativeControls$targetEffectSize <- 1
@@ -311,10 +315,8 @@ synthesizePositiveControls <- function(connectionDetails,
   allControls <- merge(allControls, data.frame(targetId = mdrr$exposureId,
                                                outcomeId = mdrr$outcomeId,
                                                mdrrTarget = mdrr$mdrr))
-  allControls <- merge(allControls,
-                       data.frame(comparatorId = mdrr$exposureId,
-                                  outcomeId = mdrr$outcomeId,
-                                  mdrrComparator = mdrr$mdrr),
-                       all.x = TRUE)
+  allControls <- merge(allControls, data.frame(comparatorId = mdrr$exposureId,
+                                               outcomeId = mdrr$outcomeId,
+                                               mdrrComparator = mdrr$mdrr), all.x = TRUE)
   write.csv(allControls, summaryFileName, row.names = FALSE)
 }

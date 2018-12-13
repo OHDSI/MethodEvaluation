@@ -12,7 +12,8 @@ computeAucs(logRr, trueLogRr)
 \item{trueLogRr}{A vector containing the injected log(relative risk) for each estimate.}
 }
 \value{
-A data frame with per injected signal size the AUC and the 95 percent confidence interval of the AUC.
+A data frame with per injected signal size the AUC and the 95 percent confidence interval of the
+AUC.
 }
 \description{
 Compute the AUCs for various injected signal sizes

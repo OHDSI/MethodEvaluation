@@ -51,41 +51,40 @@ cdmSchema.  Requires read permissions to this database.}
 
 \item{exposureTable}{The table name that contains the exposure cohorts.  If
 exposureTable <> DRUG_ERA, then expectation is exposureTable
-has format of COHORT table: cohort_concept_id,
-SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.}
+has format of COHORT table: cohort_concept_id, SUBJECT_ID,
+COHORT_START_DATE, COHORT_END_DATE.}
 
 \item{outcomeDatabaseSchema}{The name of the database schema that is the location where
-the data used to define the outcome cohorts is available.
-If exposureTable = CONDITION_ERA, exposureDatabaseSchema is
-not used by assumed to be cdmSchema.  Requires read
-permissions to this database.}
+the data used to define the outcome cohorts is available. If
+exposureTable = CONDITION_ERA, exposureDatabaseSchema is not
+used by assumed to be cdmSchema.  Requires read permissions
+to this database.}
 
-\item{outcomeTable}{The table name that contains the outcome cohorts. When the table name is
-not CONDITION_ERA This table is expected
-to have the same format as the COHORT table:
-SUBJECT_ID, COHORT_START_DATE,
-COHORT_END_DATE, COHORT_CONCEPT_ID (CDM v4) or COHORT_DEFINITION_ID (CDM v5 and higher).}
+\item{outcomeTable}{The table name that contains the outcome cohorts. When the
+table name is not CONDITION_ERA This table is expected to
+have the same format as the COHORT table: SUBJECT_ID,
+COHORT_START_DATE, COHORT_END_DATE, COHORT_CONCEPT_ID (CDM
+v4) or COHORT_DEFINITION_ID (CDM v5 and higher).}
 
 \item{outputDatabaseSchema}{The name of the database schema that is the location of the
 tables containing the new outcomesRequires write permissions
 to this database.}
 
-\item{outputTable}{The name of the table names that will contain the generated outcome
-cohorts.}
+\item{outputTable}{The name of the table names that will contain the generated
+outcome cohorts.}
 
 \item{createOutputTable}{Should the output table be created prior to inserting the
 outcomes? If TRUE and the tables already exists, it will
-first be deleted. If FALSE, the table is assumed to exist and the
-outcomes will be inserted. Any existing outcomes with the same IDs
-will first be deleted.}
+first be deleted. If FALSE, the table is assumed to exist and
+the outcomes will be inserted. Any existing outcomes with the
+same IDs will first be deleted.}
 
 \item{exposureOutcomePairs}{A data frame with at least two columns:
 \itemize{
-  \item {"exposureId" containing the drug_concept_ID
-        or cohort_concept_id of the exposure variable}
-  \item {"outcomeId" containing the
-        condition_concept_ID or cohort_concept_id of the
-        outcome variable}
+  \item {"exposureId" containing the drug_concept_ID or
+        cohort_concept_id of the exposure variable}
+  \item {"outcomeId" containing the condition_concept_ID or
+        cohort_concept_id of the outcome variable}
 }}
 
 \item{modelType}{Can be either "poisson" or "survival"}
@@ -94,16 +93,17 @@ will first be deleted.}
 
 \item{minOutcomeCountForInjection}{Minimum number of outcome events required to inject a signal.}
 
-\item{covariateSettings}{An object of type \code{covariateSettings} as created using the
-\code{createCovariateSettings} function in the
+\item{covariateSettings}{An object of type \code{covariateSettings} as created using
+the \code{createCovariateSettings} function in the
 \code{FeatureExtraction} package.}
 
-\item{prior}{The prior used to fit the outcome model. See \code{\link[Cyclops]{createPrior}}
-for details.}
+\item{prior}{The prior used to fit the outcome model. See
+\code{\link[Cyclops]{createPrior}} for details.}
 
-\item{control}{The control object used to control the cross-validation used to
-determine the hyperparameters of the prior (if applicable). See
-\code{\link[Cyclops]{createControl}} for details.}
+\item{control}{The control object used to control the cross-validation used
+to determine the hyperparameters of the prior (if
+applicable). See \code{\link[Cyclops]{createControl}} for
+details.}
 
 \item{firstExposureOnly}{Should signals be injected only for the first exposure? (ie.
 assuming an acute effect)}
@@ -118,20 +118,21 @@ exposure (in days). When 0, risk is assumed to start on the
 first day of exposure.}
 
 \item{riskWindowEnd}{The end of the risk window relative to the start of the
-exposure. Note that typically the length of exposure is
-added to this number (when the \code{addExposureDaysToEnd}
+exposure. Note that typically the length of exposure is added
+to this number (when the \code{addExposureDaysToEnd}
 parameter is set to TRUE).}
 
 \item{addExposureDaysToEnd}{Should length of exposure be added to the risk window?}
 
 \item{addIntentToTreat}{If true, the signal will not only be injected in the primary
 time at risk, but also after the time at risk (up until the
-obseration period end). In both time periods, the target effect 
-size will be enforced. This allows the same positive control
-synthesis to be used in both on treatment and intent-to-treat
-analysis variants. However, this will preclude the controls
-to be used in self-controlled designs that consider the time
-after exposure. Requires \code{firstExposureOnly = TRUE}.}
+obseration period end). In both time periods, the target
+effect size will be enforced. This allows the same positive
+control synthesis to be used in both on treatment and
+intent-to-treat analysis variants. However, this will
+preclude the controls to be used in self-controlled designs
+that consider the time after exposure. Requires
+\code{firstExposureOnly = TRUE}.}
 
 \item{firstOutcomeOnly}{Should only the first outcome per person be considered when
 modeling the outcome?}
@@ -144,19 +145,22 @@ modeling the outcome?}
 
 \item{precision}{The allowed ratio between target and injected signal size.}
 
-\item{outputIdOffset}{What should be the first new outcome ID that is to be created?}
+\item{outputIdOffset}{What should be the first new outcome ID that is to be
+created?}
 
 \item{workFolder}{Path to a folder where intermediate data will be stored.}
 
-\item{cdmVersion}{Define the OMOP CDM version used: currently support "4" and "5".}
+\item{cdmVersion}{Define the OMOP CDM version used: currently support "4" and
+"5".}
 
-\item{modelThreads}{Number of parallel threads to use when fitting outcome models.}
+\item{modelThreads}{Number of parallel threads to use when fitting outcome
+models.}
 
 \item{generationThreads}{Number of parallel threads to use when generating outcomes.}
 }
 \value{
-A data.frame listing all the drug-pairs in combination with requested effect sizes and the real inserted effect size
-(might be different from the requested effect size because of sampling error).
+A data.frame listing all the drug-pairs in combination with requested effect sizes and the real
+inserted effect size (might be different from the requested effect size because of sampling error).
 }
 \description{
 Inject signals in database
@@ -167,13 +171,12 @@ that these drug-outcome pairs represent negative controls, so the true relative 
 inserting any outcomes should be 1. There are two models for inserting the outcomes during the
 specified risk window of the drug: a Poisson model assuming multiple outcomes could occurr during a
 single exposure, and a survival model considering only one outcome per exposure.
-
 It is possible to use bulk import to insert the generated outcomes in the database. This requires
 the environmental variable 'USE_MPP_BULK_LOAD' to be set to 'TRUE'. See \code{
 ?DatabaseConnector::insertTable} for details on how to configure the bulk upload.
 }
 \references{
-Schuemie MJ, Hripcsak G, Ryan PB, Madigan D, Suchard MA. Empirical confidence interval calibration for 
-population-level effect estimation studies in observational healthcare data. Proc Natl Acad Sci U S A. 
-2018 Mar 13;115(11):2571-2577.
+Schuemie MJ, Hripcsak G, Ryan PB, Madigan D, Suchard MA. Empirical confidence interval calibration
+for population-level effect estimation studies in observational healthcare data. Proc Natl Acad Sci
+U S A. 2018 Mar 13;115(11):2571-2577.
 }

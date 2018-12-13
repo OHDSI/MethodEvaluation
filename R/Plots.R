@@ -23,10 +23,10 @@
 #' @param showAucs    Should the AUCs be shown in the plot?
 #' @param fileName    Name of the file where the plot should be saved, for example 'plot.png'. See the
 #'                    function \code{ggsave} in the ggplot2 package for supported file formats.
-#' 
+#'
 #' @return
 #' A Ggplot object. Use the \code{ggsave} function to save to file.
-#' 
+#'
 #' @export
 plotRocsInjectedSignals <- function(logRr, trueLogRr, showAucs, fileName = NULL) {
   if (any(is.na(logRr))) {
@@ -41,10 +41,9 @@ plotRocsInjectedSignals <- function(logRr, trueLogRr, showAucs, fileName = NULL)
   allData <- data.frame()
   aucs <- c()
   trueRrs <- c()
-  for (trueLogRrLevel in trueLogRrLevels){
-    if (trueLogRrLevel != 0 ) {
-      # trueLogRrLevel <- log(2)
-      data <- data.frame(logRr = logRr[trueLogRr == 0 | trueLogRr == trueLogRrLevel], 
+  for (trueLogRrLevel in trueLogRrLevels) {
+    if (trueLogRrLevel != 0) {
+      data <- data.frame(logRr = logRr[trueLogRr == 0 | trueLogRr == trueLogRrLevel],
                          trueLogRr = trueLogRr[trueLogRr == 0 | trueLogRr == trueLogRrLevel])
       data$truth <- data$trueLogRr != 0
       
@@ -53,24 +52,37 @@ plotRocsInjectedSignals <- function(logRr, trueLogRr, showAucs, fileName = NULL)
         aucs <- c(aucs, pROC::auc(roc))
         trueRrs <- c(trueRrs, exp(trueLogRrLevel))
       }
-      data <- data.frame(sens = roc$sensitivities, fpRate = 1 - roc$specificities, trueRr = exp(trueLogRrLevel))
+      data <- data.frame(sens = roc$sensitivities,
+                         fpRate = 1 - roc$specificities,
+                         trueRr = exp(trueLogRrLevel))
       data <- data[order(data$sens, data$fpRate), ]
       allData <- rbind(allData, data)
     }
   }
   allData$trueRr <- as.factor(allData$trueRr)
-  plot <- ggplot2::ggplot(allData, ggplot2::aes(x = fpRate, y = sens, group = trueRr, color = trueRr, fill = trueRr)) +
+  plot <- ggplot2::ggplot(allData, ggplot2::aes(x = fpRate,
+                                                y = sens,
+                                                group = trueRr,
+                                                color = trueRr,
+                                                fill = trueRr)) +
     ggplot2::geom_abline(intercept = 0, slope = 1) +
     ggplot2::geom_line(alpha = 0.5, size = 1) +
     ggplot2::scale_x_continuous("1 - specificity") +
     ggplot2::scale_y_continuous("Sensitivity")
   
   if (showAucs) {
-    aucs <- data.frame(auc = aucs, trueRr = trueRrs) 
+    aucs <- data.frame(auc = aucs, trueRr = trueRrs)
     aucs <- aucs[order(-aucs$trueRr), ]
     for (i in 1:nrow(aucs)) {
-      label <- paste0("True RR = ",format(round(aucs$trueRr[i], 2), nsmall = 2), ": AUC = ", format(round(aucs$auc[i], 2), nsmall = 2))
-      plot <- plot + ggplot2::geom_text(label = label, x = 1, y = (i-1)*0.1, hjust = 1, color = "#000000")
+      label <- paste0("True RR = ",
+                      format(round(aucs$trueRr[i], 2), nsmall = 2),
+                      ": AUC = ",
+                      format(round(aucs$auc[i], 2), nsmall = 2))
+      plot <- plot + ggplot2::geom_text(label = label,
+                                        x = 1,
+                                        y = (i - 1) * 0.1,
+                                        hjust = 1,
+                                        color = "#000000")
     }
   }
   if (!is.null(fileName))
@@ -94,7 +106,7 @@ plotRocsInjectedSignals <- function(logRr, trueLogRr, showAucs, fileName = NULL)
 #'                    function \code{ggsave} in the ggplot2 package for supported file formats.
 #'
 #' @export
-plotCoverageInjectedSignals  <- function(logRr, seLogRr, trueLogRr, region = 0.95, fileName = NULL) {
+plotCoverageInjectedSignals <- function(logRr, seLogRr, trueLogRr, region = 0.95, fileName = NULL) {
   data <- data.frame(logRr = logRr,
                      logLb95Rr = logRr + qnorm((1 - region)/2) * seLogRr,
                      logUb95Rr = logRr + qnorm(1 - (1 - region)/2) * seLogRr,
@@ -126,13 +138,20 @@ plotCoverageInjectedSignals  <- function(logRr, seLogRr, trueLogRr, region = 0.9
   vizD$group <- factor(vizD$group, levels = c("Below CI", "Within CI", "Above CI"))
   theme <- ggplot2::element_text(colour = "#000000", size = 10)
   plot <- with(vizD, {
-    ggplot2::ggplot(vizD, ggplot2::aes(x = as.factor(trueRr),
-                                       y = fraction)) + ggplot2::geom_bar(ggplot2::aes(fill = group),
-                                                                          stat = "identity",
-                                                                          position = "stack",
-                                                                          alpha = 0.8) + ggplot2::scale_fill_manual(values = c("#174a9f",
-                                                                                                                               "#f9dd75",
-                                                                                                                               "#f15222")) + ggplot2::geom_text(ggplot2::aes(label = label, y = pos), size = 3) + ggplot2::scale_x_discrete("True relative risk") + ggplot2::scale_y_continuous("Coverage") + ggplot2::theme(panel.grid.minor = ggplot2::element_blank(), panel.background = ggplot2::element_rect(fill = "#FAFAFA", colour = NA), panel.grid.major = ggplot2::element_blank(), axis.ticks = ggplot2::element_blank(), axis.text.y = ggplot2::element_blank(), axis.text.x = theme, legend.key = ggplot2::element_blank(), legend.position = "right")
+    ggplot2::ggplot(vizD, ggplot2::aes(x = as.factor(trueRr), y = fraction)) + 
+      ggplot2::geom_bar(ggplot2::aes(fill = group), stat = "identity", position = "stack", alpha = 0.8) + 
+      ggplot2::scale_fill_manual(values = c("#174a9f", "#f9dd75", "#f15222")) + 
+      ggplot2::geom_text(ggplot2::aes(label = label, y = pos), size = 3) + 
+      ggplot2::scale_x_discrete("True relative risk") + 
+      ggplot2::scale_y_continuous("Coverage") + 
+      ggplot2::theme(panel.grid.minor = ggplot2::element_blank(), 
+                     panel.background = ggplot2::element_rect(fill = "#FAFAFA", colour = NA), 
+                     panel.grid.major = ggplot2::element_blank(), 
+                     axis.ticks = ggplot2::element_blank(), 
+                     axis.text.y = ggplot2::element_blank(), 
+                     axis.text.x = theme, 
+                     legend.key = ggplot2::element_blank(), 
+                     legend.position = "right")
   })
   if (!is.null(fileName))
     ggplot2::ggsave(fileName, plot, width = 5, height = 3.5, dpi = 400)

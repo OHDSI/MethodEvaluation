@@ -21,6 +21,6 @@ estimate>))/qnorm(0.025).}
 Compute the coverage
 }
 \details{
-Compute the fractions of estimates where the true effect size is below, above or within the confidence
-interval, for one or more true effect sizes.
+Compute the fractions of estimates where the true effect size is below, above or within the
+confidence interval, for one or more true effect sizes.
 }

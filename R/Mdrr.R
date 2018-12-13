@@ -20,51 +20,48 @@
 #' Compute minimal detectable relative risk (MDRR)
 #'
 #' @description
-#' \code{computeMdrr} computes the minimal detectable relative risk (MDRR) for drug-outcome pairs using a 
-#' standard approach that stratifies by age and gender (Armstrong 1987).
+#' \code{computeMdrr} computes the minimal detectable relative risk (MDRR) for drug-outcome pairs
+#' using a standard approach that stratifies by age and gender (Armstrong 1987).
 #'
 #'
-#' @param connectionDetails                An R object of type \code{ConnectionDetails} created using
-#'                                         the function \code{createConnectionDetails} in the
-#'                                         \code{DatabaseConnector} package.
-#' @param cdmDatabaseSchema                Name of database schema that contains OMOP CDM and
-#'                                         vocabulary.
-#' @param oracleTempSchema                 For Oracle only: the name of the database schema where you
-#'                                         want all temporary tables to be managed. Requires
-#'                                         create/insert permissions to this database.
-#' @param exposureOutcomePairs             A data frame with at least two columns:
-#'                                         \itemize{
-#'                                           \item {"exposureId" or "targetId" containing the drug_concept_ID
-#'                                                 or cohort_definition_id of the exposure variable}
-#'                                           \item {"outcomeId" containing the
-#'                                                 condition_concept_ID or cohort_definition_id of the
-#'                                                 outcome variable}
-#'                                         }
+#' @param connectionDetails        An R object of type \code{ConnectionDetails} created using the
+#'                                 function \code{createConnectionDetails} in the
+#'                                 \code{DatabaseConnector} package.
+#' @param cdmDatabaseSchema        Name of database schema that contains OMOP CDM and vocabulary.
+#' @param oracleTempSchema         For Oracle only: the name of the database schema where you want all
+#'                                 temporary tables to be managed. Requires create/insert permissions
+#'                                 to this database.
+#' @param exposureOutcomePairs     A data frame with at least two columns:
+#'                                 \itemize{
+#'                                   \item {"exposureId" or "targetId" containing the drug_concept_ID or
+#'                                         cohort_definition_id of the exposure variable}
+#'                                   \item {"outcomeId" containing the condition_concept_ID or
+#'                                         cohort_definition_id of the outcome variable}
+#'                                 }
 #'
-#' @param exposureDatabaseSchema           The name of the database schema that is the location where
-#'                                         the exposure data used to define the exposure cohorts is
-#'                                         available.  If exposureTable = DRUG_ERA,
-#'                                         exposureDatabaseSchema is not used by assumed to be
-#'                                         cdmSchema.  Requires read permissions to this database.
-#' @param exposureTable                    The tablename that contains the exposure cohorts.  If
-#'                                         exposureTable <> DRUG_ERA, then expectation is exposureTable
-#'                                         has format of COHORT table: COHORT_DEFINITION_ID,
-#'                                         SUBJECT_ID, COHORT_START_DATE, COHORT_END_DATE.
-#' @param outcomeDatabaseSchema            The name of the database schema that is the location where
-#'                                         the data used to define the outcome cohorts is available.
-#'                                         If exposureTable = CONDITION_ERA, exposureDatabaseSchema is
-#'                                         not used by assumed to be cdmSchema.  Requires read
-#'                                         permissions to this database.
-#' @param outcomeTable                     The tablename that contains the outcome cohorts.  If
-#'                                         outcomeTable <> CONDITION_OCCURRENCE, then expectation is
-#'                                         outcomeTable has format of COHORT table:
-#'                                         COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
-#'                                         COHORT_END_DATE.
-#' @param cdmVersion                   Define the OMOP CDM version used: currently support "4" and "5".
-#' 
-#' @references 
-#' Armstrong B. A simple estimator of minimum detectable relative risk, sample size, or power in cohort studies. 
-#' American journal of epidemiology. 1987; 126: 356-8.
+#'
+#' @param exposureDatabaseSchema   The name of the database schema that is the location where the
+#'                                 exposure data used to define the exposure cohorts is available.  If
+#'                                 exposureTable = DRUG_ERA, exposureDatabaseSchema is not used by
+#'                                 assumed to be cdmSchema.  Requires read permissions to this
+#'                                 database.
+#' @param exposureTable            The tablename that contains the exposure cohorts.  If exposureTable
+#'                                 <> DRUG_ERA, then expectation is exposureTable has format of COHORT
+#'                                 table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
+#'                                 COHORT_END_DATE.
+#' @param outcomeDatabaseSchema    The name of the database schema that is the location where the data
+#'                                 used to define the outcome cohorts is available. If exposureTable =
+#'                                 CONDITION_ERA, exposureDatabaseSchema is not used by assumed to be
+#'                                 cdmSchema.  Requires read permissions to this database.
+#' @param outcomeTable             The tablename that contains the outcome cohorts.  If outcomeTable <>
+#'                                 CONDITION_OCCURRENCE, then expectation is outcomeTable has format of
+#'                                 COHORT table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
+#'                                 COHORT_END_DATE.
+#' @param cdmVersion               Define the OMOP CDM version used: currently support "4" and "5".
+#'
+#' @references
+#' Armstrong B. A simple estimator of minimum detectable relative risk, sample size, or power in
+#' cohort studies. American journal of epidemiology. 1987; 126: 356-8.
 #'
 #' @return
 #' A data frame containing the MDRRs for the given exposure-outcome pairs.
