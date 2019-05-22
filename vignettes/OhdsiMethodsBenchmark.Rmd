@@ -6,9 +6,6 @@ output:
   pdf_document:
     number_sections: yes
     toc: yes
-  html_document:
-    number_sections: yes
-    toc: yes
 vignette: >
   %\VignetteIndexEntry{OHDSI Methods Benchmark}
   %\VignetteEngine{knitr::rmarkdown}
