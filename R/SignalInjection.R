@@ -1,6 +1,6 @@
 # @file SignalInjection.R
 #
-# Copyright 2018 Observational Health Data Sciences and Informatics
+# Copyright 2019 Observational Health Data Sciences and Informatics
 #
 # This file is part of MethodEvaluation
 #
@@ -1029,7 +1029,7 @@ injectSurvival <- function(exposures, effectSize, precision, addIntentToTreat) {
   if (nrow(betas) == 1) {
     betas <- data.frame()
   } else {
-    betas <- betas[2:length(betas), ]
+    betas <- betas[2:nrow(betas), ]
     colnames(betas)[colnames(betas) == "id"] <- "covariateId"
   }
   if (nrow(betas) == 0) {
