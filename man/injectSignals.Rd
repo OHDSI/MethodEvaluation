@@ -19,9 +19,10 @@ injectSignals(connectionDetails, cdmDatabaseSchema,
   useDrugGroupEraLongTerm = TRUE, useProcedureOccurrenceLongTerm = TRUE,
   useMeasurementLongTerm = TRUE, useObservationLongTerm = TRUE,
   useCharlsonIndex = TRUE, useDcsi = TRUE, useChads2Vasc = TRUE,
-  longTermStartDays = 365, endDays = 0), prior = createPrior("laplace",
-  exclude = 0, useCrossValidation = TRUE), control = createControl(cvType
-  = "auto", startingVariance = 0.1, noiseLevel = "quiet", threads = 10),
+  longTermStartDays = 365, endDays = 0),
+  prior = Cyclops::createPrior("laplace", exclude = 0, useCrossValidation
+  = TRUE), control = Cyclops::createControl(cvType = "auto",
+  startingVariance = 0.1, noiseLevel = "quiet", threads = 10),
   firstExposureOnly = FALSE, washoutPeriod = 183,
   riskWindowStart = 0, riskWindowEnd = 0,
   addExposureDaysToEnd = TRUE, addIntentToTreat = FALSE,
