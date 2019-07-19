@@ -157,27 +157,14 @@ created?}
 \item{modelThreads}{Number of parallel threads to use when fitting outcome
 models.}
 
-\item{generationThreads}{Number of parallel threads to use when generating outcomes.}
-}
-\value{
+\item{generationThreads}{Number of parallel threads to use when generating outcomes.
+
 A data.frame listing all the drug-pairs in combination with requested effect sizes and the real
-inserted effect size (might be different from the requested effect size because of sampling error).
+inserted effect size (might be different from the requested effect size because of sampling error).}
 }
 \description{
 Inject signals in database
 }
 \details{
-This function will insert additional outcomes for a given set of drug-outcome pairs. It is assumed
-that these drug-outcome pairs represent negative controls, so the true relative risk before
-inserting any outcomes should be 1. There are two models for inserting the outcomes during the
-specified risk window of the drug: a Poisson model assuming multiple outcomes could occurr during a
-single exposure, and a survival model considering only one outcome per exposure.
-It is possible to use bulk import to insert the generated outcomes in the database. This requires
-the environmental variable 'USE_MPP_BULK_LOAD' to be set to 'TRUE'. See \code{
-?DatabaseConnector::insertTable} for details on how to configure the bulk upload.
-}
-\references{
-Schuemie MJ, Hripcsak G, Ryan PB, Madigan D, Suchard MA. Empirical confidence interval calibration
-for population-level effect estimation studies in observational healthcare data. Proc Natl Acad Sci
-U S A. 2018 Mar 13;115(11):2571-2577.
+DEPRECATED. Use \code{\link{synhtesizePositiveControls}} instead.
 }

@@ -1,8 +1,8 @@
 Package: MethodEvaluation
 Type: Package
 Title: Package for evaluation of estimation methods
-Version: 1.0.2
-Date: 2019-03-24
+Version: 1.1.0
+Date: 2019-07-19
 Authors@R: c(
   person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre"))
   )
@@ -27,7 +27,7 @@ Depends:
 Imports:
     ff,
     ffbase (>= 0.12.1),
-    SqlRender (>= 1.5.0),
+    SqlRender (>= 1.6.2),
     pROC,
     ggplot2,
     ParallelLogger,
