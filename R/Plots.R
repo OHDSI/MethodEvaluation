@@ -157,3 +157,124 @@ plotCoverageInjectedSignals <- function(logRr, seLogRr, trueLogRr, region = 0.95
     ggplot2::ggsave(fileName, plot, width = 5, height = 3.5, dpi = 400)
   return(plot)
 }
+
+#' Plot negative and positive control estimates.
+#'
+#' @param logRr       A numeric vector of effect estimates on the log scale.
+#' @param seLogRr     The standard error of the log of the effect estimates. Hint: often the standard
+#'                    error = (log(<lower bound 95 percent confidence interval>) - log(<effect
+#'                    estimate>))/qnorm(0.025). If not provided the standard error will be inferred from 
+#'                    the 95 percent confidence interval.
+#' @param ci95Lb      The lower bound of the 95 percent confidence interval. IF not provided it will be 
+#'                    inferred from the standard error.
+#' @param ci95Ub      The upper bound of the 95 percent confidence interval. IF not provided it will be 
+#'                    inferred from the standard error.
+#' @param trueLogRr   A vector of the true effect sizes
+#' @param estimateType A character string to denote the effect size estimate type. Used for the x-axis
+#'                     and the true effect size labels.
+#' @param fileName    Name of the file where the plot should be saved, for example 'plot.png'. See the
+#'                    function \code{ggsave} in the ggplot2 package for supported file formats.
+#' @param title       An optional title to display above the plot.
+#' 
+#' @return
+#' A Ggplot object. Use the \code{ggsave} function to save to file.
+#' 
+#' @export
+plotControls <- function(logRr, seLogRr = NULL, ci95Lb = NULL, ci95Ub = NULL, trueLogRr, estimateType = "relative risk",  fileName = NULL, title) {
+  if (is.null(seLogRr) && is.null(ci95Lb)) {
+    stop("Must specify either standard error or confidence interval")
+  }
+  data <- data.frame(logRr = logRr,
+                     trueLogRr = trueLogRr)
+  if (is.null(seLogRr)) {
+    data$seLogRr <- (log(ci95Ub) - log(ci95Lb)) / (2*qnorm(0.975))
+  } else {
+    data$seLogRr <- seLogRr
+  }
+  if (is.null(ci95Lb)) {
+    data$ci95Lb <- exp(data$logRr + qnorm(0.025) * data$seLogRr)
+    data$ci95Ub <- exp(data$logRr + qnorm(0.975) * data$seLogRr)
+  } else {
+    data$ci95Lb <- ci95Lb
+    data$ci95Ub <- ci95Ub
+  }
+  data <- data[!is.na(data$seLogRr), ]
+  data$Significant <- data$ci95Lb > exp(data$trueLogRr) | data$ci95Ub < exp(data$trueLogRr)
+  data$Group <- as.factor(paste("True", estimateType, "=", exp(data$trueLogRr)))
+  temp1 <- aggregate(Significant ~ Group, data = data, length)
+  temp2 <- aggregate(Significant ~ Group, data = data, mean)
+  
+  temp1$nLabel <- paste0(formatC(temp1$Significant, big.mark = ","), " estimates")
+  temp1$Significant <- NULL
+  
+  temp2$meanLabel <- paste0(formatC(100 * (1 - temp2$Significant), digits = 1, format = "f"),
+                            "% of CIs includes ",
+                            substr(as.character(temp2$Group),
+                                   start = 21,
+                                   stop = nchar(as.character(temp2$Group))))
+  temp2$Significant <- NULL
+  dd <- merge(temp1, temp2)
+  dd$tes <- as.numeric(substr(as.character(dd$Group),
+                              start = 21,
+                              stop = nchar(as.character(dd$Group))))
+  
+  breaks <- c(0.25, 0.5, 1, 2, 4, 6, 8)
+  theme <- ggplot2::element_text(colour = "#000000", size = 14)
+  themeRA <- ggplot2::element_text(colour = "#000000", size = 14, hjust = 1)
+  
+  alpha <- 1 - min(0.95 * (nrow(data)/nrow(dd)/50000)^0.1, 0.95)
+  plot <- ggplot2::ggplot(data, ggplot2::aes(x = logRr, y = seLogRr)) +
+    ggplot2::geom_vline(xintercept = log(breaks), colour = "#CCCCCC", lty = 1, size = 0.5) +
+    ggplot2::geom_abline(ggplot2::aes(intercept = (-log(tes))/qnorm(0.025), slope = 1/qnorm(0.025)),
+                colour = rgb(0.8, 0, 0),
+                linetype = "dashed",
+                size = 1,
+                alpha = 0.5,
+                data = dd) +
+    ggplot2::geom_abline(ggplot2::aes(intercept = (-log(tes))/qnorm(0.975), slope = 1/qnorm(0.975)),
+                colour = rgb(0.8, 0, 0),
+                linetype = "dashed",
+                size = 1,
+                alpha = 0.5,
+                data = dd) +
+    ggplot2::geom_point(size = 2, color = rgb(0, 0, 0, alpha = 0.05), alpha = alpha, shape = 16) +
+    ggplot2::geom_hline(yintercept = 0) +
+    ggplot2::geom_label(x = log(0.26),
+               y = 0.96,
+               alpha = 1,
+               hjust = "left",
+               ggplot2::aes(label = nLabel),
+               size = 5,
+               data = dd) +
+    ggplot2::geom_label(x = log(0.26),
+               y = 0.8,
+               alpha = 1,
+               hjust = "left",
+               ggplot2::aes(label = meanLabel),
+               size = 5,
+               data = dd) +
+    ggplot2::scale_x_continuous(paste("Estimated", estimateType),
+                       limits = log(c(0.25, 10)),
+                       breaks = log(breaks),
+                       labels = breaks) +
+    ggplot2::scale_y_continuous("Standard Error", limits = c(0, 1)) +
+    ggplot2::facet_grid(. ~ Group) +
+    ggplot2::theme(panel.grid.minor = ggplot2::element_blank(),
+          panel.background = ggplot2::element_blank(),
+          panel.grid.major = ggplot2::element_blank(),
+          axis.ticks = ggplot2::element_blank(),
+          axis.text.y = themeRA,
+          axis.text.x = theme,
+          axis.title = theme,
+          legend.key = ggplot2::element_blank(),
+          strip.text.x = theme,
+          strip.text.y = theme,
+          strip.background = ggplot2::element_blank(),
+          legend.position = "none")
+  if (!missing(title)) {
+    plot <- plot + ggplot2::ggtitle(title)
+  }
+  if (!is.null(fileName))
+    ggplot2::ggsave(fileName, plot, width = 1.6 + 3 * nrow(dd), height = 2.8, dpi = 400)
+  return(plot)
+}

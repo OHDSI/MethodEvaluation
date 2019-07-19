@@ -2,22 +2,39 @@
 % Please edit documentation in R/Metrics.R
 \name{computeMetrics}
 \alias{computeMetrics}
-\title{Compute the AUC, coverage, MSE, and type 1 and 2 error}
+\title{Compute method performance metrics}
 \usage{
-computeMetrics(logRr, seLogRr, trueLogRr)
+computeMetrics(logRr, seLogRr = NULL, ci95Lb = NULL, ci95Ub = NULL,
+  p = NULL, trueLogRr)
 }
 \arguments{
-\item{logRr}{A numeric vector of effect estimates on the log scale}
+\item{logRr}{A numeric vector of effect estimates on the log scale.}
 
 \item{seLogRr}{The standard error of the log of the effect estimates. Hint: often the standard
 error = (log(<lower bound 95 percent confidence interval>) - log(<effect
-estimate>))/qnorm(0.025)}
+estimate>))/qnorm(0.025). If not provided the standard error will be inferred from 
+the 95 percent confidence interval.}
+
+\item{ci95Lb}{The lower bound of the 95 percent confidence interval. IF not provided it will be 
+inferred from the standard error.}
+
+\item{ci95Ub}{The upper bound of the 95 percent confidence interval. IF not provided it will be 
+inferred from the standard error.}
+
+\item{p}{The two-sided p-value corresponding to the null hypothesis of no effect. IF not 
+provided it will be inferred from the standard error.}
 
 \item{trueLogRr}{A vector of the true effect sizes}
 }
 \description{
-Compute the AUC, coverage, MSE, and type 1 and 2 error
+Compute method performance metrics
 }
 \details{
-Compute the AUC, coverage, MSE, and type 1 and 2 error.
+Compute the AUC, coverage, mean precision, MSE, type 1 error, type 2 error, and the fraction non-estimable..
+}
+\examples{
+library(EmpiricalCalibration)
+data <- simulateControls(n = 50 * 3, trueLogRr = log(c(1, 2, 4)))
+computeMetrics(logRr = data$logRr, seLogRr = data$seLogRr, trueLogRr = data$trueLogRr)
+
 }

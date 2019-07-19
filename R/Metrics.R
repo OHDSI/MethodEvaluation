@@ -16,157 +16,81 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#' Compute the AUCs for various injected signal sizes
-#'
-#' @param logRr       A vector containing the log of the relative risk as estimated by a method.
-#' @param trueLogRr   A vector containing the injected log(relative risk) for each estimate.
-#'
-#' @return
-#' A data frame with per injected signal size the AUC and the 95 percent confidence interval of the
-#' AUC.
-#'
-#' @export
-computeAucs <- function(logRr, trueLogRr) {
-  if (any(is.na(logRr))) {
-    warning("Some estimates are NA, removing prior to computing AUCs")
-    trueLogRr <- trueLogRr[!is.na(logRr)]
-    logRr <- logRr[!is.na(logRr)]
-  }
-  trueLogRrLevels <- unique(trueLogRr)
-  if (all(trueLogRrLevels != 0))
-    stop("Requiring at least one true relative risk of 1")
-  result <- data.frame(trueLogRr = trueLogRrLevels[trueLogRrLevels != 0],
-                       auc = 0,
-                       aucLb95Ci = 0,
-                       aucUb95Ci = 0)
-  for (i in 1:nrow(result)) {
-    data <- data.frame(logRr = logRr[trueLogRr == 0 | trueLogRr == result$trueLogRr[i]],
-                       trueLogRr = trueLogRr[trueLogRr ==
-      0 | trueLogRr == result$trueLogRr[i]])
-    data$truth <- data$trueLogRr != 0
-    roc <- pROC::roc(data$truth, data$logRr, algorithm = 3)
-    auc <- pROC::ci.auc(roc, method = "delong")
-    result$auc[i] <- auc[1]
-    result$aucLb95Ci[i] <- auc[2]
-    result$aucUb95Ci[i] <- auc[3]
-  }
-  return(result)
-}
-
-#' Compute the coverage
+#' Compute method performance metrics
 #'
 #' @details
-#' Compute the fractions of estimates where the true effect size is below, above or within the
-#' confidence interval, for one or more true effect sizes.
+#' Compute the AUC, coverage, mean precision, MSE, type 1 error, type 2 error, and the fraction non-estimable..
 #'
 #' @param logRr       A numeric vector of effect estimates on the log scale.
 #' @param seLogRr     The standard error of the log of the effect estimates. Hint: often the standard
 #'                    error = (log(<lower bound 95 percent confidence interval>) - log(<effect
-#'                    estimate>))/qnorm(0.025).
-#' @param trueLogRr   A vector of the true effect sizes.
-#' @param region      Size of the confidence interval. Default is .95 (95 percent).
-#'
-#' @export
-computeCoverage <- function(logRr, seLogRr, trueLogRr, region = 0.95) {
-  data <- data.frame(logRr = logRr,
-                     logLb95Rr = logRr + qnorm((1 - region)/2) * seLogRr,
-                     logUb95Rr = logRr + qnorm(1 - (1 - region)/2) * seLogRr,
-                     trueLogRr = trueLogRr)
-  if (any(is.na(data$logRr))) {
-    warning("Some estimates are NA, removing prior to computing coverage")
-    data <- data[!is.na(data$logRr), ]
-  }
-  data$aboveCi <- (data$trueLogRr > data$logUb95Rr)
-  data$withCi <- (data$trueLogRr >= data$logLb95Rr & data$logRr <= data$logUb95Rr)
-  data$belowCi <- (data$trueLogRr < data$logLb95Rr)
-  result <- aggregate(aboveCi ~ trueLogRr, data = data, mean)
-  result <- merge(result, aggregate(withCi ~ trueLogRr, data = data, mean))
-  result <- merge(result, aggregate(belowCi ~ trueLogRr, data = data, mean))
-  return(result)
-}
-
-#' Compute the mean squared error
-#'
-#' @param logRr       A numeric vector of effect estimates on the log scale.
-#' @param trueLogRr   A vector of the true effect sizes.
-#'
-#' @export
-computeMse <- function(logRr, trueLogRr) {
-  if (any(is.na(logRr))) {
-    warning("Some estimates are NA, removing prior to computing coverage")
-    trueLogRr <- trueLogRr[!is.na(logRr)]
-    logRr <- logRr[!is.na(logRr)]
-  }
-
-  trueLogRrLevels <- unique(trueLogRr)
-  result <- data.frame(trueLogRr = trueLogRrLevels, mse = NA)
-  for (i in 1:nrow(result)) {
-    target <- result$trueLogRr[i]
-    result$mse[i] <- mean((logRr[trueLogRr == target] - target)^2)
-  }
-  return(result)
-}
-
-#' Compute type 1 and 2 error
-#'
-#' @param logRr       A numeric vector of effect estimates on the log scale.
-#' @param seLogRr     The standard error of the log of the effect estimates. Hint: often the standard
-#'                    error = (log(<lower bound 95 percent confidence interval>) - log(<effect
-#'                    estimate>))/qnorm(0.025).
-#' @param trueLogRr   A vector of the true effect sizes.
-#' @param alpha       The alpha (expected type I error).
-#'
-#' @export
-computeType1And2Error <- function(logRr, seLogRr, trueLogRr, alpha = 0.05) {
-  if (any(is.na(seLogRr))) {
-    warning("Some estimates are NA, removing prior to computing coverage")
-    trueLogRr <- trueLogRr[!is.na(seLogRr)]
-    logRr <- logRr[!is.na(seLogRr)]
-    seLogRr <- seLogRr[!is.na(seLogRr)]
-  }
-
-  trueLogRrLevels <- unique(trueLogRr)
-  result <- data.frame(trueLogRr = trueLogRrLevels, type1Error = NA, type2Error = NA)
-  for (i in 1:nrow(result)) {
-    target <- result$trueLogRr[i]
-    computeTraditionalP <- function(logRr, seLogRr) {
-      z <- logRr/seLogRr
-      return(2 * pmin(pnorm(z), 1 - pnorm(z)))  # 2-sided p-value
-    }
-    p <- computeTraditionalP(logRr[trueLogRr == target], seLogRr[trueLogRr == target])
-    if (target == 0) {
-      result$type1Error[i] <- mean(p < alpha)
-    } else {
-      result$type2Error[i] <- mean(p > alpha)
-    }
-  }
-  return(result)
-}
-
-#' Compute the AUC, coverage, MSE, and type 1 and 2 error
-#'
-#' @details
-#' Compute the AUC, coverage, MSE, and type 1 and 2 error.
-#'
-#' @param logRr       A numeric vector of effect estimates on the log scale
-#' @param seLogRr     The standard error of the log of the effect estimates. Hint: often the standard
-#'                    error = (log(<lower bound 95 percent confidence interval>) - log(<effect
-#'                    estimate>))/qnorm(0.025)
+#'                    estimate>))/qnorm(0.025). If not provided the standard error will be inferred from 
+#'                    the 95 percent confidence interval.
+#' @param ci95Lb      The lower bound of the 95 percent confidence interval. IF not provided it will be 
+#'                    inferred from the standard error.
+#' @param ci95Ub      The upper bound of the 95 percent confidence interval. IF not provided it will be 
+#'                    inferred from the standard error.
+#' @param p           The two-sided p-value corresponding to the null hypothesis of no effect. IF not 
+#'                    provided it will be inferred from the standard error.                   
 #' @param trueLogRr   A vector of the true effect sizes
+#' 
+#' @examples
+#' library(EmpiricalCalibration)
+#' data <- simulateControls(n = 50 * 3, trueLogRr = log(c(1, 2, 4)))
+#' computeMetrics(logRr = data$logRr, seLogRr = data$seLogRr, trueLogRr = data$trueLogRr)
 #'
 #' @export
-computeMetrics <- function(logRr, seLogRr, trueLogRr) {
+computeMetrics <- function(logRr, seLogRr = NULL, ci95Lb = NULL, ci95Ub = NULL, p = NULL, trueLogRr) {
   # data <- EmpiricalCalibration::simulateControls(n = 50 * 3, mean = 0.25, sd = 0.25, trueLogRr =
   # log(c(1, 2, 4))); logRr <- data$logRr; seLogRr <- data$seLogRr; trueLogRr <- data$trueLogRr
-  aucs <- computeAucs(logRr = logRr, trueLogRr = trueLogRr)
-  coverage <- computeCoverage(logRr = logRr, seLogRr = seLogRr, trueLogRr = trueLogRr)
-  coverage <- data.frame(trueLogRr = coverage$trueLogRr, coverage = coverage$withCi)
-  mse <- computeMse(logRr = logRr, trueLogRr = trueLogRr)
-  type1And2Error <- computeType1And2Error(logRr = logRr, seLogRr = seLogRr, trueLogRr = trueLogRr)
-  metrics <- merge(aucs, coverage, all.y = TRUE)
-  metrics <- merge(metrics, mse)
-  metrics <- merge(metrics, type1And2Error)
-  return(metrics)
+  
+  if (is.null(seLogRr) && is.null(ci95Lb)) {
+    stop("Must specify either standard error or confidence interval")
+  }
+  data <- data.frame(logRr = logRr,
+                     trueLogRr = trueLogRr)
+  if (is.null(seLogRr)) {
+    data$seLogRr <- (log(ci95Ub) - log(ci95Lb)) / (2*qnorm(0.975))
+  } else {
+    data$seLogRr <- seLogRr
+  }
+  if (is.null(ci95Lb)) {
+    data$ci95Lb <- exp(data$logRr + qnorm(0.025) * data$seLogRr)
+    data$ci95Ub <- exp(data$logRr + qnorm(0.975) * data$seLogRr)
+  } else {
+    data$ci95Lb <- ci95Lb
+    data$ci95Ub <- ci95Ub
+  }
+  if (is.null(p)) {
+    z <- data$logRr/data$seLogRr
+    data$p <- 2 * pmin(pnorm(z), 1 - pnorm(z))
+  } else {
+    data$p <- p
+  }
+  
+  idx <- is.na(data$logRr) | is.infinite(data$logRr) | is.na(data$seLogRr) | is.infinite(data$seLogRr)
+  data$logRr[idx] <- 0
+  data$seLogRr[idx] <- 999
+  data$ci95Lb[idx] <- 0
+  data$ci95Ub[idx] <- 999
+  data$p[idx] <- 1
+  
+  nonEstimable <- round(mean(data$seLogRr >= 99), 2)
+  roc <- pROC::roc(data$trueLogRr > 0, data$logRr, algorithm = 3)
+  auc <- round(pROC::auc(roc), 2)
+  mse <- round(mean((data$logRr - data$trueLogRr)^2), 2)
+  coverage <- round(mean(data$ci95Lb < exp(data$trueLogRr) & data$ci95Ub > exp(data$trueLogRr)),
+                    2)
+  meanP <- round(-1 + exp(mean(log(1 + (1/(data$seLogRr^2))))), 2)
+  type1 <- round(mean(data$p[data$trueLogRr == 0] < 0.05), 2)
+  type2 <- round(mean(data$p[data$trueLogRr > 0] >= 0.05), 2)
+  return(c(auc = auc,
+           coverage = coverage,
+           meanP = meanP,
+           mse = mse,
+           type1 = type1,
+           type2 = type2,
+           nonEstimable = nonEstimable))
 }
 
 checkHasColumns <- function(df, columnNames, argName) {
@@ -448,10 +372,6 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder,
       meanP <- round(-1 + exp(mean(log(1 + (1/(forEval$seLogRr^2))))), 2)
       type1 <- round(mean(forEval$p[forEval$targetEffectSize == 1] < 0.05), 2)
       type2 <- round(mean(forEval$p[forEval$targetEffectSize > 1] >= 0.05), 2)
-      # idx <- forEval$seLogRr < 99 meanVarEstimable <- mean(log(forEval$seLogRr[idx] ^ 2)) errors <-
-      # forEval$logRr[idx] - log(forEval$trueEffectSize[idx]) mseEstimable <- mean(errors^2)
-      # varErrorEstimable <- mean((errors - mean(errors)) ^ 2) biasEstimable <- sqrt(mseEstimable -
-      # varErrorEstimable)
       return(c(auc = auc,
                coverage = coverage,
                meanP = meanP,
