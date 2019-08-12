@@ -178,7 +178,7 @@ injectSignals <- function(connectionDetails,
     endAnchor <- "cohort start"
   }
   
-  synhtesizePositiveControls(connectionDetails = connectionDetails,
+  synthesizePositiveControls(connectionDetails = connectionDetails,
                              cdmDatabaseSchema = cdmDatabaseSchema,
                              oracleTempSchema = oracleTempSchema,
                              exposureDatabaseSchema = exposureDatabaseSchema,
