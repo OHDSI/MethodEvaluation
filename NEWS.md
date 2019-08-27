@@ -1,4 +1,4 @@
-MethodEvaluation 1.0.2
+MethodEvaluation 1.1.0
 ======================
 
 Changes:
@@ -6,6 +6,8 @@ Changes:
 1. Renamed injectSignals to synthesizePositiveControls, and changed addExposureDaysToEnd to endAnchor.
 
 2. Dropping individual metric function. The computeMetrics function now computes the standard set of metrics.
+
+3. Added checkCohortSourceCodes and findOrphanSourceCodes functions. 
 
 MethodEvaluation 1.0.2
 ======================

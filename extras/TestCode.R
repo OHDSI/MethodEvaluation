@@ -393,3 +393,55 @@ createReferenceSetCohorts(connectionDetails,
                           nestingDatabaseSchema = scratchDatabaseSchema,
                           nestingTable = "mschuemi_ohdsi_nesting",
                           referenceSet = "ohdsiNegativeControls")
+
+
+# Orphan codes ------------------------------------------------------
+
+library(MethodEvaluation)
+
+pw <- ""
+dbms <- "pdw"
+user <- NULL
+server <- "JRDUSAPSCTL01"
+cdmDatabaseSchema <- "cdm_truven_mdcd_v569.dbo"
+scratchDatabaseSchema <- "scratch.dbo"
+outputTable <- "mschuemi_injected_signals"
+port <- 17001
+cdmVersion <- "5"
+cdmDatabaseSchema <- "cdm_truven_mdcd_v699.dbo"
+
+connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
+                                                                server = server,
+                                                                user = user,
+                                                                password = pw,
+                                                                port = port)
+
+orphans <- findOrphanSourceCodes(connectionDetails,
+                                 cdmDatabaseSchema = cdmDatabaseSchema,
+                                 conceptName = "Angioedema",
+                                 conceptSynonyms = c("Angioneurotic edema",
+                                                     "Giant hives",
+                                                     "Giant urticaria",
+                                                     "Periodic edema"))
+View(orphans)
+
+
+# Check concept source codes --------------------------------------------
+
+library(MethodEvaluation)
+connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "pdw",
+                                                                server = Sys.getenv("PDW_SERVER"),
+                                                                user = NULL,
+                                                                password = NULL,
+                                                                port = Sys.getenv("PDW_PORT"))
+
+# The name of the database schema where the CDM data can be found:
+cdmDbSchema <- "CDM_IBM_MDCR_V871.dbo"
+
+json <- readChar("extras/cohort.json", file.info("extras/cohort.json")$size)
+sql <- readChar("extras/cohort.sql", file.info("extras/cohort.sql")$size)
+checkCohortSourceCodes(connectionDetails,
+                       cdmDatabaseSchema = cdmDbSchema,
+                       cohortJson = json,
+                       cohortSql = sql,
+                       outputFile = "extras/output.html")

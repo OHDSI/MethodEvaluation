@@ -2,7 +2,7 @@ Package: MethodEvaluation
 Type: Package
 Title: Package for evaluation of estimation methods
 Version: 1.1.0
-Date: 2019-07-19
+Date: 2019-08-27
 Authors@R: c(
   person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre"))
   )
@@ -32,7 +32,8 @@ Imports:
     ggplot2,
     ParallelLogger,
     methods,
-    EmpiricalCalibration
+    EmpiricalCalibration,
+    rmarkdown
 Suggests:
     testthat,
     DT,

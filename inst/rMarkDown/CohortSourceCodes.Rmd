@@ -1,0 +1,118 @@
+---
+title: "Cohort source codes"
+output:
+  html_document:
+    self_contained: true
+params:
+  countsFile: "c:/temp/counts.rds"
+  cohortDefinitionFile: "c:/temp/cohortDefinition.rds"
+
+---
+<style type="text/css">
+.main-container {
+max-width: 1000px;
+margin-left: auto;
+margin-right: auto;
+}
+</style>
+
+```{r mychunk, fig.show = "hide", echo = FALSE, fig.height=3, fig.width=5, warning=FALSE}
+library(knitr)
+
+
+if (!file.exists(opts_current$get("fig.path")))
+  dir.create(opts_current$get("fig.path"), recursive = TRUE)
+
+counts <- readRDS(params$countsFile)
+# counts <- counts[1:10, ]
+cohortDefinition <- readRDS(params$cohortDefinitionFile)
+
+indent <- "&nbsp;&nbsp;"
+
+counts$time <- counts$eventYear + (counts$eventMonth - 1)/12
+minTime <- min(counts$time)
+maxTime <- max(counts$time)
+i <<- 1
+
+createPlot <- function(data) {
+  fileName <- sprintf("%ssparkLine_%s.png", opts_current$get("fig.path"), i)
+  maxProportion <- 0
+  i <<- i + 1
+  png(filename = fileName, height = 30, width = 125)
+  if (nrow(data) > 0) {
+    data <- aggregate(personCount ~ time + backgroundCount, data, sum)
+    data$proportion <- data$personCount / data$backgroundCount
+    data <- data[order(data$time), ]
+    par(mar = c(0, 0, 0, 0))
+    plot(data$time, data$proportion, axes = FALSE, frame.plot = FALSE, ann = FALSE, type = "l", xlim = c(minTime, maxTime))
+    maxProportion <- max(data$proportion)
+  }
+  dev.off()
+  return(maxProportion)
+}
+
+createSourceCodeRows <- function(sourceValue, conceptSubset) {
+  # sourceCodeSubset <- conceptSubset[conceptSubset$sourceValue == sourceValueCounts$sourceValue[1], ]
+  sourceCodeSubset <- conceptSubset[conceptSubset$sourceValue == sourceValue, ]
+  maxProportion <- createPlot(sourceCodeSubset)
+  rows <- data.frame(maxProportion = formatC(maxProportion * 1000, format = "f", digits = 2),
+                     count = formatC(sum(sourceCodeSubset$personCount), format = "d", big.mark = ","),
+                     description = sprintf("%s%s%s (%s) %s", 
+                                           indent,
+                                           indent,
+                                           sourceCodeSubset$sourceValue[1], 
+                                           sourceCodeSubset$sourceVocabularyId[1], 
+                                           sourceCodeSubset$sourceConceptName[1]),
+                     stringsAsFactors = FALSE)
+  return(rows)
+}
+
+createConceptRows <- function(conceptId, conceptSetSubset) {
+  # conceptSubset <- conceptSetSubset[conceptSetSubset$conceptId == conceptCounts$conceptId[1], ]
+  conceptSubset <- conceptSetSubset[conceptSetSubset$conceptId == conceptId, ]
+  maxProportion <- createPlot(conceptSubset)
+  row <- data.frame(maxProportion = formatC(maxProportion * 1000, format = "f", digits = 2),
+                    count = formatC(sum(conceptSubset$personCount), format = "d", big.mark = ","),
+                    description = sprintf("%s<strong>%s</strong> %s", 
+                                          indent,
+                                          conceptSubset$conceptName[1],
+                                          conceptSubset$conceptId[1]),
+                    stringsAsFactors = FALSE)
+  if (nrow(conceptSubset) == 0) {
+    return(row)
+  } else {
+    sourceValueCounts <- aggregate(personCount ~ sourceValue, conceptSubset, sum)
+    sourceValueCounts <- sourceValueCounts[order(-sourceValueCounts$personCount), ]
+    rows <- lapply(sourceValueCounts$sourceValue, createSourceCodeRows, conceptSubset = conceptSubset)
+    return(do.call("rbind", c(list(row), rows)))
+  }
+}
+
+createConceptSetRows <- function(conceptSet, counts) {
+  # conceptSet <- cohortDefinition$ConceptSets[[1]]
+  conceptSetSubset <- counts[counts$codesetId == conceptSet$id, ]
+  maxProportion <- createPlot(conceptSetSubset)
+  row <- data.frame(maxProportion = formatC(maxProportion * 1000, format = "f", digits = 2),
+                    count = formatC(sum(conceptSetSubset$personCount), format = "d", big.mark = ","),
+                    description = sprintf("<strong><font size = \"+1\">%s</font></strong>", conceptSet$name),
+                    stringsAsFactors = FALSE)
+  
+  if (nrow(conceptSetSubset) == 0) {
+    return(row)
+  } else {
+    conceptCounts <- aggregate(personCount ~ conceptId, conceptSetSubset, sum)
+    conceptCounts <- conceptCounts[order(-conceptCounts$personCount), ]
+    rows <- lapply(conceptCounts$conceptId, createConceptRows, conceptSetSubset = conceptSetSubset)
+    return(do.call("rbind", c(list(row), rows)))
+  }
+}
+
+table <- lapply(cohortDefinition$ConceptSets, createConceptSetRows, counts = counts)
+table <- do.call("rbind", table)
+table <- cbind(sprintf("![](%ssparkLine_%s.png)", opts_current$get("fig.path"), 1:nrow(table)), table)
+kable(table, 
+      col.names = c("&permil; per month", "Max monthly &permil;", "Person count", "Description"), 
+      align = c('l', 'r', 'r', 'l'),
+      row.names = FALSE, 
+      escape = FALSE)
+```
