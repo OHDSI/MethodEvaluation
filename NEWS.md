@@ -3,7 +3,7 @@ MethodEvaluation 1.1.0
 
 Changes:
 
-1. Renamed injectSignals to synthesizePositiveControls, and changed addExposureDaysToEnd to endAnchor.
+1. Renamed synthesizePositiveControls to synthesizeReferenceSetPositiveControls, injectSignals to synthesizePositiveControls, and changed addExposureDaysToEnd to endAnchor.
 
 2. Dropping individual metric function. The computeMetrics function now computes the standard set of metrics.
 

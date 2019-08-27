@@ -6,12 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>The EU-ADR reference set
-A reference set of 43 drug-outcome pairs where we believe the drug causes the outcome ( positive
-controls) and 50 drug-outcome pairs where we believe the drug does not cause the outcome (negative
-controls). The controls involve 10 health outcomes of interest. Note that originally, there was an
-additional positive control (Nimesulide and acute liver injury), but Nimesulide is not in RxNorm,
-and is not available in many countries. — euadrReferenceSet • MethodEvaluation</title>
+<title>Check source codes used in a cohort definition — checkCohortSourceCodes • MethodEvaluation</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -35,19 +30,12 @@ and is not available in many countries. — euadrReferenceSet • MethodEvaluati
 
 
 
-<meta property="og:title" content="The EU-ADR reference set
-A reference set of 43 drug-outcome pairs where we believe the drug causes the outcome ( positive
-controls) and 50 drug-outcome pairs where we believe the drug does not cause the outcome (negative
-controls). The controls involve 10 health outcomes of interest. Note that originally, there was an
-additional positive control (Nimesulide and acute liver injury), but Nimesulide is not in RxNorm,
-and is not available in many countries. — euadrReferenceSet" />
+<meta property="og:title" content="Check source codes used in a cohort definition — checkCohortSourceCodes" />
 
-<meta property="og:description" content="The EU-ADR reference set
-A reference set of 43 drug-outcome pairs where we believe the drug causes the outcome ( positive
-controls) and 50 drug-outcome pairs where we believe the drug does not cause the outcome (negative
-controls). The controls involve 10 health outcomes of interest. Note that originally, there was an
-additional positive control (Nimesulide and acute liver injury), but Nimesulide is not in RxNorm,
-and is not available in many countries." />
+<meta property="og:description" content="This function first extracts all concept sets used in a cohort definition. Then, for each concept set
+the concept found in the CDM database the contributing source codes are identified. OVerall and per month counts
+are computed and shown for all concept sets, concepts, and source codes in a HTML table.
+This function requires the rmarkdown package as well as PanDoc." />
 <meta name="twitter:card" content="summary" />
 
 
@@ -129,58 +117,64 @@ and is not available in many countries." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>The EU-ADR reference set
-A reference set of 43 drug-outcome pairs where we believe the drug causes the outcome ( positive
-controls) and 50 drug-outcome pairs where we believe the drug does not cause the outcome (negative
-controls). The controls involve 10 health outcomes of interest. Note that originally, there was an
-additional positive control (Nimesulide and acute liver injury), but Nimesulide is not in RxNorm,
-and is not available in many countries.</h1>
-    <small class="dont-index">Source: <a href='https://github.com/OHDSI/MethodEvaluation/blob/master/R/MethodEvaluation.R'><code>R/MethodEvaluation.R</code></a></small>
-    <div class="hidden name"><code>euadrReferenceSet.Rd</code></div>
+    <h1>Check source codes used in a cohort definition</h1>
+    <small class="dont-index">Source: <a href='https://github.com/OHDSI/MethodEvaluation/blob/master/R/CohortSourceCodeCheck.R'><code>R/CohortSourceCodeCheck.R</code></a></small>
+    <div class="hidden name"><code>checkCohortSourceCodes.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>The EU-ADR reference set
-A reference set of 43 drug-outcome pairs where we believe the drug causes the outcome ( positive
-controls) and 50 drug-outcome pairs where we believe the drug does not cause the outcome (negative
-controls). The controls involve 10 health outcomes of interest. Note that originally, there was an
-additional positive control (Nimesulide and acute liver injury), but Nimesulide is not in RxNorm,
-and is not available in many countries.</p>
+    <p>This function first extracts all concept sets used in a cohort definition. Then, for each concept set
+the concept found in the CDM database the contributing source codes are identified. OVerall and per month counts
+are computed and shown for all concept sets, concepts, and source codes in a HTML table.</p>
+<p>This function requires the rmarkdown package as well as PanDoc.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'><a href='https://www.rdocumentation.org/packages/utils/topics/data'>data</a></span>(<span class='no'>euadrReferenceSet</span>)</pre>
-        
-    <h2 class="hasAnchor" id="format"><a class="anchor" href="#format"></a>Format</h2>
-
-    <p>A data frame with 399 rows and 10 variables:</p><dl class='dl-horizontal'>
-<dt>exposureId</dt><dd><p>Concept ID identifying
-the exposure</p></dd> <dt>exposureName</dt><dd><p>Name of the exposure</p></dd> <dt>outcomeId</dt><dd><p>Concept ID identifying the
-outcome</p></dd> <dt>outcomeName</dt><dd><p>Name of the outcome</p></dd> <dt>groundTruth</dt><dd><p>0 = negative control, 1 =
-positive control</p></dd> <dt>indicationId</dt><dd><p>Concept Id identifying the (primary) indication of the drug.
-To be used when one wants to nest the analysis within the indication</p></dd> <dt>indicationName</dt><dd><p>Name of
-the indication</p></dd> <dt>comparatorId</dt><dd><p>Concept ID identifying a comparator drug that can be used as a
-counterfactual</p></dd> <dt>comparatorName</dt><dd><p>Name of the comparator drug</p></dd> <dt>comparatorType</dt><dd><p>How the
-comparator was selected</p></dd> </dl>
+    <pre class="usage"><span class='fu'>checkCohortSourceCodes</span>(<span class='no'>connectionDetails</span>, <span class='no'>cdmDatabaseSchema</span>,
+  <span class='kw'>oracleTempSchema</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='no'>cohortJson</span>, <span class='no'>cohortSql</span>, <span class='no'>outputFile</span>)</pre>
     
-    <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
-
-    <p>Coloma PM, Avillach P, Salvo F, Schuemie MJ, Ferrajolo C, Pariente A, Fourrier-Reglat A, Molokhia
-M, Patadia V, van der Lei J, Sturkenboom M, Trifiro G. A reference standard for evaluation of
-methods for drug safety signal detection using electronic healthcare record databases. Drug Safety
-36(1):13-23, 2013</p>
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+    <table class="ref-arguments">
+    <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>connectionDetails</th>
+      <td><p>An object of type <code>connectionDetails</code> as created using the
+<code><a href='https://www.rdocumentation.org/packages/DatabaseConnector/topics/createConnectionDetails'>createConnectionDetails</a></code> function in the
+DatabaseConnector package.</p></td>
+    </tr>
+    <tr>
+      <th>cdmDatabaseSchema</th>
+      <td><p>Schema name where your patient-level data in OMOP CDM format resides.
+Note that for SQL Server, this should include both the database and
+schema name, for example 'cdm_data.dbo'.</p></td>
+    </tr>
+    <tr>
+      <th>oracleTempSchema</th>
+      <td><p>Should be used in Oracle to specify a schema where the user has write
+priviliges for storing temporary tables.</p></td>
+    </tr>
+    <tr>
+      <th>cohortJson</th>
+      <td><p>A characteric string containing the JSON of a cohort definition.</p></td>
+    </tr>
+    <tr>
+      <th>cohortSql</th>
+      <td><p>The OHDSI SQL representation of the same cohort definition.</p></td>
+    </tr>
+    <tr>
+      <th>outputFile</th>
+      <td><p>The name of the HTML file to create.</p></td>
+    </tr>
+    </table>
     
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
-      
-      <li><a href="#format">Format</a></li>
-
-      <li><a href="#references">References</a></li>
-          </ul>
+      <li><a href="#arguments">Arguments</a></li>
+                </ul>
 
   </div>
 </div>

@@ -1,13 +1,13 @@
 Package: MethodEvaluation
 Type: Package
-Title: Package for evaluation of estimation methods
+Title: Package for Evaluation of Estimation Methods
 Version: 1.1.0
 Date: 2019-08-27
 Authors@R: c(
   person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre"))
   )
-Maintainer: Martijn J. Schuemie <schuemie@ohdsi.org>
-Description: This package contains resources for the evaluation of the
+Maintainer: Martijn Schuemie <schuemie@ohdsi.org>
+Description: Resources for the evaluation of the
     performance of methods that aim to estimate the magnitude (relative risk) of
     the effect of a drug on an outcome. These resources include reference sets for
     evaluating methods on real data, as well as functions for inserting simulated
@@ -33,7 +33,8 @@ Imports:
     ParallelLogger,
     methods,
     EmpiricalCalibration,
-    rmarkdown
+    rmarkdown,
+    RJSONIO
 Suggests:
     testthat,
     DT,

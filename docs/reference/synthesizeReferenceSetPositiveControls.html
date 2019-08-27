@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Plot the coverage — plotCoverageInjectedSignals • MethodEvaluation</title>
+<title>Synthesize positive controls for reference set — synthesizeReferenceSetPositiveControls • MethodEvaluation</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -30,9 +30,9 @@
 
 
 
-<meta property="og:title" content="Plot the coverage — plotCoverageInjectedSignals" />
+<meta property="og:title" content="Synthesize positive controls for reference set — synthesizeReferenceSetPositiveControls" />
 
-<meta property="og:description" content="Plot the coverage" />
+<meta property="og:description" content="Synthesize positive controls for reference set" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -114,52 +114,103 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Plot the coverage</h1>
-    <small class="dont-index">Source: <a href='https://github.com/OHDSI/MethodEvaluation/blob/master/R/Plots.R'><code>R/Plots.R</code></a></small>
-    <div class="hidden name"><code>plotCoverageInjectedSignals.Rd</code></div>
+    <h1>Synthesize positive controls for reference set</h1>
+    <small class="dont-index">Source: <a href='https://github.com/OHDSI/MethodEvaluation/blob/master/R/CreateReferenceSetCohorts.R'><code>R/CreateReferenceSetCohorts.R</code></a></small>
+    <div class="hidden name"><code>synthesizeReferenceSetPositiveControls.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Plot the coverage</p>
+    <p>Synthesize positive controls for reference set</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>plotCoverageInjectedSignals</span>(<span class='no'>logRr</span>, <span class='no'>seLogRr</span>, <span class='no'>trueLogRr</span>, <span class='kw'>region</span> <span class='kw'>=</span> <span class='fl'>0.95</span>,
-  <span class='kw'>fileName</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
+    <pre class="usage"><span class='fu'>synthesizeReferenceSetPositiveControls</span>(<span class='no'>connectionDetails</span>,
+  <span class='no'>cdmDatabaseSchema</span>, <span class='kw'>oracleTempSchema</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>outcomeDatabaseSchema</span> <span class='kw'>=</span> <span class='no'>cdmDatabaseSchema</span>, <span class='kw'>outcomeTable</span> <span class='kw'>=</span> <span class='st'>"cohort"</span>,
+  <span class='kw'>exposureDatabaseSchema</span> <span class='kw'>=</span> <span class='no'>cdmDatabaseSchema</span>,
+  <span class='kw'>exposureTable</span> <span class='kw'>=</span> <span class='st'>"drug_era"</span>, <span class='kw'>referenceSet</span> <span class='kw'>=</span> <span class='st'>"ohdsiMethodsBenchmark"</span>,
+  <span class='kw'>maxCores</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='no'>workFolder</span>, <span class='kw'>summaryFileName</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/file.path'>file.path</a></span>(<span class='no'>workFolder</span>,
+  <span class='st'>"allControls.csv"</span>))</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>logRr</th>
-      <td><p>A numeric vector of effect estimates on the log scale</p></td>
+      <th>connectionDetails</th>
+      <td><p>An R object of type <code>ConnectionDetails</code> created using the
+function <code>createConnectionDetails</code> in the
+<code>DatabaseConnector</code> package.</p></td>
     </tr>
     <tr>
-      <th>seLogRr</th>
-      <td><p>The standard error of the log of the effect estimates. Hint: often the standard
-error = (log(&lt;lower bound 95 percent confidence interval&gt;) - log(&lt;effect
-estimate&gt;))/qnorm(0.025)</p></td>
+      <th>cdmDatabaseSchema</th>
+      <td><p>A database schema containing health care data in the OMOP Commond
+Data Model. Note that for SQL Server, botth the database and schema
+should be specified, e.g. 'cdm_schema.dbo'</p></td>
     </tr>
     <tr>
-      <th>trueLogRr</th>
-      <td><p>A vector of the true effect sizes</p></td>
+      <th>oracleTempSchema</th>
+      <td><p>Should be used in Oracle to specify a schema where the user has
+write priviliges for storing temporary tables.</p></td>
     </tr>
     <tr>
-      <th>region</th>
-      <td><p>Size of the confidence interval. Default is .95 (95 percent).</p></td>
+      <th>outcomeDatabaseSchema</th>
+      <td><p>The database schema where the target outcome table is located. Note
+that for SQL Server, both the database and schema should be
+specified, e.g. 'cdm_schema.dbo'</p></td>
     </tr>
     <tr>
-      <th>fileName</th>
-      <td><p>Name of the file where the plot should be saved, for example 'plot.png'. See the
-function <code>ggsave</code> in the ggplot2 package for supported file formats.</p></td>
+      <th>outcomeTable</th>
+      <td><p>The name of the table where the outcomes will be stored.</p></td>
+    </tr>
+    <tr>
+      <th>exposureDatabaseSchema</th>
+      <td><p>The name of the database schema that is the location where the
+exposure data used to define the exposure cohorts is available.  If
+exposureTable = DRUG_ERA, exposureDatabaseSchema is not used and
+assumed to be cdmDatabaseSchema.  Requires read permissions to this
+database.</p></td>
+    </tr>
+    <tr>
+      <th>exposureTable</th>
+      <td><p>The tablename that contains the exposure cohorts.  If exposureTable
+&lt;&gt; DRUG_ERA, then expectation is exposureTable has format of COHORT
+table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
+COHORT_END_DATE.</p></td>
+    </tr>
+    <tr>
+      <th>referenceSet</th>
+      <td><p>The name of the reference set for which positive controls need to be
+synthesized. Currently supported are "ohdsiMethodsBenchmark".</p></td>
+    </tr>
+    <tr>
+      <th>maxCores</th>
+      <td><p>How many parallel cores should be used? If more cores are made
+available this can speed up the analyses.</p></td>
+    </tr>
+    <tr>
+      <th>workFolder</th>
+      <td><p>Name of local folder to place intermediary results; make sure to use
+forward slashes (/). Do not use a folder on a network drive since
+this greatly impacts performance.</p></td>
+    </tr>
+    <tr>
+      <th>summaryFileName</th>
+      <td><p>The name of the CSV file where to store the summary of the final set
+of positive and negative controls.</p></td>
     </tr>
     </table>
     
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>Plot the fractions of estimates where the true effect size is below, above or within the confidence
-interval, for one or more true effect sizes.</p>
+    <p>This function will synthesize positive controls for a given reference set based on the real
+negative controls. Data from the database will be used to fit outcome models for each negative
+control outcome, and these models will be used to sample additional synthetic outcomes during
+eposure to increase the true hazard ratio.
+The positive control outcome cohorts will be stored in the same database table as the negative
+control outcome cohorts.
+A summary file will be created listing all positive and negative controls. This list should then be
+used as input for the method under evaluation.</p>
     
 
   </div>

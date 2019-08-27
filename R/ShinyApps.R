@@ -29,7 +29,8 @@
 launchMethodEvaluationApp <- function(exportFolder, launch.browser = TRUE) {
   ensure_installed("DT")
   appDir <- system.file("shinyApps", "MethodEvalViewer", package = "MethodEvaluation")
-  .GlobalEnv$shinySettings <- list(exportFolder = exportFolder)
+  shinySettings <- list(exportFolder = exportFolder)
+  .GlobalEnv$shinySettings <- shinySettings
   on.exit(rm(shinySettings, envir = .GlobalEnv))
   shiny::runApp(appDir)
 }

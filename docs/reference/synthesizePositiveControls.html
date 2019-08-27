@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Synthesize positive controls based on negative controls — synthesizePositiveControls • MethodEvaluation</title>
+<title>Synthesize positive controls — synthesizePositiveControls • MethodEvaluation</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -30,9 +30,9 @@
 
 
 
-<meta property="og:title" content="Synthesize positive controls based on negative controls — synthesizePositiveControls" />
+<meta property="og:title" content="Synthesize positive controls — synthesizePositiveControls" />
 
-<meta property="og:description" content="Synthesize positive controls based on negative controls" />
+<meta property="og:description" content="Synthesize positive controls" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -63,7 +63,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">MethodEvaluation</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.0.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.1.0</span>
       </span>
     </div>
 
@@ -114,102 +114,259 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Synthesize positive controls based on negative controls</h1>
-    <small class="dont-index">Source: <a href='https://github.com/OHDSI/MethodEvaluation/blob/master/R/CreateReferenceSetCohorts.R'><code>R/CreateReferenceSetCohorts.R</code></a></small>
+    <h1>Synthesize positive controls</h1>
+    <small class="dont-index">Source: <a href='https://github.com/OHDSI/MethodEvaluation/blob/master/R/PositiveControlSynthesis.R'><code>R/PositiveControlSynthesis.R</code></a></small>
     <div class="hidden name"><code>synthesizePositiveControls.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Synthesize positive controls based on negative controls</p>
+    <p>Synthesize positive controls</p>
     
     </div>
 
     <pre class="usage"><span class='fu'>synthesizePositiveControls</span>(<span class='no'>connectionDetails</span>, <span class='no'>cdmDatabaseSchema</span>,
-  <span class='kw'>oracleTempSchema</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>outcomeDatabaseSchema</span> <span class='kw'>=</span> <span class='no'>cdmDatabaseSchema</span>,
-  <span class='kw'>outcomeTable</span> <span class='kw'>=</span> <span class='st'>"cohort"</span>, <span class='kw'>exposureDatabaseSchema</span> <span class='kw'>=</span> <span class='no'>cdmDatabaseSchema</span>,
-  <span class='kw'>exposureTable</span> <span class='kw'>=</span> <span class='st'>"drug_era"</span>, <span class='kw'>referenceSet</span> <span class='kw'>=</span> <span class='st'>"ohdsiMethodsBenchmark"</span>,
-  <span class='kw'>maxCores</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='no'>workFolder</span>, <span class='kw'>summaryFileName</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/file.path'>file.path</a></span>(<span class='no'>workFolder</span>,
-  <span class='st'>"allControls.csv"</span>))</pre>
+  <span class='kw'>oracleTempSchema</span> <span class='kw'>=</span> <span class='no'>cdmDatabaseSchema</span>,
+  <span class='kw'>exposureDatabaseSchema</span> <span class='kw'>=</span> <span class='no'>cdmDatabaseSchema</span>,
+  <span class='kw'>exposureTable</span> <span class='kw'>=</span> <span class='st'>"drug_era"</span>,
+  <span class='kw'>outcomeDatabaseSchema</span> <span class='kw'>=</span> <span class='no'>cdmDatabaseSchema</span>, <span class='kw'>outcomeTable</span> <span class='kw'>=</span> <span class='st'>"cohort"</span>,
+  <span class='kw'>outputDatabaseSchema</span> <span class='kw'>=</span> <span class='no'>outcomeDatabaseSchema</span>,
+  <span class='kw'>outputTable</span> <span class='kw'>=</span> <span class='no'>outcomeTable</span>, <span class='kw'>createOutputTable</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='no'>exposureOutcomePairs</span>, <span class='kw'>modelType</span> <span class='kw'>=</span> <span class='st'>"poisson"</span>,
+  <span class='kw'>minOutcomeCountForModel</span> <span class='kw'>=</span> <span class='fl'>100</span>, <span class='kw'>minOutcomeCountForInjection</span> <span class='kw'>=</span> <span class='fl'>25</span>,
+  <span class='kw'>covariateSettings</span> <span class='kw'>=</span> <span class='kw pkg'>FeatureExtraction</span><span class='kw ns'>::</span><span class='fu'><a href='https://www.rdocumentation.org/packages/FeatureExtraction/topics/createCovariateSettings'>createCovariateSettings</a></span>(<span class='kw'>useDemographicsAgeGroup</span>
+  <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>useDemographicsGender</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>useDemographicsIndexYear</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>useDemographicsIndexMonth</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>useConditionGroupEraLongTerm</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>useDrugGroupEraLongTerm</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>useProcedureOccurrenceLongTerm</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>useMeasurementLongTerm</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>useObservationLongTerm</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>useCharlsonIndex</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>useDcsi</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>, <span class='kw'>useChads2Vasc</span> <span class='kw'>=</span> <span class='fl'>TRUE</span>,
+  <span class='kw'>longTermStartDays</span> <span class='kw'>=</span> <span class='fl'>365</span>, <span class='kw'>endDays</span> <span class='kw'>=</span> <span class='fl'>0</span>),
+  <span class='kw'>prior</span> <span class='kw'>=</span> <span class='kw pkg'>Cyclops</span><span class='kw ns'>::</span><span class='fu'><a href='https://www.rdocumentation.org/packages/Cyclops/topics/createPrior'>createPrior</a></span>(<span class='st'>"laplace"</span>, <span class='kw'>exclude</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>useCrossValidation</span>
+  <span class='kw'>=</span> <span class='fl'>TRUE</span>), <span class='kw'>control</span> <span class='kw'>=</span> <span class='kw pkg'>Cyclops</span><span class='kw ns'>::</span><span class='fu'><a href='https://www.rdocumentation.org/packages/Cyclops/topics/createControl'>createControl</a></span>(<span class='kw'>cvType</span> <span class='kw'>=</span> <span class='st'>"auto"</span>,
+  <span class='kw'>startingVariance</span> <span class='kw'>=</span> <span class='fl'>0.1</span>, <span class='kw'>noiseLevel</span> <span class='kw'>=</span> <span class='st'>"quiet"</span>, <span class='kw'>threads</span> <span class='kw'>=</span> <span class='fl'>10</span>),
+  <span class='kw'>firstExposureOnly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>washoutPeriod</span> <span class='kw'>=</span> <span class='fl'>183</span>,
+  <span class='kw'>riskWindowStart</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>riskWindowEnd</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>endAnchor</span> <span class='kw'>=</span> <span class='st'>"cohort end"</span>,
+  <span class='kw'>addIntentToTreat</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>firstOutcomeOnly</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
+  <span class='kw'>removePeopleWithPriorOutcomes</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>, <span class='kw'>maxSubjectsForModel</span> <span class='kw'>=</span> <span class='fl'>1e+05</span>,
+  <span class='kw'>effectSizes</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='fl'>1</span>, <span class='fl'>1.25</span>, <span class='fl'>1.5</span>, <span class='fl'>2</span>, <span class='fl'>4</span>), <span class='kw'>precision</span> <span class='kw'>=</span> <span class='fl'>0.01</span>,
+  <span class='kw'>outputIdOffset</span> <span class='kw'>=</span> <span class='fl'>1000</span>, <span class='kw'>workFolder</span> <span class='kw'>=</span> <span class='st'>"./SignalInjectionTemp"</span>,
+  <span class='kw'>cdmVersion</span> <span class='kw'>=</span> <span class='st'>"5"</span>, <span class='kw'>modelThreads</span> <span class='kw'>=</span> <span class='fl'>1</span>, <span class='kw'>generationThreads</span> <span class='kw'>=</span> <span class='fl'>1</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>connectionDetails</th>
-      <td><p>An R object of type <code>ConnectionDetails</code> created using the
-function <code>createConnectionDetails</code> in the
+      <td><p>An R object of type <code>ConnectionDetails</code> created using
+the function <code>createConnectionDetails</code> in the
 <code>DatabaseConnector</code> package.</p></td>
     </tr>
     <tr>
       <th>cdmDatabaseSchema</th>
-      <td><p>A database schema containing health care data in the OMOP Commond
-Data Model. Note that for SQL Server, botth the database and schema
-should be specified, e.g. 'cdm_schema.dbo'</p></td>
+      <td><p>Name of database schema that contains OMOP CDM and
+vocabulary.</p></td>
     </tr>
     <tr>
       <th>oracleTempSchema</th>
-      <td><p>Should be used in Oracle to specify a schema where the user has
-write priviliges for storing temporary tables.</p></td>
-    </tr>
-    <tr>
-      <th>outcomeDatabaseSchema</th>
-      <td><p>The database schema where the target outcome table is located. Note
-that for SQL Server, both the database and schema should be
-specified, e.g. 'cdm_schema.dbo'</p></td>
-    </tr>
-    <tr>
-      <th>outcomeTable</th>
-      <td><p>The name of the table where the outcomes will be stored.</p></td>
+      <td><p>For Oracle only: the name of the database schema where you
+want all temporary tables to be managed. Requires
+create/insert permissions to this database.</p></td>
     </tr>
     <tr>
       <th>exposureDatabaseSchema</th>
-      <td><p>The name of the database schema that is the location where the
-exposure data used to define the exposure cohorts is available.  If
-exposureTable = DRUG_ERA, exposureDatabaseSchema is not used and
-assumed to be cdmDatabaseSchema.  Requires read permissions to this
-database.</p></td>
+      <td><p>The name of the database schema that is the location where
+the exposure data used to define the exposure cohorts is
+available.  If exposureTable = DRUG_ERA,
+exposureDatabaseSchema is not used by assumed to be
+cdmSchema.  Requires read permissions to this database.</p></td>
     </tr>
     <tr>
       <th>exposureTable</th>
-      <td><p>The tablename that contains the exposure cohorts.  If exposureTable
-&lt;&gt; DRUG_ERA, then expectation is exposureTable has format of COHORT
-table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
-COHORT_END_DATE.</p></td>
+      <td><p>The table name that contains the exposure cohorts.  If
+exposureTable &lt;&gt; DRUG_ERA, then expectation is exposureTable
+has format of COHORT table: cohort_concept_id, SUBJECT_ID,
+COHORT_START_DATE, COHORT_END_DATE.</p></td>
     </tr>
     <tr>
-      <th>referenceSet</th>
-      <td><p>The name of the reference set for which positive controls need to be
-synthesized. Currently supported are "ohdsiMethodsBenchmark".</p></td>
+      <th>outcomeDatabaseSchema</th>
+      <td><p>The name of the database schema that is the location where
+the data used to define the outcome cohorts is available. If
+exposureTable = CONDITION_ERA, exposureDatabaseSchema is not
+used by assumed to be cdmSchema.  Requires read permissions
+to this database.</p></td>
     </tr>
     <tr>
-      <th>maxCores</th>
-      <td><p>How many parallel cores should be used? If more cores are made
-available this can speed up the analyses.</p></td>
+      <th>outcomeTable</th>
+      <td><p>The table name that contains the outcome cohorts. When the
+table name is not CONDITION_ERA This table is expected to
+have the same format as the COHORT table: SUBJECT_ID,
+COHORT_START_DATE, COHORT_END_DATE, COHORT_CONCEPT_ID (CDM
+v4) or COHORT_DEFINITION_ID (CDM v5 and higher).</p></td>
+    </tr>
+    <tr>
+      <th>outputDatabaseSchema</th>
+      <td><p>The name of the database schema that is the location of the
+tables containing the new outcomesRequires write permissions
+to this database.</p></td>
+    </tr>
+    <tr>
+      <th>outputTable</th>
+      <td><p>The name of the table names that will contain the generated
+outcome cohorts.</p></td>
+    </tr>
+    <tr>
+      <th>createOutputTable</th>
+      <td><p>Should the output table be created prior to inserting the
+outcomes? If TRUE and the tables already exists, it will
+first be deleted. If FALSE, the table is assumed to exist and
+the outcomes will be inserted. Any existing outcomes with the
+same IDs will first be deleted.</p></td>
+    </tr>
+    <tr>
+      <th>exposureOutcomePairs</th>
+      <td><p>A data frame with at least two columns:</p><ul>
+<li><p>"exposureId" containing the drug_concept_ID or
+        cohort_concept_id of the exposure variable</p></li>
+<li><p>"outcomeId" containing the condition_concept_ID or
+        cohort_concept_id of the outcome variable</p></li>
+</ul></td>
+    </tr>
+    <tr>
+      <th>modelType</th>
+      <td><p>Can be either "poisson" or "survival"</p></td>
+    </tr>
+    <tr>
+      <th>minOutcomeCountForModel</th>
+      <td><p>Minimum number of outcome events required to build a model.</p></td>
+    </tr>
+    <tr>
+      <th>minOutcomeCountForInjection</th>
+      <td><p>Minimum number of outcome events required to inject a signal.</p></td>
+    </tr>
+    <tr>
+      <th>covariateSettings</th>
+      <td><p>An object of type <code>covariateSettings</code> as created using
+the <code>createCovariateSettings</code> function in the
+<code>FeatureExtraction</code> package.</p></td>
+    </tr>
+    <tr>
+      <th>prior</th>
+      <td><p>The prior used to fit the outcome model. See
+<code><a href='https://www.rdocumentation.org/packages/Cyclops/topics/createPrior'>createPrior</a></code> for details.</p></td>
+    </tr>
+    <tr>
+      <th>control</th>
+      <td><p>The control object used to control the cross-validation used
+to determine the hyperparameters of the prior (if
+applicable). See <code><a href='https://www.rdocumentation.org/packages/Cyclops/topics/createControl'>createControl</a></code> for
+details.</p></td>
+    </tr>
+    <tr>
+      <th>firstExposureOnly</th>
+      <td><p>Should signals be injected only for the first exposure? (ie.
+assuming an acute effect)</p></td>
+    </tr>
+    <tr>
+      <th>washoutPeriod</th>
+      <td><p>Number of days at the start of observation for which no
+signals will be injected, but will be used to determine
+whether exposure or outcome is the first one, and for
+extracting covariates to build the outcome model.</p></td>
+    </tr>
+    <tr>
+      <th>riskWindowStart</th>
+      <td><p>The start of the risk window relative to the start of the
+exposure (in days). When 0, risk is assumed to start on the
+first day of exposure.</p></td>
+    </tr>
+    <tr>
+      <th>riskWindowEnd</th>
+      <td><p>The end of the risk window (in days) relative to the endAnchor.</p></td>
+    </tr>
+    <tr>
+      <th>endAnchor</th>
+      <td><p>The anchor point for the end of the risk window. Can be
+"cohort start" or "cohort end".</p></td>
+    </tr>
+    <tr>
+      <th>addIntentToTreat</th>
+      <td><p>If true, the signal will not only be injected in the primary
+time at risk, but also after the time at risk (up until the
+obseration period end). In both time periods, the target
+effect size will be enforced. This allows the same positive
+control synthesis to be used in both on treatment and
+intent-to-treat analysis variants. However, this will
+preclude the controls to be used in self-controlled designs
+that consider the time after exposure. Requires
+<code>firstExposureOnly = TRUE</code>.</p></td>
+    </tr>
+    <tr>
+      <th>firstOutcomeOnly</th>
+      <td><p>Should only the first outcome per person be considered when
+modeling the outcome?</p></td>
+    </tr>
+    <tr>
+      <th>removePeopleWithPriorOutcomes</th>
+      <td><p>Remove people with prior outcomes?</p></td>
+    </tr>
+    <tr>
+      <th>maxSubjectsForModel</th>
+      <td><p>Maximum number of people used to fit an outcome model.</p></td>
+    </tr>
+    <tr>
+      <th>effectSizes</th>
+      <td><p>A numeric vector of effect sizes that should be inserted.</p></td>
+    </tr>
+    <tr>
+      <th>precision</th>
+      <td><p>The allowed ratio between target and injected signal size.</p></td>
+    </tr>
+    <tr>
+      <th>outputIdOffset</th>
+      <td><p>What should be the first new outcome ID that is to be
+created?</p></td>
     </tr>
     <tr>
       <th>workFolder</th>
-      <td><p>Name of local folder to place intermediary results; make sure to use
-forward slashes (/). Do not use a folder on a network drive since
-this greatly impacts performance.</p></td>
+      <td><p>Path to a folder where intermediate data will be stored.</p></td>
     </tr>
     <tr>
-      <th>summaryFileName</th>
-      <td><p>The name of the CSV file where to store the summary of the final set
-of positive and negative controls.</p></td>
+      <th>cdmVersion</th>
+      <td><p>Define the OMOP CDM version used: currently support "4" and
+"5".</p></td>
+    </tr>
+    <tr>
+      <th>modelThreads</th>
+      <td><p>Number of parallel threads to use when fitting outcome
+models.</p></td>
+    </tr>
+    <tr>
+      <th>generationThreads</th>
+      <td><p>Number of parallel threads to use when generating outcomes.</p></td>
     </tr>
     </table>
     
+    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
+
+    <p>A data.frame listing all the drug-pairs in combination with requested effect sizes and the real
+inserted effect size (might be different from the requested effect size because of sampling error).</p>
+    
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>This function will synthesize positive controls for a given reference set based on the real
-negative controls. Data from the database will be used to fit outcome models for each negative
-control outcome, and these models will be used to sample additional synthetic outcomes during
-eposure to increase the true hazard ratio.
-The positive control outcome cohorts will be stored in the same database table as the negative
-control outcome cohorts.
-A summary file will be created listing all positive and negative controls. This list should then be
-used as input for the method under evaluation.</p>
+    <p>This function will insert additional outcomes for a given set of drug-outcome pairs. It is assumed
+that these drug-outcome pairs represent negative controls, so the true relative risk before
+inserting any outcomes should be 1. There are two models for inserting the outcomes during the
+specified risk window of the drug: a Poisson model assuming multiple outcomes could occurr during a
+single exposure, and a survival model considering only one outcome per exposure.
+It is possible to use bulk import to insert the generated outcomes in the database. This requires
+the environmental variable 'USE_MPP_BULK_LOAD' to be set to 'TRUE'. See <code><a href='https://www.rdocumentation.org/packages/DatabaseConnector/topics/insertTable'>
+?DatabaseConnector::insertTable</a></code> for details on how to configure the bulk upload.</p>
+    
+    <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
+
+    <p>Schuemie MJ, Hripcsak G, Ryan PB, Madigan D, Suchard MA. Empirical confidence interval calibration
+for population-level effect estimation studies in observational healthcare data. Proc Natl Acad Sci
+U S A. 2018 Mar 13;115(11):2571-2577.</p>
     
 
   </div>
@@ -218,7 +375,11 @@ used as input for the method under evaluation.</p>
     <ul class="nav nav-pills nav-stacked">
       <li><a href="#arguments">Arguments</a></li>
       
+      <li><a href="#value">Value</a></li>
+
       <li><a href="#details">Details</a></li>
+
+      <li><a href="#references">References</a></li>
           </ul>
 
   </div>

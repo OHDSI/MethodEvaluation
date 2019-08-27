@@ -166,5 +166,5 @@ inserted effect size (might be different from the requested effect size because 
 Inject signals in database
 }
 \details{
-DEPRECATED. Use \code{\link{synhtesizePositiveControls}} instead.
+DEPRECATED. Use \code{\link{synthesizePositiveControls}} instead.
 }

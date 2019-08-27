@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Compute the AUC, coverage, MSE, and type 1 and 2 error — computeMetrics • MethodEvaluation</title>
+<title>Compute method performance metrics — computeMetrics • MethodEvaluation</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -30,9 +30,9 @@
 
 
 
-<meta property="og:title" content="Compute the AUC, coverage, MSE, and type 1 and 2 error — computeMetrics" />
+<meta property="og:title" content="Compute method performance metrics — computeMetrics" />
 
-<meta property="og:description" content="Compute the AUC, coverage, MSE, and type 1 and 2 error" />
+<meta property="og:description" content="Compute method performance metrics" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -63,7 +63,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">MethodEvaluation</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.0.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.1.0</span>
       </span>
     </div>
 
@@ -114,31 +114,48 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Compute the AUC, coverage, MSE, and type 1 and 2 error</h1>
+    <h1>Compute method performance metrics</h1>
     <small class="dont-index">Source: <a href='https://github.com/OHDSI/MethodEvaluation/blob/master/R/Metrics.R'><code>R/Metrics.R</code></a></small>
     <div class="hidden name"><code>computeMetrics.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>Compute the AUC, coverage, MSE, and type 1 and 2 error</p>
+    <p>Compute method performance metrics</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>computeMetrics</span>(<span class='no'>logRr</span>, <span class='no'>seLogRr</span>, <span class='no'>trueLogRr</span>)</pre>
+    <pre class="usage"><span class='fu'>computeMetrics</span>(<span class='no'>logRr</span>, <span class='kw'>seLogRr</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>ci95Lb</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>ci95Ub</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
+  <span class='kw'>p</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='no'>trueLogRr</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>logRr</th>
-      <td><p>A numeric vector of effect estimates on the log scale</p></td>
+      <td><p>A numeric vector of effect estimates on the log scale.</p></td>
     </tr>
     <tr>
       <th>seLogRr</th>
       <td><p>The standard error of the log of the effect estimates. Hint: often the standard
 error = (log(&lt;lower bound 95 percent confidence interval&gt;) - log(&lt;effect
-estimate&gt;))/qnorm(0.025)</p></td>
+estimate&gt;))/qnorm(0.025). If not provided the standard error will be inferred from 
+the 95 percent confidence interval.</p></td>
+    </tr>
+    <tr>
+      <th>ci95Lb</th>
+      <td><p>The lower bound of the 95 percent confidence interval. IF not provided it will be 
+inferred from the standard error.</p></td>
+    </tr>
+    <tr>
+      <th>ci95Ub</th>
+      <td><p>The upper bound of the 95 percent confidence interval. IF not provided it will be 
+inferred from the standard error.</p></td>
+    </tr>
+    <tr>
+      <th>p</th>
+      <td><p>The two-sided p-value corresponding to the null hypothesis of no effect. IF not 
+provided it will be inferred from the standard error.</p></td>
     </tr>
     <tr>
       <th>trueLogRr</th>
@@ -148,9 +165,17 @@ estimate&gt;))/qnorm(0.025)</p></td>
     
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>Compute the AUC, coverage, MSE, and type 1 and 2 error.</p>
+    <p>Compute the AUC, coverage, mean precision, MSE, type 1 error, type 2 error, and the fraction non-estimable..</p>
     
 
+    <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
+    <pre class="examples"><div class='input'><span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/library'>library</a></span>(<span class='no'>EmpiricalCalibration</span>)
+<span class='no'>data</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/EmpiricalCalibration/topics/simulateControls'>simulateControls</a></span>(<span class='kw'>n</span> <span class='kw'>=</span> <span class='fl'>50</span> * <span class='fl'>3</span>, <span class='kw'>trueLogRr</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/Log'>log</a></span>(<span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='fl'>1</span>, <span class='fl'>2</span>, <span class='fl'>4</span>)))
+<span class='fu'>computeMetrics</span>(<span class='kw'>logRr</span> <span class='kw'>=</span> <span class='no'>data</span>$<span class='no'>logRr</span>, <span class='kw'>seLogRr</span> <span class='kw'>=</span> <span class='no'>data</span>$<span class='no'>seLogRr</span>, <span class='kw'>trueLogRr</span> <span class='kw'>=</span> <span class='no'>data</span>$<span class='no'>trueLogRr</span>)</div><div class='output co'>#&gt; <span class='message'>Setting levels: control = FALSE, case = TRUE</span></div><div class='output co'>#&gt; <span class='message'>Setting direction: controls &lt; cases</span></div><div class='output co'>#&gt;          auc     coverage        meanP          mse        type1        type2 
+#&gt;         1.00         0.71       136.82         0.03         0.30         0.01 
+#&gt; nonEstimable 
+#&gt;         0.00 </div><div class='input'>
+</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
@@ -158,7 +183,9 @@ estimate&gt;))/qnorm(0.025)</p></td>
       <li><a href="#arguments">Arguments</a></li>
       
       <li><a href="#details">Details</a></li>
-          </ul>
+      
+      <li><a href="#examples">Examples</a></li>
+    </ul>
 
   </div>
 </div>

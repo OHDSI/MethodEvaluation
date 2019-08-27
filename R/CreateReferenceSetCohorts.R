@@ -155,7 +155,7 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
 }
 
 
-#' Synthesize positive controls based on negative controls
+#' Synthesize positive controls for reference set
 #'
 #' @details
 #' This function will synthesize positive controls for a given reference set based on the real
@@ -199,17 +199,17 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
 #'                                 of positive and negative controls.
 #'
 #' @export
-synthesizePositiveControls <- function(connectionDetails,
-                                       cdmDatabaseSchema,
-                                       oracleTempSchema = NULL,
-                                       outcomeDatabaseSchema = cdmDatabaseSchema,
-                                       outcomeTable = "cohort",
-                                       exposureDatabaseSchema = cdmDatabaseSchema,
-                                       exposureTable = "drug_era",
-                                       referenceSet = "ohdsiMethodsBenchmark",
-                                       maxCores = 1,
-                                       workFolder,
-                                       summaryFileName = file.path(workFolder, "allControls.csv")) {
+synthesizeReferenceSetPositiveControls <- function(connectionDetails,
+                                                   cdmDatabaseSchema,
+                                                   oracleTempSchema = NULL,
+                                                   outcomeDatabaseSchema = cdmDatabaseSchema,
+                                                   outcomeTable = "cohort",
+                                                   exposureDatabaseSchema = cdmDatabaseSchema,
+                                                   exposureTable = "drug_era",
+                                                   referenceSet = "ohdsiMethodsBenchmark",
+                                                   maxCores = 1,
+                                                   workFolder,
+                                                   summaryFileName = file.path(workFolder, "allControls.csv")) {
   if (referenceSet != "ohdsiMethodsBenchmark") {
     stop("Currently only supporting positive control synthesis for the ohdsiMethodsBenchmark reference set")
   }

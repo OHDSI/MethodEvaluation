@@ -19,7 +19,7 @@
 #' Inject signals in database
 #'
 #' @details
-#' DEPRECATED. Use \code{\link{synhtesizePositiveControls}} instead.
+#' DEPRECATED. Use \code{\link{synthesizePositiveControls}} instead.
 #'
 #' @param connectionDetails               An R object of type \code{ConnectionDetails} created using
 #'                                        the function \code{createConnectionDetails} in the
