@@ -1,3 +1,11 @@
+MethodEvaluation 1.1.1
+======================
+
+Bugfixes: 
+
+1. Throw meaningful error when there are not enough negative controls with sufficient outcome count to perform positive control synthesis.
+
+
 MethodEvaluation 1.1.0
 ======================
 

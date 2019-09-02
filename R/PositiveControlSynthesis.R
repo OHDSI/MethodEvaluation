@@ -74,6 +74,8 @@
 #' @param modelType                       Can be either "poisson" or "survival"
 #' @param minOutcomeCountForModel         Minimum number of outcome events required to build a model.
 #' @param minOutcomeCountForInjection     Minimum number of outcome events required to inject a signal.
+#' @param minModelCount                   Minimum number of negative controls having enough outcomes to 
+#'                                        fit an outcome model.
 #' @param covariateSettings               An object of type \code{covariateSettings} as created using
 #'                                        the \code{createCovariateSettings} function in the
 #'                                        \code{FeatureExtraction} package.
@@ -146,6 +148,7 @@ synthesizePositiveControls <- function(connectionDetails,
                                        modelType = "poisson",
                                        minOutcomeCountForModel = 100,
                                        minOutcomeCountForInjection = 25,
+                                       minModelCount = 5,
                                        covariateSettings = FeatureExtraction::createCovariateSettings(useDemographicsAgeGroup = TRUE,
                                                                                                       useDemographicsGender = TRUE,
                                                                                                       useDemographicsIndexYear = TRUE,
@@ -467,6 +470,7 @@ synthesizePositiveControls <- function(connectionDetails,
   
   ParallelLogger::logInfo("Fitting outcome models")
   tasks <- list()
+  modelsWithEnoughOutcomes <- 0
   outcomeIds <- unique(exposureOutcomePairs$outcomeId)
   for (outcomeId in outcomeIds) {
     groupId <- outcomeIdToGroupId$groupId[outcomeIdToGroupId$outcomeId == outcomeId]
@@ -475,6 +479,7 @@ synthesizePositiveControls <- function(connectionDetails,
       result$exposureId %in% groupExposureIds & 
       result$targetEffectSize == effectSizes[1]
     if (sum(result$observedOutcomes[idx]) >= minOutcomeCountForModel) {
+      modelsWithEnoughOutcomes <- modelsWithEnoughOutcomes + 1
       modelFolder <- file.path(workFolder, paste0("model_o", outcomeId))
       result$modelFolder[result$outcomeId == outcomeId] <- modelFolder
       if (!file.exists(modelFolder)) {
@@ -486,6 +491,15 @@ synthesizePositiveControls <- function(connectionDetails,
         tasks[[length(tasks) + 1]] <- task
       }
     }
+  }
+  if (modelsWithEnoughOutcomes < minModelCount) {
+    stop("Not enough negative controls with sufficent outcome count to fit outcome model. Found ", 
+         modelsWithEnoughOutcomes, 
+         " controls with enough outcomes (> ", 
+         minOutcomeCountForModel, 
+         "), but require ",
+         minModelCount,
+         " controls.")
   }
   
   if (length(tasks) > 0) {
@@ -582,8 +596,8 @@ synthesizePositiveControls <- function(connectionDetails,
                  covarFileName = covarFileName)
     return(task)
   }
-  tasks <- lapply(1:nrow(temp), createTask)
-  if (length(tasks) > 0) {
+  if (nrow(temp) > 0) {
+    tasks <- lapply(1:nrow(temp), createTask)
     cluster <- ParallelLogger::makeCluster(generationThreads)
     results <- ParallelLogger::clusterApply(cluster,
                                             tasks,
