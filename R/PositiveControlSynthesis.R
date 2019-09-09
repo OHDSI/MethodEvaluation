@@ -286,7 +286,7 @@ synthesizePositiveControls <- function(connectionDetails,
       names(priorOutcomes) <- SqlRender::snakeCaseToCamelCase(names(priorOutcomes))
       saveRDS(priorOutcomes, priorOutcomesFile)
       sql <- "TRUNCATE TABLE #exposure_outcome; DROP TABLE #exposure_outcome;"
-      sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms)
+      sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms, oracleTempSchema = oracleTempSchema)
       DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
     }
   }
@@ -317,7 +317,7 @@ synthesizePositiveControls <- function(connectionDetails,
     names(outcomeCounts) <- SqlRender::snakeCaseToCamelCase(names(outcomeCounts))
     saveRDS(outcomeCounts, outcomesFile)
     sql <- "TRUNCATE TABLE #exposure_outcome; DROP TABLE #exposure_outcome;"
-    sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms)
+    sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms, oracleTempSchema = oracleTempSchema)
     DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
   }
   
@@ -674,16 +674,16 @@ synthesizePositiveControls <- function(connectionDetails,
   DatabaseConnector::executeSql(conn, copySql)
   
   sql <- "TRUNCATE TABLE #cohort_person; DROP TABLE #cohort_person;"
-  sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms)
+  sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms, oracleTempSchema = oracleTempSchema)
   DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
   
   sql <- "TRUNCATE TABLE #to_copy; DROP TABLE #to_copy;"
-  sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms)
+  sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms, oracleTempSchema = oracleTempSchema)
   DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
   
   sql <- "TRUNCATE TABLE @temp_outcomes_table; DROP TABLE @temp_outcomes_table;"
   sql <- SqlRender::render(sql, temp_outcomes_table = tableName)
-  sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms)
+  sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms, oracleTempSchema = oracleTempSchema)
   DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
   
   return(result)
