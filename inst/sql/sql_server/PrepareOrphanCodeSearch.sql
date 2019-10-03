@@ -21,6 +21,7 @@ WHERE concept_relationship.invalid_reason IS NULL
 
 SELECT concept_id,
 	code,
+	source_table,
 	description,
 	vocabulary_id
 INTO #orphan_codes
@@ -28,6 +29,7 @@ FROM (
 	SELECT concept_id,
 		concept_code AS code,
 		concept_name AS description,
+		CAST('concept' AS VARCHAR(21)) AS source_table,
 		vocabulary_id
 	FROM @cdm_database_schema.concept
 	WHERE (
@@ -47,6 +49,7 @@ FROM (
 	SELECT source_concept_ID AS concept_id,
 		source_code AS code,
 		source_code_description AS description,
+		CAST('source_to_concept_map' AS VARCHAR(21)) AS source_table,
 		source_vocabulary_id AS vocabulary_id
 	FROM @cdm_database_schema.source_to_concept_map
 	WHERE (

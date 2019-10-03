@@ -118,8 +118,10 @@ AS (
 	WHERE concept_id = 0
 	GROUP BY code
 	)
-SELECT orphan_codes.code,
+SELECT orphan_codes.concept_id,
+	orphan_codes.code,
 	description,
+	source_table,
 	vocabulary_id,
 	CASE 
 		WHEN drug_concept_count IS NULL

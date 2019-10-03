@@ -43,6 +43,7 @@ findOrphanSourceCodes <- function(connectionDetails,
                                   conceptSynonyms = NULL) {
   start <- Sys.time()
   connection <- DatabaseConnector::connect(connectionDetails)
+  on.exit(DatabaseConnector::disconnect(connection))
   
   names <- c(conceptName, conceptSynonyms)
   conceptNameClause <- paste(paste0("concept_name LIKE '%", names, "%'"), collapse = " OR\n")
@@ -66,8 +67,6 @@ findOrphanSourceCodes <- function(connectionDetails,
   
   orphanCodes <- DatabaseConnector::querySql(connection, sql)
   colnames(orphanCodes) <- SqlRender::snakeCaseToCamelCase(colnames(orphanCodes))
-  
-  DatabaseConnector::disconnect(connection)
   
   orphanCodes$overallCount <- orphanCodes$drugCount +
     orphanCodes$conditionCount +
