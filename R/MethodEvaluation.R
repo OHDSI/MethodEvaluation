@@ -1,6 +1,6 @@
 # @file MethodEvaluation.R
 #
-# Copyright 2019 Observational Health Data Sciences and Informatics
+# Copyright 2020 Observational Health Data Sciences and Informatics
 #
 # This file is part of MethodEvaluation
 # 
@@ -16,18 +16,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#' MethodEvaluation
-#'
-#' @docType package
-#' @name MethodEvaluation
+#' @keywords internal
+"_PACKAGE"
+
 #' @importFrom SqlRender loadRenderTranslateSql translateSql
 #' @importFrom grDevices rgb
 #' @importFrom stats aggregate coef pnorm predict qnorm quantile rexp rpois
 #' @importFrom utils write.csv install.packages menu read.csv
 #' @importFrom methods is
+#' @importFrom rlang .data
 #' @import Cyclops
 #' @import DatabaseConnector
 #' @import FeatureExtraction
+#' @import dplyr
 NULL
 
 

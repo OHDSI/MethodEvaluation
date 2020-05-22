@@ -4,8 +4,13 @@
 \alias{plotCoverageInjectedSignals}
 \title{Plot the coverage}
 \usage{
-plotCoverageInjectedSignals(logRr, seLogRr, trueLogRr, region = 0.95,
-  fileName = NULL)
+plotCoverageInjectedSignals(
+  logRr,
+  seLogRr,
+  trueLogRr,
+  region = 0.95,
+  fileName = NULL
+)
 }
 \arguments{
 \item{logRr}{A numeric vector of effect estimates on the log scale}

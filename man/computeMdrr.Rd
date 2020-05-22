@@ -4,12 +4,17 @@
 \alias{computeMdrr}
 \title{Compute minimal detectable relative risk (MDRR)}
 \usage{
-computeMdrr(connectionDetails, cdmDatabaseSchema,
-  oracleTempSchema = cdmDatabaseSchema, exposureOutcomePairs,
+computeMdrr(
+  connectionDetails,
+  cdmDatabaseSchema,
+  oracleTempSchema = cdmDatabaseSchema,
+  exposureOutcomePairs,
   exposureDatabaseSchema = cdmDatabaseSchema,
   exposureTable = "drug_era",
   outcomeDatabaseSchema = cdmDatabaseSchema,
-  outcomeTable = "condition_era", cdmVersion = "5")
+  outcomeTable = "condition_era",
+  cdmVersion = "5"
+)
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{ConnectionDetails} created using the

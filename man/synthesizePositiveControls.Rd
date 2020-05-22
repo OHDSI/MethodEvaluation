@@ -4,32 +4,49 @@
 \alias{synthesizePositiveControls}
 \title{Synthesize positive controls}
 \usage{
-synthesizePositiveControls(connectionDetails, cdmDatabaseSchema,
+synthesizePositiveControls(
+  connectionDetails,
+  cdmDatabaseSchema,
   oracleTempSchema = cdmDatabaseSchema,
   exposureDatabaseSchema = cdmDatabaseSchema,
   exposureTable = "drug_era",
-  outcomeDatabaseSchema = cdmDatabaseSchema, outcomeTable = "cohort",
+  outcomeDatabaseSchema = cdmDatabaseSchema,
+  outcomeTable = "cohort",
   outputDatabaseSchema = outcomeDatabaseSchema,
-  outputTable = outcomeTable, createOutputTable = FALSE,
-  exposureOutcomePairs, modelType = "poisson",
-  minOutcomeCountForModel = 100, minOutcomeCountForInjection = 25,
-  covariateSettings = FeatureExtraction::createCovariateSettings(useDemographicsAgeGroup
-  = TRUE, useDemographicsGender = TRUE, useDemographicsIndexYear = TRUE,
-  useDemographicsIndexMonth = TRUE, useConditionGroupEraLongTerm = TRUE,
-  useDrugGroupEraLongTerm = TRUE, useProcedureOccurrenceLongTerm = TRUE,
-  useMeasurementLongTerm = TRUE, useObservationLongTerm = TRUE,
-  useCharlsonIndex = TRUE, useDcsi = TRUE, useChads2Vasc = TRUE,
-  longTermStartDays = 365, endDays = 0),
-  prior = Cyclops::createPrior("laplace", exclude = 0, useCrossValidation
-  = TRUE), control = Cyclops::createControl(cvType = "auto",
-  startingVariance = 0.1, noiseLevel = "quiet", threads = 10),
-  firstExposureOnly = FALSE, washoutPeriod = 183,
-  riskWindowStart = 0, riskWindowEnd = 0, endAnchor = "cohort end",
-  addIntentToTreat = FALSE, firstOutcomeOnly = FALSE,
-  removePeopleWithPriorOutcomes = FALSE, maxSubjectsForModel = 1e+05,
-  effectSizes = c(1, 1.25, 1.5, 2, 4), precision = 0.01,
-  outputIdOffset = 1000, workFolder = "./SignalInjectionTemp",
-  cdmVersion = "5", modelThreads = 1, generationThreads = 1)
+  outputTable = outcomeTable,
+  createOutputTable = FALSE,
+  exposureOutcomePairs,
+  modelType = "poisson",
+  minOutcomeCountForModel = 100,
+  minOutcomeCountForInjection = 25,
+  minModelCount = 5,
+ 
+    covariateSettings = FeatureExtraction::createCovariateSettings(useDemographicsAgeGroup
+    = TRUE, useDemographicsGender = TRUE, useDemographicsIndexYear = TRUE,
+    useDemographicsIndexMonth = TRUE, useConditionGroupEraLongTerm = TRUE,
+    useDrugGroupEraLongTerm = TRUE, useProcedureOccurrenceLongTerm = TRUE,
+    useMeasurementLongTerm = TRUE, useObservationLongTerm = TRUE, useCharlsonIndex =
+    TRUE, useDcsi = TRUE, useChads2Vasc = TRUE, longTermStartDays = 365, endDays = 0),
+  prior = Cyclops::createPrior("laplace", exclude = 0, useCrossValidation = TRUE),
+  control = Cyclops::createControl(cvType = "auto", startingVariance = 0.1, noiseLevel
+    = "quiet", threads = 10),
+  firstExposureOnly = FALSE,
+  washoutPeriod = 183,
+  riskWindowStart = 0,
+  riskWindowEnd = 0,
+  endAnchor = "cohort end",
+  addIntentToTreat = FALSE,
+  firstOutcomeOnly = FALSE,
+  removePeopleWithPriorOutcomes = FALSE,
+  maxSubjectsForModel = 1e+05,
+  effectSizes = c(1, 1.25, 1.5, 2, 4),
+  precision = 0.01,
+  outputIdOffset = 1000,
+  workFolder = "./SignalInjectionTemp",
+  cdmVersion = "5",
+  modelThreads = 1,
+  generationThreads = 1
+)
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{ConnectionDetails} created using
@@ -92,6 +109,9 @@ same IDs will first be deleted.}
 \item{minOutcomeCountForModel}{Minimum number of outcome events required to build a model.}
 
 \item{minOutcomeCountForInjection}{Minimum number of outcome events required to inject a signal.}
+
+\item{minModelCount}{Minimum number of negative controls having enough outcomes to 
+fit an outcome model.}
 
 \item{covariateSettings}{An object of type \code{covariateSettings} as created using
 the \code{createCovariateSettings} function in the

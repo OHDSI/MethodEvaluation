@@ -4,9 +4,14 @@
 \alias{computeOhdsiBenchmarkMetrics}
 \title{Generate perfomance metrics for the OHDSI Methods Benchmark}
 \usage{
-computeOhdsiBenchmarkMetrics(exportFolder, mdrr = 1.25,
-  stratum = "All", trueEffectSize = "Overall", calibrated = FALSE,
-  comparative = FALSE)
+computeOhdsiBenchmarkMetrics(
+  exportFolder,
+  mdrr = 1.25,
+  stratum = "All",
+  trueEffectSize = "Overall",
+  calibrated = FALSE,
+  comparative = FALSE
+)
 }
 \arguments{
 \item{exportFolder}{The folder containing the CSV files created using the

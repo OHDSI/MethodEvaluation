@@ -1,6 +1,4 @@
-# @file PackageMaintenance.R
-#
-# Copyright 2019 Observational Health Data Sciences and Informatics
+# Copyright 2020 Observational Health Data Sciences and Informatics
 #
 # This file is part of MethodEvaluation
 # 
@@ -16,15 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 # Format and check code ---------------------------------------------------
 OhdsiRTools::formatRFolder()
 OhdsiRTools::checkUsagePackage("MethodEvaluation")
 OhdsiRTools::updateCopyrightYearFolder()
-
+devtools::spell_check()
 
 # Create manual and vignettes ----------------------------------------------
-shell("rm extras/MethodEvaluation.pdf")
+unlink("extras/MethodEvaluation.pdf")
 shell("R CMD Rd2pdf ./ --output=extras/MethodEvaluation.pdf")
 
 rmarkdown::render("vignettes/OhdsiMethodsBenchmark.Rmd",
@@ -32,8 +29,10 @@ rmarkdown::render("vignettes/OhdsiMethodsBenchmark.Rmd",
                   rmarkdown::pdf_document(latex_engine = "pdflatex",
                                           toc = TRUE,
                                           number_sections = TRUE))
+unlink("nst/doc/OhdsiMethodsBenchmark.tex")
 
 pkgdown::build_site()
+OhdsiRTools::fixHadesLogo()
 
 # Load reference sets ----------------------------------------------------- OMOP
 omopReferenceSet <- read.csv("C:/home/Research/Method evaluation task force/OmopRefSet.csv")

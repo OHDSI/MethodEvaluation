@@ -4,8 +4,13 @@
 \alias{packageOhdsiBenchmarkResults}
 \title{Package results of a method on the OHDSI Methods Benchmark}
 \usage{
-packageOhdsiBenchmarkResults(estimates, controlSummary, analysisRef,
-  databaseName, exportFolder)
+packageOhdsiBenchmarkResults(
+  estimates,
+  controlSummary,
+  analysisRef,
+  databaseName,
+  exportFolder
+)
 }
 \arguments{
 \item{estimates}{A data frame containing the estimates. See details for required columns.}

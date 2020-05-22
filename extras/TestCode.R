@@ -1,6 +1,6 @@
 # Signal injection --------------------------------------------------------
 library(MethodEvaluation)
-options(fftempdir = "s:/fftemp")
+options(andromedaTempFolder = "c:/andromedaTemp")
 
 dbms <- "pdw"
 user <- NULL
@@ -60,7 +60,8 @@ exposureOutcomePairs <- data.frame(exposureId = 1124300, outcomeId = c(24609,
 
 covariateSettings <- FeatureExtraction::createCovariateSettings(useDemographicsGender = TRUE,
                                                                 useDemographicsAge = TRUE)
-
+ParallelLogger::addDefaultErrorReportLogger(file.path(outputFolder, "ErrorReportR.txt"))
+ParallelLogger::addDefaultFileLogger(file.path(outputFolder, "log.txt"))
 x <- synthesizePositiveControls(connectionDetails,
                                 cdmDatabaseSchema = cdmDatabaseSchema,
                                 exposureOutcomePairs = exposureOutcomePairs,
@@ -82,8 +83,8 @@ x <- synthesizePositiveControls(connectionDetails,
                                 workFolder = outputFolder,
                                 cdmVersion = cdmVersion,
                                 covariateSettings = covariateSettings,
-                                modelThreads = 4,
-                                generationThreads = 3,
+                                modelThreads = 3,
+                                generationThreads = 1,
                                 minOutcomeCountForModel = 100,
                                 minOutcomeCountForInjection = 25,
                                 washoutPeriod = 183,
@@ -395,53 +396,3 @@ createReferenceSetCohorts(connectionDetails,
                           referenceSet = "ohdsiNegativeControls")
 
 
-# Orphan codes ------------------------------------------------------
-
-library(MethodEvaluation)
-
-pw <- ""
-dbms <- "pdw"
-user <- NULL
-server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "cdm_truven_mdcd_v569.dbo"
-scratchDatabaseSchema <- "scratch.dbo"
-outputTable <- "mschuemi_injected_signals"
-port <- 17001
-cdmVersion <- "5"
-cdmDatabaseSchema <- "cdm_truven_mdcd_v699.dbo"
-
-connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
-                                                                server = server,
-                                                                user = user,
-                                                                password = pw,
-                                                                port = port)
-
-orphans <- findOrphanSourceCodes(connectionDetails,
-                                 cdmDatabaseSchema = cdmDatabaseSchema,
-                                 conceptName = "Angioedema",
-                                 conceptSynonyms = c("Angioneurotic edema",
-                                                     "Giant hives",
-                                                     "Giant urticaria",
-                                                     "Periodic edema"))
-View(orphans)
-
-
-# Check concept source codes --------------------------------------------
-
-library(MethodEvaluation)
-connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "pdw",
-                                                                server = Sys.getenv("PDW_SERVER"),
-                                                                user = NULL,
-                                                                password = NULL,
-                                                                port = Sys.getenv("PDW_PORT"))
-
-# The name of the database schema where the CDM data can be found:
-cdmDbSchema <- "CDM_IBM_MDCR_V871.dbo"
-
-json <- readChar("extras/cohort.json", file.info("extras/cohort.json")$size)
-sql <- readChar("extras/cohort.sql", file.info("extras/cohort.sql")$size)
-checkCohortSourceCodes(connectionDetails,
-                       cdmDatabaseSchema = cdmDbSchema,
-                       cohortJson = json,
-                       cohortSql = sql,
-                       outputFile = "extras/output.html")

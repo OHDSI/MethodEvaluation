@@ -1,8 +1,8 @@
 Package: MethodEvaluation
 Type: Package
 Title: Package for Evaluation of Estimation Methods
-Version: 1.1.1
-Date: 2019-09-02
+Version: 2.0.0
+Date: 2020-05-21
 Authors@R: c(
   person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre"))
   )
@@ -25,9 +25,10 @@ Depends:
     FeatureExtraction (>= 2.0.0),
     Cyclops (>= 1.2.2)
 Imports:
-    ff,
-    ffbase (>= 0.12.1),
-    SqlRender (>= 1.6.2),
+    Andromeda,
+    dplyr,
+    rlang,
+    SqlRender (>= 1.6.5),
     pROC,
     ggplot2,
     ParallelLogger,
@@ -40,5 +41,5 @@ Suggests:
     DT,
     shiny,
     knitr
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.0
 Encoding: UTF-8

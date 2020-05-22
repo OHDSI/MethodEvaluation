@@ -1,6 +1,4 @@
-# @file PositiveControlSynthesis.R
-#
-# Copyright 2019 Observational Health Data Sciences and Informatics
+# Copyright 2020 Observational Health Data Sciences and Informatics
 #
 # This file is part of MethodEvaluation
 #
@@ -407,7 +405,7 @@ synthesizePositiveControls <- function(connectionDetails,
   
   # Fetch covariates for each group of exposures
   for (i in 1:length(uniqueGroups)) {
-    covarFileName <- file.path(workFolder, paste0("covarsForModel_g", i))
+    covarFileName <- file.path(workFolder, sprintf("covarsForModel_g%s.zip", i))
     if (!file.exists(covarFileName)) {
       cohortIds <- uniqueGroups[[i]]
       sql <- "SELECT COUNT(*) FROM (SELECT DISTINCT subject_id, cohort_start_date FROM #cohort_person WHERE cohort_definition_id IN (@cohort_ids)) tmp;"
@@ -432,7 +430,7 @@ synthesizePositiveControls <- function(connectionDetails,
                                        oracleTempSchema = oracleTempSchema)
         sampledRowIds <- querySql(conn, sql)
         colnames(sampledRowIds) <- SqlRender::snakeCaseToCamelCase(colnames(sampledRowIds))
-        sampledExposuresFile <- file.path(workFolder, paste0("sampledRowIds_g", i))
+        sampledExposuresFile <- file.path(workFolder, sprintf("sampledRowIds_g%s.rds", i))
         saveRDS(sampledRowIds, sampledExposuresFile)
       } else {
         # Don't sample, just copy:
@@ -456,9 +454,10 @@ synthesizePositiveControls <- function(connectionDetails,
       covariateData <- FeatureExtraction::tidyCovariateData(covariateData = covariateData,
                                                             normalize = TRUE,
                                                             removeRedundancy = TRUE)
-      covariateRef <- covariateData$covariateRef
-      covariates <- covariateData$covariates
-      ffbase::save.ffdf(covariates, covariateRef, dir = covarFileName)
+      FeatureExtraction::saveCovariateData(covariateData, covarFileName)
+      # covariateRef <- covariateData$covariateRef
+      # covariates <- covariateData$covariates
+      # ffbase::save.ffdf(covariates, covariateRef, dir = covarFileName)
       
       sql <- "TRUNCATE TABLE #sampled_person; DROP TABLE #sampled_person;"
       sql <- SqlRender::translate(sql,
@@ -485,8 +484,8 @@ synthesizePositiveControls <- function(connectionDetails,
       if (!file.exists(modelFolder)) {
         task <- list(outcomeId = outcomeId,
                      modelFolder = modelFolder,
-                     covarFileName = file.path(workFolder, paste0("covarsForModel_g", groupId)),
-                     sampledExposuresFile = file.path(workFolder, paste0("sampledRowIds_g", groupId)),
+                     covarFileName = file.path(workFolder, sprintf("covarsForModel_g%s.zip", groupId)),
+                     sampledExposuresFile = file.path(workFolder, sprintf("sampledRowIds_g%s.rds", groupId)),
                      groupExposureIds = groupExposureIds)
         tasks[[length(tasks) + 1]] <- task
       }
@@ -521,8 +520,8 @@ synthesizePositiveControls <- function(connectionDetails,
   # Generate new outcomes ----------------------------------------- Fetch covariates for all rows if
   # covars for model were based on a sample:
   for (i in 1:length(uniqueGroups)) {
-    sampledExposuresFile <- file.path(workFolder, paste0("sampledRowIds_g", i))
-    covarFileName <- file.path(workFolder, paste0("covarsForPrediction_g", i))
+    sampledExposuresFile <- file.path(workFolder, sprintf("sampledRowIds_g%s.rds", i))
+    covarFileName <- file.path(workFolder, sprintf("covarsForPrediction_g%s.zip", i))
     if (file.exists(sampledExposuresFile) && !file.exists(covarFileName)) {
       ParallelLogger::logInfo("Extracting covariates for all rows predicting outcomes")
       if (!is(covariateSettings, "covariateSettings")) {
@@ -563,9 +562,10 @@ synthesizePositiveControls <- function(connectionDetails,
         covariateData <- FeatureExtraction::tidyCovariateData(covariateData = covariateData,
                                                               normalize = TRUE,
                                                               removeRedundancy = FALSE)
-        covariateRef <- covariateData$covariateRef
-        covariates <- covariateData$covariates
-        ffbase::save.ffdf(covariates, covariateRef, dir = covarFileName)
+        FeatureExtraction::saveCovariateData(covariateData, covarFileName)
+        # covariateRef <- covariateData$covariateRef
+        # covariates <- covariateData$covariates
+        # ffbase::save.ffdf(covariates, covariateRef, dir = covarFileName)
         
         sql <- "TRUNCATE TABLE #selected_person; DROP TABLE #selected_person;"
         sql <- SqlRender::translate(sql,
@@ -584,11 +584,11 @@ synthesizePositiveControls <- function(connectionDetails,
   temp <- unique(temp)
   createTask <- function(i) {
     groupId <- outcomeIdToGroupId$groupId[outcomeIdToGroupId$outcomeId == temp$outcomeId[i]]
-    sampledExposuresFile <- file.path(workFolder, paste0("sampledRowIds_g", groupId))
+    sampledExposuresFile <- file.path(workFolder, sprintf("sampledRowIds_g%s.rds", groupId))
     if (file.exists(sampledExposuresFile)) {
-      covarFileName <- file.path(workFolder, paste0("covarsForPrediction_g", groupId))
+      covarFileName <- file.path(workFolder, sprintf("covarsForPrediction_g%s.zip", groupId))
     } else {
-      covarFileName <- file.path(workFolder, paste0("covarsForModel_g", groupId))
+      covarFileName <- file.path(workFolder, sprintf("covarsForModel_g%s.zip", groupId))
     }
     task <- list(exposureId = temp$exposureId[i],
                  outcomeId = temp$outcomeId[i],
@@ -715,18 +715,24 @@ fitModel <- function(task,
   exposures <- exposures[order(exposures$personId, exposures$cohortStartDate), ]
   exposures <- exposures[!duplicated(exposures[, c("personId", "cohortStartDate")]), ]
   
-  covariates <- NULL
-  covariateRef <- NULL
-  ffbase::load.ffdf(task$covarFileName)  # loads covariates and covariatesRef
-  open(covariates, readOnly = TRUE)
-  open(covariateRef, readOnly = TRUE)
-  covariates <- covariates[ffbase::"%in%"(covariates$rowId, exposures$rowId), ]
+  covariateData <- FeatureExtraction::loadCovariateData(task$covarFileName)
+  covariates <- covariateData$covariates %>%
+    filter(.data$rowId %in% local(exposures$rowId))
+  
+  # covariates <- NULL
+  # covariateRef <- NULL
+  # ffbase::load.ffdf(task$covarFileName)  # loads covariates and covariatesRef
+  # open(covariates, readOnly = TRUE)
+  # open(covariateRef, readOnly = TRUE)
+  # covariates <- covariates[ffbase::"%in%"(covariates$rowId, exposures$rowId), ]
   if (removePeopleWithPriorOutcomes) {
     priorOutcomes <- readRDS(priorOutcomesFile)
     removeRowIds <- priorOutcomes$rowId[priorOutcomes$outcomeId == task$outcomeId]
     outcomes <- outcomes[!(outcomes$rowId %in% removeRowIds), ]
     exposures <- exposures[!(exposures$rowId %in% removeRowIds), ]
-    covariates <- covariates[!ffbase::"%in%"(covariates$rowId, removeRowIds), ]
+    covariates <- covariates %>%
+      filter(!.data$rowId %in% removeRowIds)
+    # covariates <- covariates[!ffbase::"%in%"(covariates$rowId, removeRowIds), ]
   }
   outcomes <- merge(exposures, outcomes[, c("rowId",
                                             "y",
@@ -743,7 +749,8 @@ fitModel <- function(task,
   
   # Note: for survival, using Poisson regression with 1 outcome and censored time as equivalent of
   # survival regression:
-  cyclopsData <- Cyclops::convertToCyclopsData(ff::as.ffdf(outcomes),
+  covariateData$outcomes <- outcomes
+  cyclopsData <- Cyclops::convertToCyclopsData(covariateData$outcomes,
                                                covariates,
                                                modelType = "pr",
                                                quiet = TRUE)
@@ -761,20 +768,27 @@ fitModel <- function(task,
     write.csv(fit, file.path(task$modelFolder, "Error.txt"))
   } else {
     betas <- coef(fit)
-    intercept <- betas[1]
-    betas <- betas[2:length(betas)]
+    intercept <- data.frame(beta = betas[1],
+                            id = 0,
+                            covariateName = "(Intercept)",
+                            row.names = NULL)
     betas <- betas[betas != 0]
-    if (length(betas) > 0) {
-      betas <- data.frame(beta = betas, id = as.numeric(attr(betas, "names")))
-      betas <- merge(ff::as.ffdf(betas), covariateRef, by.x = "id", by.y = "covariateId")
-      betas <- ff::as.ram(betas)
-      betas <- betas[, c("beta", "id", "covariateName")]
-      betas <- betas[order(-abs(betas$beta)), ]
+    if (length(betas) > 1) {
+      betas <- betas[2:length(betas)]
+      betas <- data.frame(beta = betas, covariateId = as.numeric(attr(betas, "names")))
+      betas <- betas %>%
+        inner_join(collect(covariateData$covariateRef), by = "covariateId") %>%
+        select(.data$beta, id = .data$covariateId, .data$covariateName) %>%
+        arrange(desc(abs(.data$beta)))
+      
+      # betas <- merge(ff::as.ffdf(betas), covariateRef, by.x = "id", by.y = "covariateId")
+      # betas <- ff::as.ram(betas)
+      # betas <- betas[, c("beta", "id", "covariateName")]
+      # betas <- betas[order(-abs(betas$beta)), ]
+      betas <- rbind(intercept, betas)
+    } else {
+      betas <- intercept 
     }
-    betas <- rbind(data.frame(beta = intercept,
-                              id = 0,
-                              covariateName = "(Intercept)",
-                              row.names = NULL), betas)
     dir.create(task$modelFolder)
     saveRDS(betas, file.path(task$modelFolder, "betas.rds"))
   }
@@ -809,9 +823,13 @@ generateOutcomes <- function(task,
       if (nrow(betas) == 1) {
         covariates <- NULL
       } else {
-        ffbase::load.ffdf(task$covarFileName)
-        open(covariates, readOnly = TRUE)
-        covariates <- covariates[ffbase::`%in%`(covariates$rowId, exposures$rowId), ]
+        covariateData <- FeatureExtraction::loadCovariateData(task$covarFileName)
+        covariates <- covariateData$covariates %>%
+          filter(.data$rowId %in% local(exposures$rowId))
+        
+        # ffbase::load.ffdf(task$covarFileName)
+        # open(covariates, readOnly = TRUE)
+        # covariates <- covariates[ffbase::`%in%`(covariates$rowId, exposures$rowId), ]
       }
       prediction <- .predict(betas, exposures, covariates, modelType)
       saveRDS(prediction, predictionFile)
@@ -1055,20 +1073,35 @@ injectSurvival <- function(exposures, effectSize, precision, addIntentToTreat) {
                              daysAtRisk = exposures$daysAtRisk,
                              value = exp(intercept))
   } else {
-    prediction <- ffbase::merge.ffdf(covariates, ff::as.ffdf(betas[, c("covariateId", "beta")]))
-    if (is.null(prediction)) {
-      prediction <- data.frame(rowId = exposures$rowId,
-                               daysAtRisk = exposures$daysAtRisk,
-                               value = exp(intercept))
-    } else {
-      prediction$value <- prediction$covariateValue * prediction$beta
-      prediction <- FeatureExtraction::bySumFf(prediction$value, prediction$rowId)
-      colnames(prediction) <- c("rowId", "value")
-      prediction <- merge(exposures[, c("rowId",
-                                        "daysAtRisk")], prediction, by = "rowId", all.x = TRUE)
-      prediction$value[is.na(prediction$value)] <- 0
-      prediction$value <- exp(prediction$value + intercept)
-    }
+    prediction <- covariates %>%
+      inner_join(select(betas, .data$beta, .data$covariateId), by = "covariateId", copy = TRUE) %>%
+      mutate(value = .data$beta * .data$covariateValue) %>%
+      group_by(.data$rowId) %>%
+      summarise(value = sum(.data$value, na.rm = TRUE)) %>%
+      select(.data$rowId, .data$value) %>%
+      ungroup() %>%
+      collect()
+    
+    prediction <- prediction %>%
+      right_join(select(exposures, .data$rowId, .data$daysAtRisk), by = "rowId") %>%
+      mutate(value = coalesce(.data$value, 0) + intercept) %>%
+      mutate(value = exp(.data$value))
+    
+    # 
+    # prediction <- ffbase::merge.ffdf(covariates, ff::as.ffdf(betas[, c("covariateId", "beta")]))
+    # if (is.null(prediction)) {
+    #   prediction <- data.frame(rowId = exposures$rowId,
+    #                            daysAtRisk = exposures$daysAtRisk,
+    #                            value = exp(intercept))
+    # } else {
+    #   prediction$value <- prediction$covariateValue * prediction$beta
+    #   prediction <- FeatureExtraction::bySumFf(prediction$value, prediction$rowId)
+    #   colnames(prediction) <- c("rowId", "value")
+    #   prediction <- merge(exposures[, c("rowId",
+    #                                     "daysAtRisk")], prediction, by = "rowId", all.x = TRUE)
+    #   prediction$value[is.na(prediction$value)] <- 0
+    #   prediction$value <- exp(prediction$value + intercept)
+    # }
   }
   if (modelType == "poisson") {
     prediction$value <- prediction$value * (prediction$daysAtRisk + 1)

@@ -4,13 +4,19 @@
 \alias{synthesizeReferenceSetPositiveControls}
 \title{Synthesize positive controls for reference set}
 \usage{
-synthesizeReferenceSetPositiveControls(connectionDetails,
-  cdmDatabaseSchema, oracleTempSchema = NULL,
-  outcomeDatabaseSchema = cdmDatabaseSchema, outcomeTable = "cohort",
+synthesizeReferenceSetPositiveControls(
+  connectionDetails,
+  cdmDatabaseSchema,
+  oracleTempSchema = NULL,
+  outcomeDatabaseSchema = cdmDatabaseSchema,
+  outcomeTable = "cohort",
   exposureDatabaseSchema = cdmDatabaseSchema,
-  exposureTable = "drug_era", referenceSet = "ohdsiMethodsBenchmark",
-  maxCores = 1, workFolder, summaryFileName = file.path(workFolder,
-  "allControls.csv"))
+  exposureTable = "drug_era",
+  referenceSet = "ohdsiMethodsBenchmark",
+  maxCores = 1,
+  workFolder,
+  summaryFileName = file.path(workFolder, "allControls.csv")
+)
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{ConnectionDetails} created using the

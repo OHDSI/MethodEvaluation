@@ -1,3 +1,13 @@
+MethodEvaluation 2.0.0
+======================
+
+Changes:
+
+1. Dropping orphan concept and source concept functions, as these are now implemented much better in the CohortDiagnostics packages.
+
+2. Replacing ff with Andromeda for storage of large data objects.
+
+
 MethodEvaluation 1.1.1
 ======================
 

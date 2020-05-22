@@ -4,8 +4,14 @@
 \alias{computeMetrics}
 \title{Compute method performance metrics}
 \usage{
-computeMetrics(logRr, seLogRr = NULL, ci95Lb = NULL, ci95Ub = NULL,
-  p = NULL, trueLogRr)
+computeMetrics(
+  logRr,
+  seLogRr = NULL,
+  ci95Lb = NULL,
+  ci95Ub = NULL,
+  p = NULL,
+  trueLogRr
+)
 }
 \arguments{
 \item{logRr}{A numeric vector of effect estimates on the log scale.}

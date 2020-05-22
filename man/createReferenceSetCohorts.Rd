@@ -4,10 +4,16 @@
 \alias{createReferenceSetCohorts}
 \title{Create cohorts used in a reference set.}
 \usage{
-createReferenceSetCohorts(connectionDetails, oracleTempSchema = NULL,
-  cdmDatabaseSchema, outcomeDatabaseSchema = cdmDatabaseSchema,
-  outcomeTable = "outcomes", nestingDatabaseSchema = cdmDatabaseSchema,
-  nestingTable = "nesting", referenceSet = "ohdsiMethodsBenchmark")
+createReferenceSetCohorts(
+  connectionDetails,
+  oracleTempSchema = NULL,
+  cdmDatabaseSchema,
+  outcomeDatabaseSchema = cdmDatabaseSchema,
+  outcomeTable = "outcomes",
+  nestingDatabaseSchema = cdmDatabaseSchema,
+  nestingTable = "nesting",
+  referenceSet = "ohdsiMethodsBenchmark"
+)
 }
 \arguments{
 \item{connectionDetails}{An R object of type \code{ConnectionDetails} created using the

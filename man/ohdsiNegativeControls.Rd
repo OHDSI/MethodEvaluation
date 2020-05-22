@@ -14,12 +14,14 @@ The exposure, outcome, and nesting cohorts can be created using the
 \code{\link{createReferenceSetCohorts}} function.
 These negative controls can form the basis to generate positive controls using the
 \code{\link{injectSignals}} function.}
-\format{A data frame with 200 rows and 9 variables: \describe{ \item{targetId}{Cohort ID identifying the
+\format{
+A data frame with 200 rows and 9 variables: \describe{ \item{targetId}{Cohort ID identifying the
 target exposure} \item{targetName}{Name of the target cohort} \item{comparatorId}{Cohort ID
 identifying the comparator exposure} \item{comparatorName}{Name of the comparator cohort}
 \item{nestingId}{Cohort ID identifying the nesting cohort} \item{nestingName}{Name of the nesting
 cohort} \item{outcomeId}{Cohort ID identifying the outcome} \item{outcomeName}{Name of the outcome}
-\item{type}{THe type of control: exposure or outcome}}}
+\item{type}{THe type of control: exposure or outcome}}
+}
 \usage{
 data(ohdsiNegativeControls)
 }

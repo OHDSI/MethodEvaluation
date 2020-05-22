@@ -9,14 +9,16 @@ controls) and 50 drug-outcome pairs where we believe the drug does not cause the
 controls). The controls involve 10 health outcomes of interest. Note that originally, there was an
 additional positive control (Nimesulide and acute liver injury), but Nimesulide is not in RxNorm,
 and is not available in many countries.}
-\format{A data frame with 399 rows and 10 variables: \describe{ \item{exposureId}{Concept ID identifying
+\format{
+A data frame with 399 rows and 10 variables: \describe{ \item{exposureId}{Concept ID identifying
 the exposure} \item{exposureName}{Name of the exposure} \item{outcomeId}{Concept ID identifying the
 outcome} \item{outcomeName}{Name of the outcome} \item{groundTruth}{0 = negative control, 1 =
 positive control} \item{indicationId}{Concept Id identifying the (primary) indication of the drug.
 To be used when one wants to nest the analysis within the indication} \item{indicationName}{Name of
 the indication} \item{comparatorId}{Concept ID identifying a comparator drug that can be used as a
 counterfactual} \item{comparatorName}{Name of the comparator drug} \item{comparatorType}{How the
-comparator was selected} }}
+comparator was selected} }
+}
 \usage{
 data(euadrReferenceSet)
 }

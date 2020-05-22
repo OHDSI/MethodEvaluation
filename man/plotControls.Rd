@@ -4,8 +4,16 @@
 \alias{plotControls}
 \title{Plot negative and positive control estimates.}
 \usage{
-plotControls(logRr, seLogRr = NULL, ci95Lb = NULL, ci95Ub = NULL,
-  trueLogRr, estimateType = "relative risk", fileName = NULL, title)
+plotControls(
+  logRr,
+  seLogRr = NULL,
+  ci95Lb = NULL,
+  ci95Ub = NULL,
+  trueLogRr,
+  estimateType = "relative risk",
+  fileName = NULL,
+  title
+)
 }
 \arguments{
 \item{logRr}{A numeric vector of effect estimates on the log scale.}
