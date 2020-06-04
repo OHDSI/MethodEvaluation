@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Generate perfomance metrics for the OHDSI Methods Benchmark — computeOhdsiBenchmarkMetrics • MethodEvaluation</title>
+<title>MethodEvaluation: Package for Evaluation of Estimation Methods — MethodEvaluation-package • MethodEvaluation</title>
 
 
 <!-- jquery -->
@@ -39,8 +39,15 @@
 
 
 
-<meta property="og:title" content="Generate perfomance metrics for the OHDSI Methods Benchmark — computeOhdsiBenchmarkMetrics" />
-<meta property="og:description" content="Generate perfomance metrics for the OHDSI Methods Benchmark" />
+<meta property="og:title" content="MethodEvaluation: Package for Evaluation of Estimation Methods — MethodEvaluation-package" />
+<meta property="og:description" content="Resources for the evaluation of the
+	performance of methods that aim to estimate the magnitude (relative risk) of
+	the effect of a drug on an outcome. These resources include reference sets for
+	evaluating methods on real data, as well as functions for inserting simulated
+	effects in real data based on negative control drug-outcome pairs. Further
+	included are functions for the computation of the minimum detectable relative
+	risks and functions for computing performance statistics such as predictive
+	accuracy, error and bias." />
 
 
 
@@ -126,64 +133,32 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Generate perfomance metrics for the OHDSI Methods Benchmark</h1>
-    <small class="dont-index">Source: <a href='https://github.com/OHDSI/MethodEvaluation/blob/master/R/Metrics.R'><code>R/Metrics.R</code></a></small>
-    <div class="hidden name"><code>computeOhdsiBenchmarkMetrics.Rd</code></div>
+    <h1>MethodEvaluation: Package for Evaluation of Estimation Methods</h1>
+    <small class="dont-index">Source: <a href='https://github.com/OHDSI/MethodEvaluation/blob/master/R/MethodEvaluation.R'><code>R/MethodEvaluation.R</code></a></small>
+    <div class="hidden name"><code>MethodEvaluation-package.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p>Generate perfomance metrics for the OHDSI Methods Benchmark</p>
+    <p>Resources for the evaluation of the
+	performance of methods that aim to estimate the magnitude (relative risk) of
+	the effect of a drug on an outcome. These resources include reference sets for
+	evaluating methods on real data, as well as functions for inserting simulated
+	effects in real data based on negative control drug-outcome pairs. Further
+	included are functions for the computation of the minimum detectable relative
+	risks and functions for computing performance statistics such as predictive
+	accuracy, error and bias.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>computeOhdsiBenchmarkMetrics</span>(
-  <span class='no'>exportFolder</span>,
-  <span class='kw'>mdrr</span> <span class='kw'>=</span> <span class='fl'>1.25</span>,
-  <span class='kw'>stratum</span> <span class='kw'>=</span> <span class='st'>"All"</span>,
-  <span class='kw'>trueEffectSize</span> <span class='kw'>=</span> <span class='st'>"Overall"</span>,
-  <span class='kw'>calibrated</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>,
-  <span class='kw'>comparative</span> <span class='kw'>=</span> <span class='fl'>FALSE</span>
-)</pre>
 
-    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
-    <table class="ref-arguments">
-    <colgroup><col class="name" /><col class="desc" /></colgroup>
-    <tr>
-      <th>exportFolder</th>
-      <td><p>The folder containing the CSV files created using the
-<code><a href='packageOhdsiBenchmarkResults.html'>packageOhdsiBenchmarkResults</a></code> function. This folder can contain
-results from various methods, analyses, and databases.</p></td>
-    </tr>
-    <tr>
-      <th>mdrr</th>
-      <td><p>The minimum detectable relative risk (MDRR). Only controls with this MDRR
-will be used to compute the performance metrics. Set to "All" to include all
-controls.</p></td>
-    </tr>
-    <tr>
-      <th>stratum</th>
-      <td><p>The stratum for which to compute the metrics, e.g. 'Acute Pancreatitis'. Set
-to 'All' to use all controls.</p></td>
-    </tr>
-    <tr>
-      <th>trueEffectSize</th>
-      <td><p>Should the analysis be limited to a specific true effect size? Set to
-"Overall" to include all.</p></td>
-    </tr>
-    <tr>
-      <th>calibrated</th>
-      <td><p>Should confidence intervals and p-values be empirically calibrated before
-computing the metrics?</p></td>
-    </tr>
-    <tr>
-      <th>comparative</th>
-      <td><p>Should the methods be evaluated on the task of comprative effect estimation?
-If FALSE, they will be evaluated on the task of effect estimation.</p></td>
-    </tr>
-    </table>
 
-    <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
+    <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <p>A data frame with the various metrics per method - analysisId - database combination.</p>
+    <div class='dont-index'><p>Useful links:</p><ul>
+<li><p><a href='https://github.com/OHDSI/MethodEvaluation'>https://github.com/OHDSI/MethodEvaluation</a></p></li>
+<li><p>Report bugs at <a href='https://github.com/OHDSI/MethodEvaluation/issues'>https://github.com/OHDSI/MethodEvaluation/issues</a></p></li>
+</ul>
+
+</div>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

@@ -11,21 +11,29 @@ the outcome ( positive controls) and 234 drug-outcome pairs where we believe the
 cause the outcome (negative controls). The controls involve 4 health outcomes of interest: acute
 liver injury, acute kidney injury, acute myocardial infarction, and GI bleeding. — omopReferenceSet • MethodEvaluation</title>
 
-<!-- jquery -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
-<!-- Bootstrap -->
-<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script>
+<!-- jquery -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+<!-- Bootstrap -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous" />
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script>
+
+<!-- bootstrap-toc -->
+<link rel="stylesheet" href="../bootstrap-toc.css">
+<script src="../bootstrap-toc.js"></script>
 
 <!-- Font Awesome icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous" />
 
 <!-- clipboard.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script>
 
-<!-- sticky kit -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sticky-kit/1.1.3/sticky-kit.min.js" integrity="sha256-c4Rlo1ZozqTPE2RLuvbusY3+SU1pQaJC0TjuhygMipw=" crossorigin="anonymous"></script>
+<!-- headroom.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script>
 
 <!-- pkgdown -->
 <link href="../pkgdown.css" rel="stylesheet">
@@ -33,16 +41,16 @@ liver injury, acute kidney injury, acute myocardial infarction, and GI bleeding.
 
 
 
+
 <meta property="og:title" content="The OMOP reference set A reference set of 165 drug-outcome pairs where we believe the drug causes
 the outcome ( positive controls) and 234 drug-outcome pairs where we believe the drug does not
 cause the outcome (negative controls). The controls involve 4 health outcomes of interest: acute
 liver injury, acute kidney injury, acute myocardial infarction, and GI bleeding. — omopReferenceSet" />
-
 <meta property="og:description" content="The OMOP reference set A reference set of 165 drug-outcome pairs where we believe the drug causes
 the outcome ( positive controls) and 234 drug-outcome pairs where we believe the drug does not
 cause the outcome (negative controls). The controls involve 4 health outcomes of interest: acute
 liver injury, acute kidney injury, acute myocardial infarction, and GI bleeding." />
-<meta name="twitter:card" content="summary" />
+
 
 
 
@@ -56,9 +64,10 @@ liver injury, acute kidney injury, acute myocardial infarction, and GI bleeding.
 <![endif]-->
 
 
+
   </head>
 
-  <body>
+  <body data-spy="scroll" data-target="#toc">
     <div class="container template-reference-topic">
       <header>
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
@@ -72,7 +81,7 @@ liver injury, acute kidney injury, acute myocardial infarction, and GI bleeding.
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">MethodEvaluation</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -80,12 +89,15 @@ liver injury, acute kidney injury, acute myocardial infarction, and GI bleeding.
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fa fa-home fa-lg"></span>
+    <span class="fas fa fas fa-home fa-lg"></span>
      
   </a>
 </li>
 <li>
   <a href="../reference/index.html">Reference</a>
+</li>
+<li>
+  <a href="../news/index.html">Changelog</a>
 </li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
@@ -99,15 +111,14 @@ liver injury, acute kidney injury, acute myocardial infarction, and GI bleeding.
     </li>
   </ul>
 </li>
-<li>
-  <a href="../news/index.html">Changelog</a>
-</li>
       </ul>
-      
       <ul class="nav navbar-nav navbar-right">
         <li>
-  <a href="https://github.com/OHDSI/MethodEvaluation">
-    <span class="fa fa-github fa-lg"></span>
+  <a href="https://ohdsi.github.io/Hades"><img src='https://ohdsi.github.io/Hades/images/hadesMini.png' width=80 height=17 style='vertical-align: top;'></a>
+</li>
+<li>
+  <a href="https://github.com/OHDSI/MethodEvaluation/">
+    <span class="fab fa fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -118,6 +129,7 @@ liver injury, acute kidney injury, acute myocardial infarction, and GI bleeding.
 </div><!--/.navbar -->
 
       
+
       </header>
 
 <div class="row">
@@ -132,19 +144,18 @@ liver injury, acute kidney injury, acute myocardial infarction, and GI bleeding.
     </div>
 
     <div class="ref-description">
-    
     <p>The OMOP reference set A reference set of 165 drug-outcome pairs where we believe the drug causes
 the outcome ( positive controls) and 234 drug-outcome pairs where we believe the drug does not
 cause the outcome (negative controls). The controls involve 4 health outcomes of interest: acute
 liver injury, acute kidney injury, acute myocardial infarction, and GI bleeding.</p>
-    
     </div>
 
-    <pre class="usage"><span class='fu'><a href='https://www.rdocumentation.org/packages/utils/topics/data'>data</a></span>(<span class='no'>omopReferenceSet</span>)</pre>
-        
+    <pre class="usage"><span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span>(<span class='no'>omopReferenceSet</span>)</pre>
+
+
     <h2 class="hasAnchor" id="format"><a class="anchor" href="#format"></a>Format</h2>
 
-    <p>A data frame with 399 rows and 10 variables:</p><dl class='dl-horizontal'>
+    <p>A data frame with 399 rows and 10 variables:</p><dl'>
 <dt>exposureId</dt><dd><p>Concept ID identifying
 the exposure</p></dd> <dt>exposureName</dt><dd><p>Name of the exposure</p></dd> <dt>outcomeId</dt><dd><p>Concept ID identifying the
 outcome</p></dd> <dt>outcomeName</dt><dd><p>Name of the outcome</p></dd> <dt>groundTruth</dt><dd><p>0 = negative control, 1 =
@@ -152,26 +163,22 @@ positive control</p></dd> <dt>indicationId</dt><dd><p>Concept Id identifying the
 To be used when one wants to nest the analysis within the indication</p></dd> <dt>indicationName</dt><dd><p>Name of
 the indication</p></dd> <dt>comparatorId</dt><dd><p>Concept ID identifying a comparator drug that can be used as a
 counterfactual</p></dd> <dt>comparatorName</dt><dd><p>Name of the comparator drug</p></dd> <dt>comparatorType</dt><dd><p>How the
-comparator was selected</p></dd> </dl>
-    
+comparator was selected</p></dd> 
+</dl>
+
     <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
 
     <p>Ryan PB, Schuemie MJ, Welebob E, Duke J, Valentine S, Hartzema AG. Defining a reference set to
 support methodological research in drug safety. Drug Safety 36 Suppl 1:S33-47, 2013</p>
-    
 
   </div>
-  <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
-    <h2>Contents</h2>
-    <ul class="nav nav-pills nav-stacked">
-      
-      <li><a href="#format">Format</a></li>
-
-      <li><a href="#references">References</a></li>
-          </ul>
-
+  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
+    <nav id="toc" data-toggle="toc" class="sticky-top">
+      <h2 data-toc-skip>Contents</h2>
+    </nav>
   </div>
 </div>
+
 
       <footer>
       <div class="copyright">
@@ -179,13 +186,16 @@ support methodological research in drug safety. Drug Safety 36 Suppl 1:S33-47, 2
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
 </div>
+
       </footer>
    </div>
 
   
 
+
   </body>
 </html>
+
 

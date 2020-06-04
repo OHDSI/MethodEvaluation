@@ -7,13 +7,13 @@
 \title{MethodEvaluation: Package for Evaluation of Estimation Methods}
 \description{
 Resources for the evaluation of the
-    performance of methods that aim to estimate the magnitude (relative risk) of
-    the effect of a drug on an outcome. These resources include reference sets for
-    evaluating methods on real data, as well as functions for inserting simulated
-    effects in real data based on negative control drug-outcome pairs. Further
-    included are functions for the computation of the minimum detectable relative
-    risks and functions for computing performance statistics such as predictive
-    accuracy, error and bias.
+	performance of methods that aim to estimate the magnitude (relative risk) of
+	the effect of a drug on an outcome. These resources include reference sets for
+	evaluating methods on real data, as well as functions for inserting simulated
+	effects in real data based on negative control drug-outcome pairs. Further
+	included are functions for the computation of the minimum detectable relative
+	risks and functions for computing performance statistics such as predictive
+	accuracy, error and bias.
 }
 \seealso{
 Useful links:

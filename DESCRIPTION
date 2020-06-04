@@ -2,44 +2,45 @@ Package: MethodEvaluation
 Type: Package
 Title: Package for Evaluation of Estimation Methods
 Version: 2.0.0
-Date: 2020-05-21
+Date: 2020-06-03
 Authors@R: c(
   person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre"))
   )
 Maintainer: Martijn Schuemie <schuemie@ohdsi.org>
 Description: Resources for the evaluation of the
-    performance of methods that aim to estimate the magnitude (relative risk) of
-    the effect of a drug on an outcome. These resources include reference sets for
-    evaluating methods on real data, as well as functions for inserting simulated
-    effects in real data based on negative control drug-outcome pairs. Further
-    included are functions for the computation of the minimum detectable relative
-    risks and functions for computing performance statistics such as predictive
-    accuracy, error and bias.
+	performance of methods that aim to estimate the magnitude (relative risk) of
+	the effect of a drug on an outcome. These resources include reference sets for
+	evaluating methods on real data, as well as functions for inserting simulated
+	effects in real data based on negative control drug-outcome pairs. Further
+	included are functions for the computation of the minimum detectable relative
+	risks and functions for computing performance statistics such as predictive
+	accuracy, error and bias.
 License: Apache License 2.0
 VignetteBuilder: knitr
 URL: https://github.com/OHDSI/MethodEvaluation
 BugReports: https://github.com/OHDSI/MethodEvaluation/issues
 Depends:
-    R (>= 3.2.0),
-    DatabaseConnector (>= 2.0.0),
-    FeatureExtraction (>= 2.0.0),
-    Cyclops (>= 1.2.2)
+  R (>= 3.2.0),
+  DatabaseConnector (>= 3.0.0),
+  FeatureExtraction (>= 3.0.0),
+  Cyclops (>= 1.2.2)
 Imports:
-    Andromeda,
-    dplyr,
-    rlang,
-    SqlRender (>= 1.6.5),
-    pROC,
-    ggplot2,
-    ParallelLogger,
-    methods,
-    EmpiricalCalibration,
-    rmarkdown,
-    RJSONIO
+  dplyr,
+  rlang,
+  SqlRender (>= 1.6.5),
+  pROC,
+  ggplot2,
+  ParallelLogger (>= 2.0.0),
+  methods,
+  EmpiricalCalibration
 Suggests:
-    testthat,
-    DT,
-    shiny,
-    knitr
+  testthat,
+  DT,
+  shiny,
+  knitr
+Remotes:
+  ohdsi/DatabaseConnector@develop,
+  ohdsi/FeatureExtraction@develop,
+  ohdsi/ParallelLogger@develop
 RoxygenNote: 7.1.0
 Encoding: UTF-8

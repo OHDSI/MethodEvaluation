@@ -29,7 +29,7 @@ rmarkdown::render("vignettes/OhdsiMethodsBenchmark.Rmd",
                   rmarkdown::pdf_document(latex_engine = "pdflatex",
                                           toc = TRUE,
                                           number_sections = TRUE))
-unlink("nst/doc/OhdsiMethodsBenchmark.tex")
+unlink("inst/doc/OhdsiMethodsBenchmark.tex")
 
 pkgdown::build_site()
 OhdsiRTools::fixHadesLogo()

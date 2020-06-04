@@ -60,11 +60,11 @@ plotRocsInjectedSignals <- function(logRr, trueLogRr, showAucs, fileName = NULL)
     }
   }
   allData$trueRr <- as.factor(allData$trueRr)
-  plot <- ggplot2::ggplot(allData, ggplot2::aes(x = fpRate,
-                                                y = sens,
-                                                group = trueRr,
-                                                color = trueRr,
-                                                fill = trueRr)) +
+  plot <- ggplot2::ggplot(allData, ggplot2::aes(x = .data$fpRate,
+                                                y = .data$sens,
+                                                group = .data$trueRr,
+                                                color = .data$trueRr,
+                                                fill = .data$trueRr)) +
     ggplot2::geom_abline(intercept = 0, slope = 1) +
     ggplot2::geom_line(alpha = 0.5, size = 1) +
     ggplot2::scale_x_continuous("1 - specificity") +
@@ -225,13 +225,13 @@ plotControls <- function(logRr, seLogRr = NULL, ci95Lb = NULL, ci95Ub = NULL, tr
   alpha <- 1 - min(0.95 * (nrow(data)/nrow(dd)/50000)^0.1, 0.95)
   plot <- ggplot2::ggplot(data, ggplot2::aes(x = logRr, y = seLogRr)) +
     ggplot2::geom_vline(xintercept = log(breaks), colour = "#CCCCCC", lty = 1, size = 0.5) +
-    ggplot2::geom_abline(ggplot2::aes(intercept = (-log(tes))/qnorm(0.025), slope = 1/qnorm(0.025)),
+    ggplot2::geom_abline(ggplot2::aes(intercept = (-log(.data$tes))/qnorm(0.025), slope = 1/qnorm(0.025)),
                 colour = rgb(0.8, 0, 0),
                 linetype = "dashed",
                 size = 1,
                 alpha = 0.5,
                 data = dd) +
-    ggplot2::geom_abline(ggplot2::aes(intercept = (-log(tes))/qnorm(0.975), slope = 1/qnorm(0.975)),
+    ggplot2::geom_abline(ggplot2::aes(intercept = (-log(.data$tes))/qnorm(0.975), slope = 1/qnorm(0.975)),
                 colour = rgb(0.8, 0, 0),
                 linetype = "dashed",
                 size = 1,
@@ -243,14 +243,14 @@ plotControls <- function(logRr, seLogRr = NULL, ci95Lb = NULL, ci95Ub = NULL, tr
                y = 0.96,
                alpha = 1,
                hjust = "left",
-               ggplot2::aes(label = nLabel),
+               ggplot2::aes(label = .data$nLabel),
                size = 5,
                data = dd) +
     ggplot2::geom_label(x = log(0.26),
                y = 0.8,
                alpha = 1,
                hjust = "left",
-               ggplot2::aes(label = meanLabel),
+               ggplot2::aes(label = .data$meanLabel),
                size = 5,
                data = dd) +
     ggplot2::scale_x_continuous(paste("Estimated", estimateType),

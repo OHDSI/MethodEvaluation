@@ -6,18 +6,19 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Running the OHDSI Methods Benchmark • MethodEvaluation</title>
-<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script><!-- Bootstrap --><link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin="anonymous">
-<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script><!-- sticky kit --><script src="https://cdnjs.cloudflare.com/ajax/libs/sticky-kit/1.1.3/sticky-kit.min.js" integrity="sha256-c4Rlo1ZozqTPE2RLuvbusY3+SU1pQaJC0TjuhygMipw=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
+<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script><!-- Bootstrap --><link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.4.0/cosmo/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
+<script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
+<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
 <script src="../pkgdown.js"></script><meta property="og:title" content="Running the OHDSI Methods Benchmark">
-<meta property="og:description" content="">
-<meta name="twitter:card" content="summary">
+<meta property="og:description" content="MethodEvaluation">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
 <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
 <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
 <![endif]-->
 </head>
-<body>
+<body data-spy="scroll" data-target="#toc">
     <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -30,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">MethodEvaluation</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">1.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
       </span>
     </div>
 
@@ -38,12 +39,15 @@
       <ul class="nav navbar-nav">
 <li>
   <a href="../index.html">
-    <span class="fa fa-home fa-lg"></span>
+    <span class="fas fa fas fa-home fa-lg"></span>
      
   </a>
 </li>
 <li>
   <a href="../reference/index.html">Reference</a>
+</li>
+<li>
+  <a href="../news/index.html">Changelog</a>
 </li>
 <li class="dropdown">
   <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
@@ -57,14 +61,14 @@
     </li>
   </ul>
 </li>
-<li>
-  <a href="../news/index.html">Changelog</a>
-</li>
       </ul>
 <ul class="nav navbar-nav navbar-right">
 <li>
-  <a href="https://github.com/OHDSI/MethodEvaluation">
-    <span class="fa fa-github fa-lg"></span>
+  <a href="https://ohdsi.github.io/Hades"><img src='https://ohdsi.github.io/Hades/images/hadesMini.png' width=80 height=17 style='vertical-align: top;'></a>
+</li>
+<li>
+  <a href="https://github.com/OHDSI/MethodEvaluation/">
+    <span class="fab fa fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -77,13 +81,14 @@
 <!--/.navbar -->
 
       
+
       </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
-      <h1>Running the OHDSI Methods Benchmark</h1>
+      <h1 data-toc-skip>Running the OHDSI Methods Benchmark</h1>
                         <h4 class="author">Martijn J. Schuemie</h4>
             
-            <h4 class="date">2019-08-27</h4>
+            <h4 class="date">2020-06-04</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/OHDSI/MethodEvaluation/blob/master/vignettes/OhdsiMethodsBenchmark.Rmd"><code>vignettes/OhdsiMethodsBenchmark.Rmd</code></a></small>
       <div class="hidden name"><code>OhdsiMethodsBenchmark.Rmd</code></div>
@@ -149,49 +154,49 @@
 <li>An <strong>output folder</strong> where all intermediary and final results can be written. This should not be a network drive, since that would severely slow down the analyses.</li>
 </ul>
 <p>Below is example code showing we specify how to connect to the database server, and the various required locations. <code>MethodEvaluation</code> uses the <code>DatabaseConnector</code> package, which provides the <code>createConnectionDetails</code> function. Type <code>?createConnectionDetails</code> for the specific settings required for the various database management systems (DBMS).</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1"></a><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/library">library</a></span>(MethodEvaluation)</span>
-<span id="cb1-2"><a href="#cb1-2"></a>connectionDetails &lt;-<span class="st"> </span><span class="kw">createConnectionDetails</span>(<span class="dt">dbms =</span> <span class="st">"postgresql"</span>, </span>
-<span id="cb1-3"><a href="#cb1-3"></a>                                             <span class="dt">server =</span> <span class="st">"localhost/ohdsi"</span>, </span>
-<span id="cb1-4"><a href="#cb1-4"></a>                                             <span class="dt">user =</span> <span class="st">"joe"</span>, </span>
-<span id="cb1-5"><a href="#cb1-5"></a>                                             <span class="dt">password =</span> <span class="st">"supersecret"</span>)</span>
-<span id="cb1-6"><a href="#cb1-6"></a></span>
-<span id="cb1-7"><a href="#cb1-7"></a>cdmDatabaseSchema &lt;-<span class="st"> "my_cdm_data"</span></span>
-<span id="cb1-8"><a href="#cb1-8"></a>oracleTempSchema &lt;-<span class="st"> </span><span class="ot">NULL</span></span>
-<span id="cb1-9"><a href="#cb1-9"></a>outcomeDatabaseSchema &lt;-<span class="st"> "scratch"</span></span>
-<span id="cb1-10"><a href="#cb1-10"></a>outcomeTable &lt;-<span class="st"> "ohdsi_outcomes"</span></span>
-<span id="cb1-11"><a href="#cb1-11"></a>nestingCohortDatabaseSchema &lt;-<span class="st"> "scratch"</span></span>
-<span id="cb1-12"><a href="#cb1-12"></a>nestingCohortTable &lt;-<span class="st"> "ohdsi_nesting_cohorts"</span></span>
-<span id="cb1-13"><a href="#cb1-13"></a>outputFolder &lt;-<span class="st"> "/home/benchmarkOutput"</span></span>
-<span id="cb1-14"><a href="#cb1-14"></a>cdmVersion &lt;-<span class="st"> "5"</span></span></code></pre></div>
+<div class="sourceCode" id="cb1"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">MethodEvaluation</span>)
+<span class="no">connectionDetails</span> <span class="kw">&lt;-</span> <span class="fu">createConnectionDetails</span>(<span class="kw">dbms</span> <span class="kw">=</span> <span class="st">"postgresql"</span>,
+                                             <span class="kw">server</span> <span class="kw">=</span> <span class="st">"localhost/ohdsi"</span>,
+                                             <span class="kw">user</span> <span class="kw">=</span> <span class="st">"joe"</span>,
+                                             <span class="kw">password</span> <span class="kw">=</span> <span class="st">"supersecret"</span>)
+
+<span class="no">cdmDatabaseSchema</span> <span class="kw">&lt;-</span> <span class="st">"my_cdm_data"</span>
+<span class="no">oracleTempSchema</span> <span class="kw">&lt;-</span> <span class="kw">NULL</span>
+<span class="no">outcomeDatabaseSchema</span> <span class="kw">&lt;-</span> <span class="st">"scratch"</span>
+<span class="no">outcomeTable</span> <span class="kw">&lt;-</span> <span class="st">"ohdsi_outcomes"</span>
+<span class="no">nestingCohortDatabaseSchema</span> <span class="kw">&lt;-</span> <span class="st">"scratch"</span>
+<span class="no">nestingCohortTable</span> <span class="kw">&lt;-</span> <span class="st">"ohdsi_nesting_cohorts"</span>
+<span class="no">outputFolder</span> <span class="kw">&lt;-</span> <span class="st">"/home/benchmarkOutput"</span>
+<span class="no">cdmVersion</span> <span class="kw">&lt;-</span> <span class="st">"5"</span></pre></body></html></div>
 <p>Note that for Microsoft SQL Server, database schemas need to specify both the database and the schema, so for example <code>cdmDatabaseSchema &lt;- "my_cdm_data.dbo"</code>.</p>
 </div>
 <div id="creating-all-necessary-cohorts" class="section level2">
 <h2 class="hasAnchor">
 <a href="#creating-all-necessary-cohorts" class="anchor"></a>Creating all necessary cohorts</h2>
 <p>In order to run our population-level effect estimation method, we will need to identify the exposures and outcomes of interest. To identify exposures we will simlpy use the predefined exposure eras in the <code>drug_era</code> table in the CDM. However, for the outcomes custom cohorts need to be generated. In addition, some methods such as the nested case-control design require nesting cohorts to be defined. The negative control outcome and nesting cohorts can be generated using the following command:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1"></a><span class="kw"><a href="../reference/createReferenceSetCohorts.html">createReferenceSetCohorts</a></span>(<span class="dt">connectionDetails =</span> connectionDetails,</span>
-<span id="cb2-2"><a href="#cb2-2"></a>                          <span class="dt">oracleTempSchema =</span> oracleTempSchema,</span>
-<span id="cb2-3"><a href="#cb2-3"></a>                          <span class="dt">cdmDatabaseSchema =</span> cdmDatabaseSchema,</span>
-<span id="cb2-4"><a href="#cb2-4"></a>                          <span class="dt">outcomeDatabaseSchema =</span> outcomeDatabaseSchema,</span>
-<span id="cb2-5"><a href="#cb2-5"></a>                          <span class="dt">outcomeTable =</span> outcomeTable,</span>
-<span id="cb2-6"><a href="#cb2-6"></a>                          <span class="dt">nestingDatabaseSchema =</span> nestingCohortDatabaseSchema,</span>
-<span id="cb2-7"><a href="#cb2-7"></a>                          <span class="dt">nestingTable =</span> nestingCohortTable,</span>
-<span id="cb2-8"><a href="#cb2-8"></a>                          <span class="dt">referenceSet =</span> <span class="st">"ohdsiMethodsBenchmark"</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb2"><html><body><pre class="r"><span class="fu"><a href="../reference/createReferenceSetCohorts.html">createReferenceSetCohorts</a></span>(<span class="kw">connectionDetails</span> <span class="kw">=</span> <span class="no">connectionDetails</span>,
+                          <span class="kw">oracleTempSchema</span> <span class="kw">=</span> <span class="no">oracleTempSchema</span>,
+                          <span class="kw">cdmDatabaseSchema</span> <span class="kw">=</span> <span class="no">cdmDatabaseSchema</span>,
+                          <span class="kw">outcomeDatabaseSchema</span> <span class="kw">=</span> <span class="no">outcomeDatabaseSchema</span>,
+                          <span class="kw">outcomeTable</span> <span class="kw">=</span> <span class="no">outcomeTable</span>,
+                          <span class="kw">nestingDatabaseSchema</span> <span class="kw">=</span> <span class="no">nestingCohortDatabaseSchema</span>,
+                          <span class="kw">nestingTable</span> <span class="kw">=</span> <span class="no">nestingCohortTable</span>,
+                          <span class="kw">referenceSet</span> <span class="kw">=</span> <span class="st">"ohdsiMethodsBenchmark"</span>)</pre></body></html></div>
 <p>This will automatically create the outcome and nesting cohort tables, and populate them.</p>
 <p>The nest step is to create the positive controls. These are generated by taking the negative controls, and adding synthetic outcomes during exposed time to achieve predefined relative risks greater than one. The synthetic outcomes are sampled based on models that are fitted for each negative control outcome, using predictors extracted from the data. These positive control outcomes are added to the outcome table.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1"></a><span class="kw"><a href="../reference/synthesizeReferenceSetPositiveControls.html">synthesizeReferenceSetPositiveControls</a></span>(<span class="dt">connectionDetails =</span> connectionDetails,</span>
-<span id="cb3-2"><a href="#cb3-2"></a>                                       <span class="dt">oracleTempSchema =</span> oracleTempSchema,</span>
-<span id="cb3-3"><a href="#cb3-3"></a>                                       <span class="dt">cdmDatabaseSchema =</span> cdmDatabaseSchema,</span>
-<span id="cb3-4"><a href="#cb3-4"></a>                                       <span class="dt">outcomeDatabaseSchema =</span> outcomeDatabaseSchema,</span>
-<span id="cb3-5"><a href="#cb3-5"></a>                                       <span class="dt">outcomeTable =</span> outcomeTable,</span>
-<span id="cb3-6"><a href="#cb3-6"></a>                                       <span class="dt">maxCores =</span> <span class="dv">10</span>,</span>
-<span id="cb3-7"><a href="#cb3-7"></a>                                       <span class="dt">workFolder =</span> outputFolder,</span>
-<span id="cb3-8"><a href="#cb3-8"></a>                                       <span class="dt">summaryFileName =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/file.path">file.path</a></span>(outputFolder, </span>
-<span id="cb3-9"><a href="#cb3-9"></a>                                                                   <span class="st">"allControls.csv"</span>),</span>
-<span id="cb3-10"><a href="#cb3-10"></a>                                       <span class="dt">referenceSet =</span> <span class="st">"ohdsiMethodsBenchmark"</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb3"><html><body><pre class="r"><span class="fu"><a href="../reference/synthesizeReferenceSetPositiveControls.html">synthesizeReferenceSetPositiveControls</a></span>(<span class="kw">connectionDetails</span> <span class="kw">=</span> <span class="no">connectionDetails</span>,
+                                       <span class="kw">oracleTempSchema</span> <span class="kw">=</span> <span class="no">oracleTempSchema</span>,
+                                       <span class="kw">cdmDatabaseSchema</span> <span class="kw">=</span> <span class="no">cdmDatabaseSchema</span>,
+                                       <span class="kw">outcomeDatabaseSchema</span> <span class="kw">=</span> <span class="no">outcomeDatabaseSchema</span>,
+                                       <span class="kw">outcomeTable</span> <span class="kw">=</span> <span class="no">outcomeTable</span>,
+                                       <span class="kw">maxCores</span> <span class="kw">=</span> <span class="fl">10</span>,
+                                       <span class="kw">workFolder</span> <span class="kw">=</span> <span class="no">outputFolder</span>,
+                                       <span class="kw">summaryFileName</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span>(<span class="no">outputFolder</span>,
+                                                                   <span class="st">"allControls.csv"</span>),
+                                       <span class="kw">referenceSet</span> <span class="kw">=</span> <span class="st">"ohdsiMethodsBenchmark"</span>)</pre></body></html></div>
 <p>Fitting the outcome models can take a while. It is recommend to set the <code>maxCores</code> argument to the number of CPU cores available in the machine to speed up the process. Note that at the end, a file will be created called <em>allControls.csv</em> in the output folder containing the information on the controls:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1"></a>allControls &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/read.table">read.csv</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/file.path">file.path</a></span>(outputFolder, <span class="st">"allControls.csv"</span>))</span>
-<span id="cb4-2"><a href="#cb4-2"></a><span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/head">head</a></span>(allControls)</span></code></pre></div>
+<div class="sourceCode" id="cb4"><html><body><pre class="r"><span class="no">allControls</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span>(<span class="no">outputFolder</span>, <span class="st">"allControls.csv"</span>))
+<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(<span class="no">allControls</span>)</pre></body></html></div>
 <pre><code>#&gt;  outcomeId comparatorId targetId targetName comparatorName nestingId                  nestingName        outcomeName             type targetEffectSize trueEffectSize trueEffectSizeFirstExposure oldOutcomeId mdrrTarget
 #&gt; 1         1      1105775  1110942 omalizumab  Aminophylline  37203741 Bronchospasm and obstruction Acute pancreatitis Exposure control                1              1                           1            1   1.421960
 #&gt; 2         1      1110942  1140088 Dyphylline     omalizumab  37203741 Bronchospasm and obstruction Acute pancreatitis Exposure control                1              1                           1            1   1.420173
@@ -211,50 +216,50 @@
 <h2 class="hasAnchor">
 <a href="#running-the-method-to-evaluate" class="anchor"></a>Running the method to evaluate</h2>
 <p>Now that we have the controls in place, we can run the method we would like to evaluate. Here we will run the <code>SelfControlledCohort</code> package which implements the Self-Controlled Cohort (SCC) design. We first will first define some SCC analysis settings to evaluate. Here we define two analysis settings, one using the length of exposure as the time-at-risk, and one using the first 30 days after exposure start as the time-at-risk:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1"></a><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/library">library</a></span>(SelfControlledCohort)</span>
-<span id="cb6-2"><a href="#cb6-2"></a>runSccArgs1 &lt;-<span class="st"> </span><span class="kw">createRunSelfControlledCohortArgs</span>(<span class="dt">addLengthOfExposureExposed =</span> <span class="ot">TRUE</span>,</span>
-<span id="cb6-3"><a href="#cb6-3"></a>                                                 <span class="dt">riskWindowStartExposed =</span> <span class="dv">0</span>,</span>
-<span id="cb6-4"><a href="#cb6-4"></a>                                                 <span class="dt">riskWindowEndExposed =</span> <span class="dv">0</span>,</span>
-<span id="cb6-5"><a href="#cb6-5"></a>                                                 <span class="dt">riskWindowEndUnexposed =</span> <span class="dv">-1</span>,</span>
-<span id="cb6-6"><a href="#cb6-6"></a>                                                 <span class="dt">addLengthOfExposureUnexposed =</span> <span class="ot">TRUE</span>,</span>
-<span id="cb6-7"><a href="#cb6-7"></a>                                                 <span class="dt">riskWindowStartUnexposed =</span> <span class="dv">-1</span>,</span>
-<span id="cb6-8"><a href="#cb6-8"></a>                                                 <span class="dt">washoutPeriod =</span> <span class="dv">365</span>)</span>
-<span id="cb6-9"><a href="#cb6-9"></a></span>
-<span id="cb6-10"><a href="#cb6-10"></a>sccAnalysis1 &lt;-<span class="st"> </span><span class="kw">createSccAnalysis</span>(<span class="dt">analysisId =</span> <span class="dv">1</span>,</span>
-<span id="cb6-11"><a href="#cb6-11"></a>                                  <span class="dt">description =</span> <span class="st">"Length of exposure"</span>,</span>
-<span id="cb6-12"><a href="#cb6-12"></a>                                  <span class="dt">runSelfControlledCohortArgs =</span> runSccArgs1)</span>
-<span id="cb6-13"><a href="#cb6-13"></a></span>
-<span id="cb6-14"><a href="#cb6-14"></a>runSccArgs2 &lt;-<span class="st"> </span><span class="kw">createRunSelfControlledCohortArgs</span>(<span class="dt">addLengthOfExposureExposed =</span> <span class="ot">FALSE</span>,</span>
-<span id="cb6-15"><a href="#cb6-15"></a>                                                 <span class="dt">riskWindowStartExposed =</span> <span class="dv">0</span>,</span>
-<span id="cb6-16"><a href="#cb6-16"></a>                                                 <span class="dt">riskWindowEndExposed =</span> <span class="dv">30</span>,</span>
-<span id="cb6-17"><a href="#cb6-17"></a>                                                 <span class="dt">riskWindowEndUnexposed =</span> <span class="dv">-1</span>,</span>
-<span id="cb6-18"><a href="#cb6-18"></a>                                                 <span class="dt">addLengthOfExposureUnexposed =</span> <span class="ot">FALSE</span>,</span>
-<span id="cb6-19"><a href="#cb6-19"></a>                                                 <span class="dt">riskWindowStartUnexposed =</span> <span class="dv">-30</span>,</span>
-<span id="cb6-20"><a href="#cb6-20"></a>                                                 <span class="dt">washoutPeriod =</span> <span class="dv">365</span>)</span>
-<span id="cb6-21"><a href="#cb6-21"></a></span>
-<span id="cb6-22"><a href="#cb6-22"></a>sccAnalysis2 &lt;-<span class="st"> </span><span class="kw">createSccAnalysis</span>(<span class="dt">analysisId =</span> <span class="dv">2</span>,</span>
-<span id="cb6-23"><a href="#cb6-23"></a>                                  <span class="dt">description =</span> <span class="st">"30 days of each exposure"</span>,</span>
-<span id="cb6-24"><a href="#cb6-24"></a>                                  <span class="dt">runSelfControlledCohortArgs =</span> runSccArgs2)</span>
-<span id="cb6-25"><a href="#cb6-25"></a>sccAnalysisList &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/list">list</a></span>(sccAnalysis1, sccAnalysis2)</span></code></pre></div>
+<div class="sourceCode" id="cb6"><html><body><pre class="r"><span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="no">SelfControlledCohort</span>)
+<span class="no">runSccArgs1</span> <span class="kw">&lt;-</span> <span class="fu">createRunSelfControlledCohortArgs</span>(<span class="kw">addLengthOfExposureExposed</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
+                                                 <span class="kw">riskWindowStartExposed</span> <span class="kw">=</span> <span class="fl">0</span>,
+                                                 <span class="kw">riskWindowEndExposed</span> <span class="kw">=</span> <span class="fl">0</span>,
+                                                 <span class="kw">riskWindowEndUnexposed</span> <span class="kw">=</span> -<span class="fl">1</span>,
+                                                 <span class="kw">addLengthOfExposureUnexposed</span> <span class="kw">=</span> <span class="fl">TRUE</span>,
+                                                 <span class="kw">riskWindowStartUnexposed</span> <span class="kw">=</span> -<span class="fl">1</span>,
+                                                 <span class="kw">washoutPeriod</span> <span class="kw">=</span> <span class="fl">365</span>)
+
+<span class="no">sccAnalysis1</span> <span class="kw">&lt;-</span> <span class="fu">createSccAnalysis</span>(<span class="kw">analysisId</span> <span class="kw">=</span> <span class="fl">1</span>,
+                                  <span class="kw">description</span> <span class="kw">=</span> <span class="st">"Length of exposure"</span>,
+                                  <span class="kw">runSelfControlledCohortArgs</span> <span class="kw">=</span> <span class="no">runSccArgs1</span>)
+
+<span class="no">runSccArgs2</span> <span class="kw">&lt;-</span> <span class="fu">createRunSelfControlledCohortArgs</span>(<span class="kw">addLengthOfExposureExposed</span> <span class="kw">=</span> <span class="fl">FALSE</span>,
+                                                 <span class="kw">riskWindowStartExposed</span> <span class="kw">=</span> <span class="fl">0</span>,
+                                                 <span class="kw">riskWindowEndExposed</span> <span class="kw">=</span> <span class="fl">30</span>,
+                                                 <span class="kw">riskWindowEndUnexposed</span> <span class="kw">=</span> -<span class="fl">1</span>,
+                                                 <span class="kw">addLengthOfExposureUnexposed</span> <span class="kw">=</span> <span class="fl">FALSE</span>,
+                                                 <span class="kw">riskWindowStartUnexposed</span> <span class="kw">=</span> -<span class="fl">30</span>,
+                                                 <span class="kw">washoutPeriod</span> <span class="kw">=</span> <span class="fl">365</span>)
+
+<span class="no">sccAnalysis2</span> <span class="kw">&lt;-</span> <span class="fu">createSccAnalysis</span>(<span class="kw">analysisId</span> <span class="kw">=</span> <span class="fl">2</span>,
+                                  <span class="kw">description</span> <span class="kw">=</span> <span class="st">"30 days of each exposure"</span>,
+                                  <span class="kw">runSelfControlledCohortArgs</span> <span class="kw">=</span> <span class="no">runSccArgs2</span>)
+<span class="no">sccAnalysisList</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span>(<span class="no">sccAnalysis1</span>, <span class="no">sccAnalysis2</span>)</pre></body></html></div>
 <p>Next, we specify all exposure-outcome pairs we want to apply the SCC design to. Note that we only use the <code>targetId</code> and <code>outcomeId</code> fields of the controls, because the SCC design can only be used for effect estimation, and does not support nesting:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1"></a>allControls &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/read.table">read.csv</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/file.path">file.path</a></span>(outputFolder , <span class="st">"allControls.csv"</span>))</span>
-<span id="cb7-2"><a href="#cb7-2"></a>eos &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/list">list</a></span>()</span>
-<span id="cb7-3"><a href="#cb7-3"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/nrow">nrow</a></span>(allControls)) {</span>
-<span id="cb7-4"><a href="#cb7-4"></a>  eos[[<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/length">length</a></span>(eos) <span class="op">+</span><span class="st"> </span><span class="dv">1</span>]] &lt;-<span class="st"> </span><span class="kw">createExposureOutcome</span>(<span class="dt">exposureId =</span> allControls<span class="op">$</span>targetId[i],</span>
-<span id="cb7-5"><a href="#cb7-5"></a>                                                  <span class="dt">outcomeId =</span> allControls<span class="op">$</span>outcomeId[i])</span>
-<span id="cb7-6"><a href="#cb7-6"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb7"><html><body><pre class="r"><span class="no">allControls</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span>(<span class="no">outputFolder</span> , <span class="st">"allControls.csv"</span>))
+<span class="no">eos</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html">list</a></span>()
+<span class="kw">for</span> (<span class="no">i</span> <span class="kw">in</span> <span class="fl">1</span>:<span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span>(<span class="no">allControls</span>)) {
+  <span class="no">eos</span><span class="kw">[[</span><span class="fu"><a href="https://rdrr.io/r/base/length.html">length</a></span>(<span class="no">eos</span>) + <span class="fl">1</span>]] <span class="kw">&lt;-</span> <span class="fu">createExposureOutcome</span>(<span class="kw">exposureId</span> <span class="kw">=</span> <span class="no">allControls</span>$<span class="no">targetId</span>[<span class="no">i</span>],
+                                                  <span class="kw">outcomeId</span> <span class="kw">=</span> <span class="no">allControls</span>$<span class="no">outcomeId</span>[<span class="no">i</span>])
+}</pre></body></html></div>
 <p>Then, we run the SCC method. The following command will execute the SCC with the specified analysis settings against the exposure-outcome pairs:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1"></a>sccResult &lt;-<span class="st"> </span><span class="kw">runSccAnalyses</span>(<span class="dt">connectionDetails =</span> connectionDetails,</span>
-<span id="cb8-2"><a href="#cb8-2"></a>                            <span class="dt">cdmDatabaseSchema =</span> cdmDatabaseSchema,</span>
-<span id="cb8-3"><a href="#cb8-3"></a>                            <span class="dt">oracleTempSchema =</span> oracleTempSchema,</span>
-<span id="cb8-4"><a href="#cb8-4"></a>                            <span class="dt">exposureTable =</span> <span class="st">"drug_era"</span>,</span>
-<span id="cb8-5"><a href="#cb8-5"></a>                            <span class="dt">outcomeDatabaseSchema =</span> outcomeDatabaseSchema,</span>
-<span id="cb8-6"><a href="#cb8-6"></a>                            <span class="dt">outcomeTable =</span> outcomeTable,</span>
-<span id="cb8-7"><a href="#cb8-7"></a>                            <span class="dt">sccAnalysisList =</span> sccAnalysisList,</span>
-<span id="cb8-8"><a href="#cb8-8"></a>                            <span class="dt">exposureOutcomeList =</span> eos,</span>
-<span id="cb8-9"><a href="#cb8-9"></a>                            <span class="dt">outputFolder =</span> outputFolder)</span>
-<span id="cb8-10"><a href="#cb8-10"></a>sccSummary &lt;-<span class="st"> </span><span class="kw">summarizeAnalyses</span>(sccResult, outputFolder)</span>
-<span id="cb8-11"><a href="#cb8-11"></a><span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/write.table">write.csv</a></span>(sccSummary, <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/file.path">file.path</a></span>(outputFolder, <span class="st">"sccSummary.csv"</span>), <span class="dt">row.names =</span> <span class="ot">FALSE</span>)</span></code></pre></div>
+<div class="sourceCode" id="cb8"><html><body><pre class="r"><span class="no">sccResult</span> <span class="kw">&lt;-</span> <span class="fu">runSccAnalyses</span>(<span class="kw">connectionDetails</span> <span class="kw">=</span> <span class="no">connectionDetails</span>,
+                            <span class="kw">cdmDatabaseSchema</span> <span class="kw">=</span> <span class="no">cdmDatabaseSchema</span>,
+                            <span class="kw">oracleTempSchema</span> <span class="kw">=</span> <span class="no">oracleTempSchema</span>,
+                            <span class="kw">exposureTable</span> <span class="kw">=</span> <span class="st">"drug_era"</span>,
+                            <span class="kw">outcomeDatabaseSchema</span> <span class="kw">=</span> <span class="no">outcomeDatabaseSchema</span>,
+                            <span class="kw">outcomeTable</span> <span class="kw">=</span> <span class="no">outcomeTable</span>,
+                            <span class="kw">sccAnalysisList</span> <span class="kw">=</span> <span class="no">sccAnalysisList</span>,
+                            <span class="kw">exposureOutcomeList</span> <span class="kw">=</span> <span class="no">eos</span>,
+                            <span class="kw">outputFolder</span> <span class="kw">=</span> <span class="no">outputFolder</span>)
+<span class="no">sccSummary</span> <span class="kw">&lt;-</span> <span class="fu">summarizeAnalyses</span>(<span class="no">sccResult</span>, <span class="no">outputFolder</span>)
+<span class="fu"><a href="https://rdrr.io/r/utils/write.table.html">write.csv</a></span>(<span class="no">sccSummary</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span>(<span class="no">outputFolder</span>, <span class="st">"sccSummary.csv"</span>), <span class="kw">row.names</span> <span class="kw">=</span> <span class="fl">FALSE</span>)</pre></body></html></div>
 <p>This produces a file called <em>sccSummary.csv</em> which contains the effect size estimates for each analysisId-exposureId-outcomeId combination.</p>
 </div>
 <div id="packaging-the-evaluation-results" class="section level2">
@@ -262,15 +267,15 @@
 <a href="#packaging-the-evaluation-results" class="anchor"></a>Packaging the evaluation results</h2>
 <p>Now that we have the estimates, we need to feed them back into the <code>MethodEvaluation</code> package. To do that we need to create two data frames, one specifying the effect size estimates, the other providing details on the various analyses.</p>
 <p>First, we specify the estimates:</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1"></a>estimates &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/readRDS">readRDS</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/file.path">file.path</a></span>(outputFolder, <span class="st">"sccSummary.csv"</span>))</span>
-<span id="cb9-2"><a href="#cb9-2"></a>estimates &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/data.frame">data.frame</a></span>(<span class="dt">analysisId =</span> estimates<span class="op">$</span>analysisId,</span>
-<span id="cb9-3"><a href="#cb9-3"></a>                        <span class="dt">targetId =</span> estimates<span class="op">$</span>exposureId,</span>
-<span id="cb9-4"><a href="#cb9-4"></a>                        <span class="dt">outcomeId =</span> estimates<span class="op">$</span>outcomeId,</span>
-<span id="cb9-5"><a href="#cb9-5"></a>                        <span class="dt">logRr =</span> estimates<span class="op">$</span>logRr,</span>
-<span id="cb9-6"><a href="#cb9-6"></a>                        <span class="dt">seLogRr =</span> estimates<span class="op">$</span>seLogRr,</span>
-<span id="cb9-7"><a href="#cb9-7"></a>                        <span class="dt">ci95Lb =</span> estimates<span class="op">$</span>irrLb95,</span>
-<span id="cb9-8"><a href="#cb9-8"></a>                        <span class="dt">ci95Ub =</span> estimates<span class="op">$</span>irrUb95)</span>
-<span id="cb9-9"><a href="#cb9-9"></a><span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/head">head</a></span>(estimates)</span></code></pre></div>
+<div class="sourceCode" id="cb9"><html><body><pre class="r"><span class="no">estimates</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readRDS.html">readRDS</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span>(<span class="no">outputFolder</span>, <span class="st">"sccSummary.csv"</span>))
+<span class="no">estimates</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span>(<span class="kw">analysisId</span> <span class="kw">=</span> <span class="no">estimates</span>$<span class="no">analysisId</span>,
+                        <span class="kw">targetId</span> <span class="kw">=</span> <span class="no">estimates</span>$<span class="no">exposureId</span>,
+                        <span class="kw">outcomeId</span> <span class="kw">=</span> <span class="no">estimates</span>$<span class="no">outcomeId</span>,
+                        <span class="kw">logRr</span> <span class="kw">=</span> <span class="no">estimates</span>$<span class="no">logRr</span>,
+                        <span class="kw">seLogRr</span> <span class="kw">=</span> <span class="no">estimates</span>$<span class="no">seLogRr</span>,
+                        <span class="kw">ci95Lb</span> <span class="kw">=</span> <span class="no">estimates</span>$<span class="no">irrLb95</span>,
+                        <span class="kw">ci95Ub</span> <span class="kw">=</span> <span class="no">estimates</span>$<span class="no">irrUb95</span>)
+<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(<span class="no">estimates</span>)</pre></body></html></div>
 <pre><code>#&gt;   analysisId targetId outcomeId      logRr   seLogRr    ci95Lb    ci95Ub
 #&gt; 1          1  1110942         1 -1.5000000        NA        NA 13.177433
 #&gt; 2          1  1140088         1         NA        NA        NA        NA
@@ -279,29 +284,29 @@
 #&gt; 5          1  1350310         1 -0.2876821 0.7038381 0.1642789  2.592973
 #&gt; 6          1  1311276         1 -0.1823216 0.5451585 0.2651910  2.247182</code></pre>
 <p>Next, we create the analysis reference:</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1"></a><span class="co"># Create a reference of the analysis settings:</span></span>
-<span id="cb11-2"><a href="#cb11-2"></a>analysisRef &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/data.frame">data.frame</a></span>(<span class="dt">method =</span> <span class="st">"SelfControlledCohort"</span>,</span>
-<span id="cb11-3"><a href="#cb11-3"></a>                          <span class="dt">analysisId =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="dv">1</span>, <span class="dv">2</span>),</span>
-<span id="cb11-4"><a href="#cb11-4"></a>                          <span class="dt">description =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/c">c</a></span>(<span class="st">"Length of exposure"</span>, </span>
-<span id="cb11-5"><a href="#cb11-5"></a>                                          <span class="st">"30 days of each exposure"</span>),</span>
-<span id="cb11-6"><a href="#cb11-6"></a>                          <span class="dt">details =</span> <span class="st">""</span>,</span>
-<span id="cb11-7"><a href="#cb11-7"></a>                          <span class="dt">comparative =</span> <span class="ot">FALSE</span>,</span>
-<span id="cb11-8"><a href="#cb11-8"></a>                          <span class="dt">nesting =</span> <span class="ot">FALSE</span>,</span>
-<span id="cb11-9"><a href="#cb11-9"></a>                          <span class="dt">firstExposureOnly =</span> <span class="ot">FALSE</span>)</span>
-<span id="cb11-10"><a href="#cb11-10"></a><span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/head">head</a></span>(analysisRef)</span></code></pre></div>
-<pre><code>#&gt;                 method analysisId              description details
-#&gt; 1 SelfControlledCohort          1       Length of exposure        
-#&gt; 2 SelfControlledCohort          2 30 days of each exposure        
-#&gt;   comparative nesting firstExposureOnly
-#&gt; 1       FALSE   FALSE             FALSE
-#&gt; 2       FALSE   FALSE             FALSE</code></pre>
+<div class="sourceCode" id="cb11"><html><body><pre class="r"><span class="co"># Create a reference of the analysis settings:</span>
+<span class="no">analysisRef</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html">data.frame</a></span>(<span class="kw">method</span> <span class="kw">=</span> <span class="st">"SelfControlledCohort"</span>,
+                          <span class="kw">analysisId</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="fl">1</span>, <span class="fl">2</span>),
+                          <span class="kw">description</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span>(<span class="st">"Length of exposure"</span>,
+                                          <span class="st">"30 days of each exposure"</span>),
+                          <span class="kw">details</span> <span class="kw">=</span> <span class="st">""</span>,
+                          <span class="kw">comparative</span> <span class="kw">=</span> <span class="fl">FALSE</span>,
+                          <span class="kw">nesting</span> <span class="kw">=</span> <span class="fl">FALSE</span>,
+                          <span class="kw">firstExposureOnly</span> <span class="kw">=</span> <span class="fl">FALSE</span>)
+<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(<span class="no">analysisRef</span>)</pre></body></html></div>
+<pre><code>#&gt;                 method analysisId              description details comparative
+#&gt; 1 SelfControlledCohort          1       Length of exposure               FALSE
+#&gt; 2 SelfControlledCohort          2 30 days of each exposure               FALSE
+#&gt;   nesting firstExposureOnly
+#&gt; 1   FALSE             FALSE
+#&gt; 2   FALSE             FALSE</code></pre>
 <p>Finally, we supply these two data frames, together with the data frame with controls to the <code>packageOhdsiBenchmarkResults</code> function:</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1"></a>allControls &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/read.table">read.csv</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/file.path">file.path</a></span>(outputFolder , <span class="st">"allControls.csv"</span>))</span>
-<span id="cb13-2"><a href="#cb13-2"></a><span class="kw"><a href="../reference/packageOhdsiBenchmarkResults.html">packageOhdsiBenchmarkResults</a></span>(<span class="dt">estimates =</span> estimates,</span>
-<span id="cb13-3"><a href="#cb13-3"></a>                             <span class="dt">controlSummary =</span> allControls,</span>
-<span id="cb13-4"><a href="#cb13-4"></a>                             <span class="dt">analysisRef =</span> analysisRef,</span>
-<span id="cb13-5"><a href="#cb13-5"></a>                             <span class="dt">databaseName =</span> databaseName,</span>
-<span id="cb13-6"><a href="#cb13-6"></a>                             <span class="dt">exportFolder =</span> <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/file.path">file.path</a></span>(outputFolder, <span class="st">"export"</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb13"><html><body><pre class="r"><span class="no">allControls</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html">read.csv</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span>(<span class="no">outputFolder</span> , <span class="st">"allControls.csv"</span>))
+<span class="fu"><a href="../reference/packageOhdsiBenchmarkResults.html">packageOhdsiBenchmarkResults</a></span>(<span class="kw">estimates</span> <span class="kw">=</span> <span class="no">estimates</span>,
+                             <span class="kw">controlSummary</span> <span class="kw">=</span> <span class="no">allControls</span>,
+                             <span class="kw">analysisRef</span> <span class="kw">=</span> <span class="no">analysisRef</span>,
+                             <span class="kw">databaseName</span> <span class="kw">=</span> <span class="no">databaseName</span>,
+                             <span class="kw">exportFolder</span> <span class="kw">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span>(<span class="no">outputFolder</span>, <span class="st">"export"</span>))</pre></body></html></div>
 <p>This will generate two CSV files in the export folder. Results from different methods and databases can all be written to the same export folder.</p>
 </div>
 <div id="computing-metrics" class="section level2">
@@ -312,8 +317,8 @@
 <h3 class="hasAnchor">
 <a href="#using-the-shiny-app" class="anchor"></a>Using the Shiny app</h3>
 <p>Run the follow command to launch the Shiny app and view the metrics:</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1"></a>exportFolder &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/file.path">file.path</a></span>(outputFolder, <span class="st">"export"</span>)</span>
-<span id="cb14-2"><a href="#cb14-2"></a><span class="kw"><a href="../reference/launchMethodEvaluationApp.html">launchMethodEvaluationApp</a></span>(exportFolder)</span></code></pre></div>
+<div class="sourceCode" id="cb14"><html><body><pre class="r"><span class="no">exportFolder</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span>(<span class="no">outputFolder</span>, <span class="st">"export"</span>)
+<span class="fu"><a href="../reference/launchMethodEvaluationApp.html">launchMethodEvaluationApp</a></span>(<span class="no">exportFolder</span>)</pre></body></html></div>
 <p>This will launch a Shiny app as shown in Figure 1.</p>
 <div class="figure">
 <img src="shiny.png" alt=""><p class="caption">Method Benchmark Shiny app</p>
@@ -324,14 +329,14 @@
 <h3 class="hasAnchor">
 <a href="#generating-a-data-frame" class="anchor"></a>Generating a data frame</h3>
 <p>Alternatively, we can output the metrics to a data frame:</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1"></a>exportFolder &lt;-<span class="st"> </span><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/file.path">file.path</a></span>(outputFolder, <span class="st">"export"</span>)</span>
-<span id="cb15-2"><a href="#cb15-2"></a>metrics &lt;-<span class="st"> </span><span class="kw"><a href="../reference/computeOhdsiBenchmarkMetrics.html">computeOhdsiBenchmarkMetrics</a></span>(exportFolder, </span>
-<span id="cb15-3"><a href="#cb15-3"></a>                                        <span class="dt">mdrr =</span> <span class="fl">1.25</span>, </span>
-<span id="cb15-4"><a href="#cb15-4"></a>                                        <span class="dt">stratum =</span> <span class="st">"All"</span>, </span>
-<span id="cb15-5"><a href="#cb15-5"></a>                                        <span class="dt">trueEffectSize =</span> <span class="st">"Overall"</span>, </span>
-<span id="cb15-6"><a href="#cb15-6"></a>                                        <span class="dt">calibrated =</span> <span class="ot">FALSE</span>, </span>
-<span id="cb15-7"><a href="#cb15-7"></a>                                        <span class="dt">comparative =</span> <span class="ot">FALSE</span>)</span>
-<span id="cb15-8"><a href="#cb15-8"></a><span class="kw"><a href="https://www.rdocumentation.org/packages/utils/topics/head">head</a></span>(metrics)</span></code></pre></div>
+<div class="sourceCode" id="cb15"><html><body><pre class="r"><span class="no">exportFolder</span> <span class="kw">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html">file.path</a></span>(<span class="no">outputFolder</span>, <span class="st">"export"</span>)
+<span class="no">metrics</span> <span class="kw">&lt;-</span> <span class="fu"><a href="../reference/computeOhdsiBenchmarkMetrics.html">computeOhdsiBenchmarkMetrics</a></span>(<span class="no">exportFolder</span>,
+                                        <span class="kw">mdrr</span> <span class="kw">=</span> <span class="fl">1.25</span>,
+                                        <span class="kw">stratum</span> <span class="kw">=</span> <span class="st">"All"</span>,
+                                        <span class="kw">trueEffectSize</span> <span class="kw">=</span> <span class="st">"Overall"</span>,
+                                        <span class="kw">calibrated</span> <span class="kw">=</span> <span class="fl">FALSE</span>,
+                                        <span class="kw">comparative</span> <span class="kw">=</span> <span class="fl">FALSE</span>)
+<span class="fu"><a href="https://rdrr.io/r/utils/head.html">head</a></span>(<span class="no">metrics</span>)</pre></body></html></div>
 <pre><code>#&gt;    database               method analysisId                                           description  auc coverage   meanP  mse type1 type2 nonEstimable
 #&gt; 1     CCAE SelfControlledCohort          1                    Length of exposure 0.89     0.21 1048.97 0.30  0.66  0.08         0.01
 #&gt; 2     CCAE SelfControlledCohort          2                        30 days of each exposure 0.87     0.41  422.25 0.14  0.55  0.11         0.00</code></pre>
@@ -341,31 +346,14 @@
 </div>
   </div>
 
-  <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
-        <div id="tocnav">
-      <h2 class="hasAnchor">
-<a href="#tocnav" class="anchor"></a>Contents</h2>
-      <ul class="nav nav-pills nav-stacked">
-<li>
-<a href="#introduction">Introduction</a><ul class="nav nav-pills nav-stacked">
-<li><a href="#gold-standard">Gold standard</a></li>
-      <li><a href="#metrics">Metrics</a></li>
-      </ul>
-</li>
-      <li>
-<a href="#running-the-benchmark">Running the benchmark</a><ul class="nav nav-pills nav-stacked">
-<li><a href="#specifying-locations-on-the-server-and-local-file-system">Specifying locations on the server and local file system</a></li>
-      <li><a href="#creating-all-necessary-cohorts">Creating all necessary cohorts</a></li>
-      <li><a href="#running-the-method-to-evaluate">Running the method to evaluate</a></li>
-      <li><a href="#packaging-the-evaluation-results">Packaging the evaluation results</a></li>
-      <li><a href="#computing-metrics">Computing metrics</a></li>
-      </ul>
-</li>
-      </ul>
+  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
+
+        <nav id="toc" data-toggle="toc"><h2 data-toc-skip>Contents</h2>
+    </nav>
 </div>
-      </div>
 
 </div>
+
 
 
       <footer><div class="copyright">
@@ -373,12 +361,14 @@
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.3.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
 </div>
+
       </footer>
 </div>
 
   
+
 
   </body>
 </html>
