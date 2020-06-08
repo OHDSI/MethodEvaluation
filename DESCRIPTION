@@ -23,7 +23,7 @@ Depends:
   R (>= 3.2.0),
   DatabaseConnector (>= 3.0.0),
   FeatureExtraction (>= 3.0.0),
-  Cyclops (>= 1.2.2)
+  Cyclops (>= 3.0.0)
 Imports:
   dplyr,
   rlang,
@@ -39,8 +39,6 @@ Suggests:
   shiny,
   knitr
 Remotes:
-  ohdsi/DatabaseConnector@develop,
-  ohdsi/FeatureExtraction@develop,
-  ohdsi/ParallelLogger@develop
+  ohdsi/FeatureExtraction
 RoxygenNote: 7.1.0
 Encoding: UTF-8
