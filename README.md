@@ -52,6 +52,10 @@ Support
 * Developer questions/comments/feedback: <a href="http://forums.ohdsi.org/c/developers">OHDSI Forum</a>
 * We use the <a href="https://github.com/OHDSI/MethodEvaluation/issues">GitHub issue tracker</a> for all bugs/issues/enhancements
  
+Contributing
+============
+Read [here](https://ohdsi.github.io/Hades/contribute.html) how you can contribute to this package.
+
 License
 =======
 MethodEvaluation is licensed under Apache License 2.0
