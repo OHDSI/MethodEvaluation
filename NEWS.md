@@ -1,3 +1,19 @@
+MethodEvaluation 2.1.0
+======================
+
+Changes:
+
+1. Added 'ohdsiDevelopment' reference set, intended to be used when developing methods. This set is based on 76 negative controls from the LEGEND Hypertension study.
+
+2. Now generating cohort counts when generating reference set cohorts.
+
+Bugfixes:
+
+1. Fixed error during positive control synthesis for platforms using `oracleTempSchema`.
+
+2. Correctly handling 64-bit integer covariate IDs.
+
+
 MethodEvaluation 2.0.0
 ======================
 

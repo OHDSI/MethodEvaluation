@@ -19,7 +19,8 @@
 #' Compute method performance metrics
 #'
 #' @details
-#' Compute the AUC, coverage, mean precision, MSE, type 1 error, type 2 error, and the fraction non-estimable..
+#' Compute the AUC, coverage, mean precision, MSE, type 1 error, type 2 error, and the fraction non-
+#' estimable.
 #'
 #' @param logRr       A numeric vector of effect estimates on the log scale.
 #' @param seLogRr     The standard error of the log of the effect estimates. Hint: often the standard
@@ -117,6 +118,9 @@ checkHasColumns <- function(df, columnNames, argName) {
 #'                         required columns.
 #' @param databaseName     A character string to identify the database the method was executed on.
 #' @param exportFolder     The folder where the output CSV files will written.
+#' @param referenceSet     The name of the reference set for which to package the results. Currently 
+#'                         supported are "ohdsiMethodsBenchmark" and "ohdsiDevelopment".
+
 #'
 #' @details
 #' The \code{estimates} argument should have the following columns: "targetId", "outcomeId",
@@ -145,7 +149,8 @@ packageOhdsiBenchmarkResults <- function(estimates,
                                          controlSummary,
                                          analysisRef,
                                          databaseName,
-                                         exportFolder) {
+                                         exportFolder,
+                                         referenceSet = "ohdsiMethodsBenchmark") {
   checkHasColumns(estimates,
                   c("targetId", "outcomeId", "analysisId", "logRr", "seLogRr", "ci95Lb", "ci95Ub"),
                   "estimates")
@@ -167,13 +172,22 @@ packageOhdsiBenchmarkResults <- function(estimates,
   checkHasColumns(analysisRef,
                   c("analysisId", "method", "comparative", "nesting", "firstExposureOnly"),
                   "analysisRef")
+  if (!referenceSet %in% c("ohdsiMethodsBenchmark", "ohdsiDevelopment")) {
+    stop("Currently only supporting the ohdsiMethodsBenchmark and ohdsiDevelopment reference sets")
+  }
+  
   if (!file.exists(exportFolder)) {
     dir.create(exportFolder, recursive = TRUE)
   }
-
+  
   # Create full grid of controls (including those that did not make it in the database:
-  ohdsiNegativeControls <- readRDS(system.file("ohdsiNegativeControls.rds",
-                                               package = "MethodEvaluation"))
+  if (referenceSet == "ohdsiMethodsBenchmark") {
+    ohdsiNegativeControls <- readRDS(system.file("ohdsiNegativeControls.rds",
+                                                 package = "MethodEvaluation"))
+  } else {
+    ohdsiNegativeControls <- readRDS(system.file("ohdsiDevelopmentNegativeControls.rds",
+                                                 package = "MethodEvaluation"))
+  }
   ohdsiNegativeControls$oldOutcomeId <- ohdsiNegativeControls$outcomeId
   ohdsiNegativeControls$stratum <- ohdsiNegativeControls$outcomeName
   idx <- ohdsiNegativeControls$type == "Outcome control"
@@ -195,7 +209,7 @@ packageOhdsiBenchmarkResults <- function(estimates,
                                       ", RR=",
                                       fullGrid$targetEffectSize[idx])
   allControls <- merge(controlSummary, fullGrid, all.y = TRUE)
-
+  
   # Merge estimates into full grid:
   analysisIds <- unique(analysisRef$analysisId)
   fullGrid <- do.call("rbind", replicate(length(analysisIds), allControls, simplify = FALSE))
@@ -207,18 +221,18 @@ packageOhdsiBenchmarkResults <- function(estimates,
                                              "seLogRr",
                                              "ci95Lb",
                                              "ci95Ub")], all.x = TRUE)
-
+  
   # Add meta-data:
   estimates <- merge(estimates,
                      analysisRef[,
-                     c("analysisId", "method", "comparative", "nesting", "firstExposureOnly")])
+                                 c("analysisId", "method", "comparative", "nesting", "firstExposureOnly")])
   estimates$database <- databaseName
-
+  
   # Perform empirical calibration:
   combis <- unique(estimates[, c("method", "analysisId", "stratum")])
   calibrate <- function(i, combis, estimates) {
     subset <- estimates[estimates$method == combis$method[i] & estimates$analysisId == combis$analysisId[i] &
-      estimates$stratum == combis$stratum[i], ]
+                          estimates$stratum == combis$stratum[i], ]
     subset$rootOutcomeName <- gsub(", RR.*$", "", as.character(subset$outcomeName))
     subset$leaveOutUnit <- paste(subset$targetId, subset$rootOutcomeName)
     filterSubset <- subset[!is.na(subset$seLogRr) & !is.infinite(subset$seLogRr), ]
@@ -230,7 +244,7 @@ packageOhdsiBenchmarkResults <- function(estimates,
       subset$calP <- rep(NA, nrow(subset))
     } else {
       # Use leave-one out when calibrating to not overestimate
-
+      
       calibrateLeaveOneOut <- function(leaveOutUnit) {
         subsetMinusOne <- filterSubset[filterSubset$leaveOutUnit != leaveOutUnit, ]
         one <- subset[subset$leaveOutUnit == leaveOutUnit, ]
@@ -242,7 +256,7 @@ packageOhdsiBenchmarkResults <- function(estimates,
                                                                     seLogRr = one$seLogRr,
                                                                     model = model)
         null <- EmpiricalCalibration::fitNull(logRr = subsetMinusOne$logRr[subsetMinusOne$targetEffectSize ==
-          1], seLogRr = subsetMinusOne$seLogRr[subsetMinusOne$targetEffectSize == 1])
+                                                                             1], seLogRr = subsetMinusOne$seLogRr[subsetMinusOne$targetEffectSize == 1])
         caliP <- EmpiricalCalibration::calibrateP(null = null,
                                                   logRr = one$logRr,
                                                   seLogRr = one$seLogRr)
@@ -311,7 +325,7 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder,
                                          trueEffectSize = "Overall",
                                          calibrated = FALSE,
                                          comparative = FALSE) {
-
+  
   # Load and prepare estimates of all methods
   files <- list.files(exportFolder, "estimates.*csv", full.names = TRUE)
   estimates <- lapply(files, read.csv)
@@ -333,12 +347,12 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder,
   estimates$calCi95Lb[idx] <- 0
   estimates$calCi95Ub[idx] <- 999
   estimates$calP[is.na(estimates$calP)] <- 1
-
+  
   # Load and prepare analysis refs
   files <- list.files(exportFolder, "analysisRef.*csv", full.names = TRUE)
   analysisRef <- lapply(files, read.csv)
   analysisRef <- do.call("rbind", analysisRef)
-
+  
   # Apply selection criteria
   subset <- estimates
   if (mdrr != "All") {
@@ -357,7 +371,7 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder,
     subset$ci95Ub <- subset$calCi95Ub
     subset$p <- subset$calP
   }
-
+  
   # Compute metrics
   combis <- unique(subset[, c("database", "method", "analysisId")])
   if (trueEffectSize == "Overall") {
@@ -385,7 +399,7 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder,
     # trueRr <- input$trueRr
     computeMetrics <- function(i) {
       forEval <- subset[subset$method == combis$method[i] & subset$analysisId == combis$analysisId[i] &
-        subset$targetEffectSize == trueEffectSize, ]
+                          subset$targetEffectSize == trueEffectSize, ]
       mse <- round(mean((forEval$logRr - log(forEval$trueEffectSize))^2), 2)
       coverage <- round(mean(forEval$ci95Lb < forEval$trueEffectSize & forEval$ci95Ub > forEval$trueEffectSize),
                         2)
@@ -397,7 +411,7 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder,
         nonEstimable <- round(mean(forEval$seLogRr == 999), 2)
       } else {
         negAndPos <- subset[subset$method == combis$method[i] & subset$analysisId == combis$analysisId[i] &
-          (subset$targetEffectSize == trueEffectSize | subset$targetEffectSize == 1), ]
+                              (subset$targetEffectSize == trueEffectSize | subset$targetEffectSize == 1), ]
         roc <- pROC::roc(negAndPos$targetEffectSize > 1, negAndPos$logRr, algorithm = 3)
         auc <- round(pROC::auc(roc), 2)
         type1 <- NA

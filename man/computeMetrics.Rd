@@ -36,7 +36,8 @@ provided it will be inferred from the standard error.}
 Compute method performance metrics
 }
 \details{
-Compute the AUC, coverage, mean precision, MSE, type 1 error, type 2 error, and the fraction non-estimable..
+Compute the AUC, coverage, mean precision, MSE, type 1 error, type 2 error, and the fraction non-
+estimable.
 }
 \examples{
 library(EmpiricalCalibration)

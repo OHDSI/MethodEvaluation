@@ -208,17 +208,16 @@ synthesizePositiveControls <- function(connectionDetails,
   outcomesFile <- file.path(workFolder, "outcomes.rds")
   priorOutcomesFile <- file.path(workFolder, "priorOutcomes.rds")
   countsFile <- file.path(workFolder, "counts.rds")
-  result <- data.frame(exposureId = rep(exposureOutcomePairs$exposureId, each = length(effectSizes)),
-                       outcomeId = rep(exposureOutcomePairs$outcomeId, each = length(effectSizes)),
-                       targetEffectSize = rep(effectSizes, nrow(exposureOutcomePairs)),
-                       newOutcomeId = outputIdOffset + (0:(nrow(exposureOutcomePairs) * length(effectSizes) - 1)), 
-                       trueEffectSize = 0, 
-                       trueEffectSizeFirstExposure = 0, 
-                       trueEffectSizeItt = 0, 
-                       injectedOutcomes = 0, 
-                       modelFolder = "", 
-                       outcomesToInjectFile = "", 
-                       stringsAsFactors = FALSE)
+  result <- tibble(exposureId = rep(exposureOutcomePairs$exposureId, each = length(effectSizes)),
+                   outcomeId = rep(exposureOutcomePairs$outcomeId, each = length(effectSizes)),
+                   targetEffectSize = rep(effectSizes, nrow(exposureOutcomePairs)),
+                   newOutcomeId = outputIdOffset + (0:(nrow(exposureOutcomePairs) * length(effectSizes) - 1)), 
+                   trueEffectSize = 0, 
+                   trueEffectSizeFirstExposure = 0, 
+                   trueEffectSizeItt = 0, 
+                   injectedOutcomes = 0, 
+                   modelFolder = "", 
+                   outcomesToInjectFile = "")
   
   exposureIds <- unique(exposureOutcomePairs$exposureId)
   
@@ -247,6 +246,7 @@ synthesizePositiveControls <- function(connectionDetails,
   if (file.exists(exposuresFile)) {
     exposures <- readRDS(exposuresFile)
   } else {
+    ParallelLogger::logInfo("\nRetrieving exposure cohorts")
     exposureSql <- SqlRender::loadRenderTranslateSql("GetExposedCohorts.sql",
                                                      packageName = "MethodEvaluation",
                                                      dbms = connectionDetails$dbms,
@@ -324,69 +324,60 @@ synthesizePositiveControls <- function(connectionDetails,
     result <- readRDS(countsFile)
   } else {
     ParallelLogger::logInfo("Computing counts per exposure - outcome pair")
-    temp <- merge(exposures[, c("rowId", "exposureId", "eraNumber")],
-                  outcomeCounts[, c("rowId", "outcomeId", "y", "yItt")])
+    temp <- select(exposures, .data$rowId, .data$exposureId, .data$eraNumber) %>%
+      inner_join(select(outcomeCounts, .data$rowId, .data$outcomeId, .data$y, .data$yItt),
+                 by = "rowId")
     if (modelType == "survival") {
-      temp$y <- temp$y != 0
-      temp$yItt <- temp$yItt != 0
+      temp <- temp %>%
+        mutate(y = .data$y != 0,
+               yItt = .data$yItt != 0)
     }
-    observedOutcomes <- list()
-    observedOutcomesFirstExposure <- list()
-    observedOutcomesItt <- list()
-    observedOutcomesFirstExposureItt <- list()
-    exposureCounts <- list()
-    firstExposureCounts <- list()
-    for (outcomeId in unique(outcomeCounts$outcomeId)) {
-      oTemp <- temp[temp$outcomeId == outcomeId, ]
-      tempExposures <- exposures
+    generateCounts <- function(outcomeId) {
+      tempOutcomes <- temp %>%
+        filter(.data$outcomeId == !!outcomeId)
       if (removePeopleWithPriorOutcomes) {
-        removeRowIds <- priorOutcomes$rowId[priorOutcomes$outcomeId == outcomeId]
-        oTemp <- oTemp[!(oTemp$rowId %in% removeRowIds), ]
-        tempExposures <- tempExposures[!(tempExposures$rowId %in% removeRowIds), ]
+        removeRowIds <- priorOutcomes %>%
+          filter(.data$outcomeId == !!outcomeId) %>%
+          pull(.data$rowId)
+        tempOutcomes <- tempOutcomes %>%
+          filter(!.data$rowId %in% removeRowIds)
+        tempExposures <- exposures %>%
+          filter(!.data$rowId %in% removeRowIds)
+      } else {
+        tempExposures <- exposures
       }
-      tempAll <- aggregate(y ~ exposureId, oTemp, sum)
-      tempAll$outcomeId <- outcomeId
-      colnames(tempAll)[colnames(tempAll) == "y"] <- "observedOutcomes"
-      observedOutcomes[[length(observedOutcomes) + 1]] <- tempAll
-      
-      tempFirst <- aggregate(y ~ exposureId, oTemp[oTemp$eraNumber == 1, ], sum)
-      tempFirst$outcomeId <- outcomeId
-      colnames(tempFirst)[colnames(tempFirst) == "y"] <- "observedOutcomesFirstExposure"
-      observedOutcomesFirstExposure[[length(observedOutcomesFirstExposure) + 1]] <- tempFirst
-      
-      tempAll <- aggregate(yItt ~ exposureId, oTemp, sum)
-      tempAll$outcomeId <- outcomeId
-      colnames(tempAll)[colnames(tempAll) == "yItt"] <- "observedOutcomesItt"
-      observedOutcomesItt[[length(observedOutcomesItt) + 1]] <- tempAll
-      
-      tempFirst <- aggregate(yItt ~ exposureId, oTemp[oTemp$eraNumber == 1, ], sum)
-      tempFirst$outcomeId <- outcomeId
-      colnames(tempFirst)[colnames(tempFirst) == "yItt"] <- "observedOutcomesFirstExposureItt"
-      observedOutcomesFirstExposureItt[[length(observedOutcomesFirstExposureItt) + 1]] <- tempFirst
-      
-      tempAll <- aggregate(rowId ~ exposureId, tempExposures, length)
-      tempAll$outcomeId <- outcomeId
-      colnames(tempAll)[colnames(tempAll) == "rowId"] <- "exposures"
-      exposureCounts[[length(exposureCounts) + 1]] <- tempAll
-      
-      tempFirst <- aggregate(rowId ~ exposureId,
-                             tempExposures[tempExposures$eraNumber == 1,
-                                           ],
-                             length)
-      tempFirst$outcomeId <- outcomeId
-      colnames(tempFirst)[colnames(tempFirst) == "rowId"] <- "firstExposures"
-      firstExposureCounts[[length(firstExposureCounts) + 1]] <- tempFirst
+      exposureSummary <- tempExposures %>% 
+        group_by(.data$exposureId) %>%
+        summarize(exposures = n(),
+                  firstExposures = sum(.data$eraNumber == 1),
+                  .groups = "drop_last")
+      outcomeSummary <- tempOutcomes %>%
+        group_by(.data$exposureId) %>%
+        summarize(observedOutcomes = sum(.data$y),
+                  observedOutcomesFirstExposure = sum(.data$y & .data$eraNumber == 1),
+                  observedOutcomesItt = sum(.data$yItt),
+                  observedOutcomesFirstExposureItt = sum(.data$yItt & .data$eraNumber == 1),
+                  .groups = "drop_last")
+      resultRows <- exposureSummary %>%
+        left_join(outcomeSummary, by = "exposureId") %>%
+        mutate(outcomeId = !!outcomeId)
+      return(resultRows)
     }
-    result <- merge(result, do.call("rbind", observedOutcomes), all.x = TRUE)
-    result$observedOutcomes[is.na(result$observedOutcomes)] <- 0
-    result <- merge(result, do.call("rbind", observedOutcomesFirstExposure), all.x = TRUE)
-    result$observedOutcomesFirstExposure[is.na(result$observedOutcomesFirstExposure)] <- 0
-    result <- merge(result, do.call("rbind", observedOutcomesItt), all.x = TRUE)
-    result$observedOutcomesItt[is.na(result$observedOutcomesItt)] <- 0
-    result <- merge(result, do.call("rbind", observedOutcomesFirstExposureItt), all.x = TRUE)
-    result$observedOutcomesFirstExposureItt[is.na(result$observedOutcomesFirstExposureItt)] <- 0
-    result <- merge(result, do.call("rbind", exposureCounts), all.x = TRUE)
-    result <- merge(result, do.call("rbind", firstExposureCounts), all.x = TRUE)
+    resultRows <- lapply(unique(result$outcomeId), generateCounts)
+    resultRows <- bind_rows(resultRows)
+    result <- left_join(result, resultRows, by = c("exposureId", "outcomeId")) %>%
+      mutate(exposures = case_when(is.na(exposures) ~ as.integer(0), 
+                                  TRUE ~ as.integer(.data$exposures)),
+             firstExposures = case_when(is.na(firstExposures) ~ as.integer(0), 
+                                       TRUE ~ as.integer(.data$firstExposures)),
+             observedOutcomes = case_when(is.na(observedOutcomes) ~ as.integer(0), 
+                                          TRUE ~ as.integer(.data$observedOutcomes)),
+             observedOutcomesFirstExposure = case_when(is.na(observedOutcomesFirstExposure) ~ as.integer(0), 
+                                                       TRUE ~ as.integer(.data$observedOutcomesFirstExposure)),
+             observedOutcomesItt = case_when(is.na(observedOutcomesItt) ~ as.integer(0), 
+                                             TRUE ~ as.integer(.data$observedOutcomesItt)),
+             observedOutcomesFirstExposureItt = case_when(is.na(observedOutcomesFirstExposureItt) ~ as.integer(0), 
+                                                       TRUE ~ as.integer(.data$observedOutcomesFirstExposureItt)))
     saveRDS(result, countsFile)
   }
   
@@ -408,12 +399,12 @@ synthesizePositiveControls <- function(connectionDetails,
     covarFileName <- file.path(workFolder, sprintf("covarsForModel_g%s.zip", i))
     if (!file.exists(covarFileName)) {
       cohortIds <- uniqueGroups[[i]]
-      sql <- "SELECT COUNT(*) FROM (SELECT DISTINCT subject_id, cohort_start_date FROM #cohort_person WHERE cohort_definition_id IN (@cohort_ids)) tmp;"
-      sql <- SqlRender::render(sql, cohort_ids = cohortIds)
-      sql <- SqlRender::translate(sql,
-                                     targetDialect = connectionDetails$dbms,
-                                     oracleTempSchema = oracleTempSchema)
-      count <- DatabaseConnector::querySql(conn, sql)
+      sql <- "SELECT COUNT(*) AS entries FROM (SELECT DISTINCT subject_id, cohort_start_date FROM #cohort_person WHERE cohort_definition_id IN (@cohort_ids)) tmp;"
+      count <- DatabaseConnector::renderTranslateQuerySql(connection = conn, 
+                                                          sql = sql,
+                                                          oracleTempSchema = oracleTempSchema,
+                                                          cohort_ids = cohortIds,
+                                                          snakeCaseToCamelCase = TRUE)$entries
       if (count > maxSubjectsForModel) {
         ParallelLogger::logInfo("Sampling exposed cohorts for model(s)")
         renderedSql <- SqlRender::loadRenderTranslateSql("SampleExposedCohorts.sql",
@@ -425,21 +416,21 @@ synthesizePositiveControls <- function(connectionDetails,
         DatabaseConnector::executeSql(conn, renderedSql)
         
         sql <- "SELECT row_id FROM #sampled_person"
-        sql <- SqlRender::translate(sql = sql,
-                                       targetDialect = connectionDetails$dbms,
-                                       oracleTempSchema = oracleTempSchema)
-        sampledRowIds <- querySql(conn, sql)
-        colnames(sampledRowIds) <- SqlRender::snakeCaseToCamelCase(colnames(sampledRowIds))
+        sampledRowIds <- DatabaseConnector::renderTranslateQuerySql(connection = conn, 
+                                                                    sql = sql,
+                                                                    oracleTempSchema = oracleTempSchema,
+                                                                    snakeCaseToCamelCase = TRUE)
         sampledExposuresFile <- file.path(workFolder, sprintf("sampledRowIds_g%s.rds", i))
         saveRDS(sampledRowIds, sampledExposuresFile)
       } else {
         # Don't sample, just copy:
         sql <- "SELECT * INTO #sampled_person FROM #cohort_person WHERE cohort_definition_id IN (@cohort_ids);"
-        sql <- SqlRender::render(sql, cohort_ids = cohortIds)
-        sql <- SqlRender::translate(sql,
-                                       targetDialect = connectionDetails$dbms,
-                                       oracleTempSchema = oracleTempSchema)
-        DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
+        DatabaseConnector::renderTranslateExecuteSql(connection = conn, 
+                                                     sql = sql, 
+                                                     oracleTempSchema = oracleTempSchema,
+                                                     cohort_ids = cohortIds,
+                                                     progressBar = FALSE, 
+                                                     reportOverallTime = FALSE)
       }
       ParallelLogger::logInfo("Extracting covariates for fitting outcome model(s)")
       covariateData <- FeatureExtraction::getDbCovariateData(connection = conn,
@@ -455,15 +446,13 @@ synthesizePositiveControls <- function(connectionDetails,
                                                             normalize = TRUE,
                                                             removeRedundancy = TRUE)
       FeatureExtraction::saveCovariateData(covariateData, covarFileName)
-      # covariateRef <- covariateData$covariateRef
-      # covariates <- covariateData$covariates
-      # ffbase::save.ffdf(covariates, covariateRef, dir = covarFileName)
-      
+
       sql <- "TRUNCATE TABLE #sampled_person; DROP TABLE #sampled_person;"
-      sql <- SqlRender::translate(sql,
-                                     targetDialect = connectionDetails$dbms,
-                                     oracleTempSchema = oracleTempSchema)
-      DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
+      DatabaseConnector::renderTranslateExecuteSql(connection = conn, 
+                                                   oracleTempSchema = oracleTempSchema,
+                                                   sql = sql, 
+                                                   progressBar = FALSE, 
+                                                   reportOverallTime = FALSE)
     }
   }
   
@@ -532,7 +521,11 @@ synthesizePositiveControls <- function(connectionDetails,
       for (modelFolder in unique(result$modelFolder[result$outcomeId %in% outcomeIds])) {
         if (modelFolder != "" && file.exists(file.path(modelFolder, "betas.rds"))) {
           betas <- readRDS(file.path(modelFolder, "betas.rds"))
-          modelCovariateIds <- c(modelCovariateIds, betas$id)
+          if (is.null(modelCovariateIds)) {
+            modelCovariateIds <- betas$id
+          } else {
+            modelCovariateIds <- c(modelCovariateIds, betas$id)
+          }
         }
       }
       modelCovariateIds <- unique(modelCovariateIds)
@@ -547,8 +540,8 @@ synthesizePositiveControls <- function(connectionDetails,
         sql <- "SELECT * INTO #selected_person FROM #cohort_person WHERE cohort_definition_id IN (@cohort_ids);"
         sql <- SqlRender::render(sql, cohort_ids = uniqueGroups[[i]])
         sql <- SqlRender::translate(sql,
-                                       targetDialect = connectionDetails$dbms,
-                                       oracleTempSchema = oracleTempSchema)
+                                    targetDialect = connectionDetails$dbms,
+                                    oracleTempSchema = oracleTempSchema)
         DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
         covariateData <- FeatureExtraction::getDbCovariateData(connection = conn,
                                                                oracleTempSchema = oracleTempSchema,
@@ -563,14 +556,11 @@ synthesizePositiveControls <- function(connectionDetails,
                                                               normalize = TRUE,
                                                               removeRedundancy = FALSE)
         FeatureExtraction::saveCovariateData(covariateData, covarFileName)
-        # covariateRef <- covariateData$covariateRef
-        # covariates <- covariateData$covariates
-        # ffbase::save.ffdf(covariates, covariateRef, dir = covarFileName)
-        
+
         sql <- "TRUNCATE TABLE #selected_person; DROP TABLE #selected_person;"
         sql <- SqlRender::translate(sql,
-                                       targetDialect = connectionDetails$dbms,
-                                       oracleTempSchema = oracleTempSchema)
+                                    targetDialect = connectionDetails$dbms,
+                                    oracleTempSchema = oracleTempSchema)
         DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
       }
     }
@@ -630,7 +620,8 @@ synthesizePositiveControls <- function(connectionDetails,
   outcomesToInject <- lapply(fileNames, readRDS)
   outcomesToInject <- do.call("rbind", outcomesToInject)
   colnames(outcomesToInject) <- SqlRender::camelCaseToSnakeCase(colnames(outcomesToInject))
-  if (Sys.getenv("USE_MPP_BULK_LOAD") == "TRUE") {
+  if (Sys.getenv("USE_MPP_BULK_LOAD") == "TRUE" || 
+      Sys.getenv("DATABASE_CONNECTOR_BULK_UPLOAD") == "TRUE") {
     tableName <- paste0(outputDatabaseSchema,
                         ".temp_outcomes_",
                         paste(sample(letters, 5), collapse = ""))
@@ -719,13 +710,7 @@ fitModel <- function(task,
   covariateData <- FeatureExtraction::loadCovariateData(task$covarFileName)
   covariates <- covariateData$covariates %>%
     filter(.data$rowId %in% local(exposures$rowId))
-  
-  # covariates <- NULL
-  # covariateRef <- NULL
-  # ffbase::load.ffdf(task$covarFileName)  # loads covariates and covariatesRef
-  # open(covariates, readOnly = TRUE)
-  # open(covariateRef, readOnly = TRUE)
-  # covariates <- covariates[ffbase::"%in%"(covariates$rowId, exposures$rowId), ]
+
   if (removePeopleWithPriorOutcomes) {
     priorOutcomes <- readRDS(priorOutcomesFile)
     removeRowIds <- priorOutcomes$rowId[priorOutcomes$outcomeId == task$outcomeId]
@@ -733,7 +718,6 @@ fitModel <- function(task,
     exposures <- exposures[!(exposures$rowId %in% removeRowIds), ]
     covariates <- covariates %>%
       filter(!.data$rowId %in% removeRowIds)
-    # covariates <- covariates[!ffbase::"%in%"(covariates$rowId, removeRowIds), ]
   }
   outcomes <- merge(exposures, outcomes[, c("rowId",
                                             "y",
@@ -769,24 +753,22 @@ fitModel <- function(task,
     write.csv(fit, file.path(task$modelFolder, "Error.txt"))
   } else {
     betas <- coef(fit)
-    intercept <- data.frame(beta = betas[1],
-                            id = 0,
-                            covariateName = "(Intercept)",
-                            row.names = NULL)
+    intercept <- tibble(beta = betas[1],
+                        id = bit64::as.integer64(0),
+                        covariateName = "(Intercept)",
+                        row.names = NULL)
     betas <- betas[betas != 0]
     if (length(betas) > 1) {
       betas <- betas[2:length(betas)]
-      betas <- data.frame(beta = betas, covariateId = as.numeric(attr(betas, "names")))
+      betas <- tibble(beta = betas, covariateId = bit64::as.integer64(attr(betas, "names")))
       betas <- betas %>%
-        inner_join(collect(covariateData$covariateRef), by = "covariateId") %>%
+        inner_join(covariateData$covariateRef %>% 
+                     collect() %>%
+                     mutate(covariateId = bit64::as.integer64(.data$covariateId)), 
+                   by = "covariateId") %>%
         select(.data$beta, id = .data$covariateId, .data$covariateName) %>%
         arrange(desc(abs(.data$beta)))
-      
-      # betas <- merge(ff::as.ffdf(betas), covariateRef, by.x = "id", by.y = "covariateId")
-      # betas <- ff::as.ram(betas)
-      # betas <- betas[, c("beta", "id", "covariateName")]
-      # betas <- betas[order(-abs(betas$beta)), ]
-      betas <- rbind(intercept, betas)
+      betas <- bind_rows(intercept, betas)
     } else {
       betas <- intercept 
     }
@@ -952,7 +934,7 @@ injectSurvival <- function(exposures, effectSize, precision, addIntentToTreat) {
   hasOutcome <- exposures$y != 0
   observedCount <- sum(hasOutcome)
   correctedTargetCount <- observedCount * (effectSize - 1)
-  survivalTime <- exposures$daysAtRisk
+  survivalTime <- as.numeric(exposures$daysAtRisk)
   survivalTime[hasOutcome] <- exposures$timeToEvent[hasOutcome]
   ratios <- c()
   multiplier <- 1

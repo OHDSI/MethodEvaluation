@@ -1,8 +1,8 @@
 Package: MethodEvaluation
 Type: Package
 Title: Package for Evaluation of Estimation Methods
-Version: 2.0.0
-Date: 2020-06-03
+Version: 2.1.0
+Date: 2020-12-08
 Authors@R: c(
   person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre"))
   )
@@ -26,6 +26,8 @@ Depends:
   Cyclops (>= 3.0.0)
 Imports:
   dplyr,
+  bit64,
+  readr,
   rlang,
   SqlRender (>= 1.6.5),
   pROC,
@@ -40,5 +42,5 @@ Suggests:
   knitr
 Remotes:
   ohdsi/FeatureExtraction
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
 Encoding: UTF-8

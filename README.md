@@ -12,7 +12,7 @@ These resources include reference sets for evaluating methods on real data, as w
 
 Features
 ========
-- Contains the OMOP and EU-ADR reference set, and the OHDSI Method benchmark for evaluating method performance using real data.
+- Contains the OMOP and EU-ADR reference sets, and the OHDSI Method Benchmark and OHDSI Development Set for evaluating method performance using real data.
 - Function for inserting simulated effects in real data based on negative control drug-outcome pairs.
 - Function for computation of the minimum detectable relative risk (MDRR)
 - Functions for computing predictive accuracy, error, and bias

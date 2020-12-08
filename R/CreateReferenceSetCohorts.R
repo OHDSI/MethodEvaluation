@@ -20,38 +20,55 @@
 #' This function will create the outcomes of interest and nesting cohorts referenced in the various
 #' reference sets. The outcomes of interest are derives using information like diagnoses, procedures,
 #' and drug prescriptions. The outcomes are stored in a table on the database server.
+#' 
+#' For the 'ohdsiMethodsBenchmark' reference set, the exposures are taken from the drug_era table, and
+#' are therefore not generated as separate cohorts, and an exposure cohort table therefore needn't be supplied. 
+#' For the 'ohdsiDevelopment' reference set, exposure cohorts will be generated.
 #'
 #' @param connectionDetails       An R object of type \code{ConnectionDetails} created using the
 #'                                function \code{createConnectionDetails} in the
 #'                                \code{DatabaseConnector} package.
 #' @param oracleTempSchema        Should be used in Oracle to specify a schema where the user has write
-#'                                priviliges for storing temporary tables.
+#'                                privileges for storing temporary tables.
 #' @param cdmDatabaseSchema       A database schema containing health care data in the OMOP Commond
 #'                                Data Model. Note that for SQL Server, botth the database and schema
-#'                                should be specified, e.g. 'cdm_schema.dbo'
+#'                                should be specified, e.g. 'cdm_schema.dbo'.
+#' @param exposureDatabaseSchema  The name of the database schema where the exposure cohorts will be 
+#'                                created. Only needed if \code{referenceSet = 'ohdsiDevelopment'}. Note
+#'                                that for SQL Server, both the database and schema should be specified, 
+#'                                e.g. 'cdm_schema.dbo'.
+#' @param exposureTable           The name of the table that will be created to store the exposure 
+#'                                cohorts. Only needed if \code{referenceSet = 'ohdsiDevelopment'}.
 #' @param outcomeDatabaseSchema   The database schema where the target outcome table is located. Note
 #'                                that for SQL Server, both the database and schema should be
 #'                                specified, e.g. 'cdm_schema.dbo'
 #' @param outcomeTable            The name of the table where the outcomes will be stored.
-#' @param nestingDatabaseSchema   (For the OHDSI Methods Benchmark only) The database schema where the
-#'                                nesting outcome table is located. Note that for SQL Server, both the
-#'                                database and schema should be specified, e.g. 'cdm_schema.dbo'.
-#' @param nestingTable            (For the OHDSI Methods Benchmark only) The name of the table where
-#'                                the nesting cohorts will be stored.
+#' @param nestingDatabaseSchema   (For the OHDSI Methods Benchmark and OHDSI Development Set only) The
+#'                                database schema where the nesting outcome table is located. Note that 
+#'                                for SQL Server, both the database and schema should be specified, e.g.
+#'                                 'cdm_schema.dbo'.
+#' @param nestingTable            (For the OHDSI Methods Benchmark and OHDSI Development Set only) The 
+#'                                name of the table where the nesting cohorts will be stored.
 #' @param referenceSet            The name of the reference set for which outcomes need to be created.
-#'                                Currently supported are "omopReferenceSet", "euadrReferenceSet", and
-#'                                "ohdsiMethodsBenchmark".
+#'                                Currently supported are "omopReferenceSet", "euadrReferenceSet", 
+#'                                "ohdsiMethodsBenchmark", and "ohdsiDevelopment".
+#' @param workFolder              Name of local folder to place intermediary results; make sure to use
+#'                                forward slashes (/). Do not use a folder on a network drive since
+#'                                this greatly impacts performance.
+
 #'
 #' @export
 createReferenceSetCohorts <- function(connectionDetails,
                                       oracleTempSchema = NULL,
                                       cdmDatabaseSchema,
+                                      exposureDatabaseSchema = cdmDatabaseSchema,
+                                      exposureTable = "exposures",
                                       outcomeDatabaseSchema = cdmDatabaseSchema,
                                       outcomeTable = "outcomes",
                                       nestingDatabaseSchema = cdmDatabaseSchema,
                                       nestingTable = "nesting",
-                                      referenceSet = "ohdsiMethodsBenchmark") {
-  
+                                      referenceSet = "ohdsiMethodsBenchmark",
+                                      workFolder) {
   if (referenceSet == "omopReferenceSet") {
     ParallelLogger::logInfo("Generating HOIs for the OMOP reference set")
     renderedSql <- SqlRender::loadRenderTranslateSql("CreateOmopHois.sql",
@@ -77,10 +94,137 @@ createReferenceSetCohorts <- function(connectionDetails,
                                       outcomeTable = outcomeTable,
                                       nestingDatabaseSchema = nestingDatabaseSchema,
                                       nestingTable = nestingTable,
-                                      oracleTempSchema = oracleTempSchema)
+                                      oracleTempSchema = oracleTempSchema,
+                                      workFolder = workFolder)
+  } else if (referenceSet == "ohdsiDevelopment") {
+    ParallelLogger::logInfo("Generating HOIs and nesting cohorts for the OHDSI Development set")
+    createOhdsiDevelopmentNegativeControlCohorts(connectionDetails = connectionDetails,
+                                                 cdmDatabaseSchema = cdmDatabaseSchema,
+                                                 exposureDatabaseSchema = exposureDatabaseSchema,
+                                                 exposureTable = exposureTable,
+                                                 outcomeDatabaseSchema = outcomeDatabaseSchema,
+                                                 outcomeTable = outcomeTable,
+                                                 nestingDatabaseSchema = nestingDatabaseSchema,
+                                                 nestingTable = nestingTable,
+                                                 oracleTempSchema = oracleTempSchema,
+                                                 workFolder = workFolder)
   } else {
     stop(paste("Unknow reference set:", referenceSet))
   }
+}
+
+createOhdsiDevelopmentNegativeControlCohorts <- function(connectionDetails,
+                                                         cdmDatabaseSchema,
+                                                         exposureDatabaseSchema,
+                                                         exposureTable,
+                                                         outcomeDatabaseSchema,
+                                                         outcomeTable,
+                                                         nestingDatabaseSchema,
+                                                         nestingTable,
+                                                         oracleTempSchema,
+                                                         workFolder) {
+  if (!file.exists(workFolder)) {
+    dir.create(workFolder, recursive = TRUE)
+  }
+  ohdsiDevelopmentNegativeControls <- readRDS(system.file("ohdsiDevelopmentNegativeControls.rds",
+                                                          package = "MethodEvaluation"))
+  
+  connection <- DatabaseConnector::connect(connectionDetails)
+  on.exit(DatabaseConnector::disconnect(connection))
+  
+  sql <- SqlRender::loadRenderTranslateSql(sqlFilename = "CreateCohortTable.sql",
+                                           packageName = "MethodEvaluation",
+                                           dbms = connectionDetails$dbms,
+                                           oracleTempSchema = oracleTempSchema,
+                                           cohort_database_schema = outcomeDatabaseSchema,
+                                           cohort_table = outcomeTable)
+  DatabaseConnector::executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
+  
+  if (outcomeDatabaseSchema != nestingDatabaseSchema | outcomeTable != nestingTable) {
+    sql <- SqlRender::loadRenderTranslateSql(sqlFilename = "CreateCohortTable.sql",
+                                             packageName = "MethodEvaluation",
+                                             dbms = connectionDetails$dbms,
+                                             oracleTempSchema = oracleTempSchema,
+                                             cohort_database_schema = nestingDatabaseSchema,
+                                             cohort_table = nestingTable)
+    DatabaseConnector::executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
+  }
+  if (outcomeDatabaseSchema != exposureDatabaseSchema | outcomeTable != exposureTable) {
+    sql <- SqlRender::loadRenderTranslateSql(sqlFilename = "CreateCohortTable.sql",
+                                             packageName = "MethodEvaluation",
+                                             dbms = connectionDetails$dbms,
+                                             oracleTempSchema = oracleTempSchema,
+                                             cohort_database_schema = exposureDatabaseSchema,
+                                             cohort_table = exposureTable)
+    DatabaseConnector::executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
+  }
+  exposureCohorts <- data.frame(cohortName = c("ace_inhibitors", "thiazides_diuretics"),
+                                cohortId = c(1, 2))
+  for (i in 1:nrow(exposureCohorts)) {
+    ParallelLogger::logInfo(paste("Creating exposure cohort:", exposureCohorts$cohortName[i]))
+    sql <- SqlRender::loadRenderTranslateSql(sqlFilename = paste0(exposureCohorts$cohortName[i], ".sql"),
+                                             packageName = "MethodEvaluation",
+                                             dbms = connectionDetails$dbms,
+                                             oracleTempSchema = oracleTempSchema,
+                                             cdm_database_schema = cdmDatabaseSchema,
+                                             vocabulary_database_schema = cdmDatabaseSchema,
+                                             target_database_schema = exposureDatabaseSchema,
+                                             target_cohort_table = exposureTable,
+                                             target_cohort_id = exposureCohorts$cohortId[i])
+    DatabaseConnector::executeSql(connection, sql)
+  }
+  ParallelLogger::logInfo("Creating negative control outcomes")
+  outcomeCohorts <- ohdsiDevelopmentNegativeControls %>%
+    distinct(cohortId = .data$outcomeId, cohortName = .data$outcomeName)
+  sql <- SqlRender::loadRenderTranslateSql("NegativeControls.sql",
+                                           "MethodEvaluation",
+                                           dbms = connectionDetails$dbms,
+                                           oracleTempSchema = oracleTempSchema,
+                                           cdm_database_schema = cdmDatabaseSchema,
+                                           target_database_schema = outcomeDatabaseSchema,
+                                           target_cohort_table = outcomeTable,
+                                           outcome_ids = outcomeCohorts$cohortId)
+  DatabaseConnector::executeSql(connection, sql)
+  
+  ParallelLogger::logInfo("Creating nesting cohorts")
+  nestingCohorts <- ohdsiDevelopmentNegativeControls %>%
+    distinct(cohortId = .data$nestingId, cohortName = .data$nestingName)
+  sql <- SqlRender::loadRenderTranslateSql("NestingCohorts.sql",
+                                           "MethodEvaluation",
+                                           dbms = connectionDetails$dbms,
+                                           oracleTempSchema = oracleTempSchema,
+                                           cdm_database_schema = cdmDatabaseSchema,
+                                           target_database_schema = nestingDatabaseSchema,
+                                           target_cohort_table = nestingTable,
+                                           nesting_ids = nestingCohorts$cohortId)
+  DatabaseConnector::executeSql(connection, sql)
+  
+  ParallelLogger::logInfo("Counting cohorts")
+  exposureCohortCounts <- countCohorts(connection = connection, 
+                                       cohortDatabaseSchema = exposureDatabaseSchema, 
+                                       cohortTable = exposureTable, 
+                                       cohortIds = exposureCohorts$cohortId) %>%
+    right_join(exposureCohorts, by = "cohortId") %>%
+    mutate(type = "Exposure")
+  outcomeCohortCounts <- countCohorts(connection = connection, 
+                                      cohortDatabaseSchema = outcomeDatabaseSchema, 
+                                      cohortTable = outcomeTable, 
+                                      cohortIds = outcomeCohorts$cohortId) %>%
+    right_join(outcomeCohorts, by = "cohortId") %>%
+    mutate(type = "Outcome")
+  nestingCohortCounts <- countCohorts(connection = connection, 
+                                      cohortDatabaseSchema = nestingDatabaseSchema, 
+                                      cohortTable = nestingTable, 
+                                      cohortIds = nestingCohorts$cohortId) %>%
+    right_join(nestingCohorts, by = "cohortId") %>%
+    mutate(type = "Nesting")
+  cohortCounts <- bind_rows(exposureCohortCounts, outcomeCohortCounts, nestingCohortCounts) %>%
+    mutate(cohortEntries = case_when(is.na(.data$cohortEntries) ~ as.integer(0),
+                                     TRUE ~ as.integer(.data$cohortEntries)),
+           cohortSubjects = case_when(is.na(.data$cohortSubjects) ~ as.integer(0),
+                                      TRUE ~ as.integer(.data$cohortSubjects)))
+  readr::write_csv(cohortCounts, file.path(workFolder, "cohortCounts.csv"))  
+  ParallelLogger::logInfo("Cohort counts written to ", file.path(workFolder, "cohortCounts.csv")) 
 }
 
 createOhdsiNegativeControlCohorts <- function(connectionDetails,
@@ -89,7 +233,8 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
                                               outcomeTable,
                                               nestingDatabaseSchema,
                                               nestingTable,
-                                              oracleTempSchema) {
+                                              oracleTempSchema,
+                                              workFolder) {
   ohdsiNegativeControls <- readRDS(system.file("ohdsiNegativeControls.rds",
                                                package = "MethodEvaluation"))
   
@@ -112,11 +257,11 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
                                            cohort_table = nestingTable)
   DatabaseConnector::executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
   
-  cohortsToCreate <- data.frame(name = c("acute_pancreatitis", "gi_bleed", "stroke", "ibd"),
-                                id = c(1, 2, 3, 4))
-  for (i in 1:nrow(cohortsToCreate)) {
-    ParallelLogger::logInfo(paste("Creating outcome:", cohortsToCreate$name[i]))
-    sql <- SqlRender::loadRenderTranslateSql(sqlFilename = paste0(cohortsToCreate$name[i], ".sql"),
+  complexOutcomeCohorts <- data.frame(sqlName = c("acute_pancreatitis", "gi_bleed", "stroke", "ibd"),
+                                      cohortId = c(1, 2, 3, 4))
+  for (i in 1:nrow(complexOutcomeCohorts)) {
+    ParallelLogger::logInfo(paste("Creating outcome:", complexOutcomeCohorts$sqlName[i]))
+    sql <- SqlRender::loadRenderTranslateSql(sqlFilename = paste0(complexOutcomeCohorts$sqlName[i], ".sql"),
                                              packageName = "MethodEvaluation",
                                              dbms = connectionDetails$dbms,
                                              oracleTempSchema = oracleTempSchema,
@@ -124,11 +269,14 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
                                              vocabulary_database_schema = cdmDatabaseSchema,
                                              target_database_schema = outcomeDatabaseSchema,
                                              target_cohort_table = outcomeTable,
-                                             target_cohort_id = cohortsToCreate$id[i])
+                                             target_cohort_id = complexOutcomeCohorts$cohortId[i])
     DatabaseConnector::executeSql(connection, sql)
   }
   ParallelLogger::logInfo("Creating other negative control outcomes")
-  negativeControlIds <- ohdsiNegativeControls$outcomeId[ohdsiNegativeControls$outcomeId > 4]
+  otherOutcomeCohortIds <- ohdsiNegativeControls %>%
+    filter(.data$outcomeId > 4) %>%
+    distinct(cohortId = .data$outcomeId) %>%
+    pull()
   sql <- SqlRender::loadRenderTranslateSql("NegativeControls.sql",
                                            "MethodEvaluation",
                                            dbms = connectionDetails$dbms,
@@ -136,11 +284,14 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
                                            cdm_database_schema = cdmDatabaseSchema,
                                            target_database_schema = outcomeDatabaseSchema,
                                            target_cohort_table = outcomeTable,
-                                           outcome_ids = negativeControlIds)
+                                           outcome_ids = otherOutcomeCohorts$cohortId)
   DatabaseConnector::executeSql(connection, sql)
+  outcomeCohorts <- ohdsiNegativeControls %>%
+    distinct(cohortId = .data$outcomeId, cohortName = .data$outcomeName)  
   
   ParallelLogger::logInfo("Creating nesting cohorts")
-  nestingIds <- ohdsiNegativeControls$nestingId
+  nestingCohorts <- ohdsiNegativeControls %>%
+    distinct(cohortId = .data$nestingId, cohortName = .data$nestingName)
   sql <- SqlRender::loadRenderTranslateSql("NestingCohorts.sql",
                                            "MethodEvaluation",
                                            dbms = connectionDetails$dbms,
@@ -148,12 +299,52 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
                                            cdm_database_schema = cdmDatabaseSchema,
                                            target_database_schema = nestingDatabaseSchema,
                                            target_cohort_table = nestingTable,
-                                           nesting_ids = nestingIds)
+                                           nesting_ids = nestingCohorts$cohortId)
   DatabaseConnector::executeSql(connection, sql)
   
   ParallelLogger::logInfo("Counting cohorts")
+  exposureCohortCounts <- countCohorts(connection = connection, 
+                                       cohortDatabaseSchema = exposureDatabaseSchema, 
+                                       cohortTable = exposureTable, 
+                                       cohortIds = exposureCohorts$cohortId) %>%
+    right_join(exposureCohorts, by = "cohortId") %>%
+    mutate(type = "Exposure")
+  outcomeCohortCounts <- countCohorts(connection = connection, 
+                                      cohortDatabaseSchema = outcomeDatabaseSchema, 
+                                      cohortTable = outcomeTable, 
+                                      cohortIds = outcomeCohorts$cohortId) %>%
+    right_join(outcomeCohorts, by = "cohortId") %>%
+    mutate(type = "Outcome")
+  nestingCohortCounts <- countCohorts(connection = connection, 
+                                      cohortDatabaseSchema = nestingDatabaseSchema, 
+                                      cohortTable = nestingTable, 
+                                      cohortIds = nestingCohorts$cohortId) %>%
+    right_join(nestingCohorts, by = "cohortId") %>%
+    mutate(type = "Nesting")
+  cohortCounts <- bind_rows(exposureCohortCounts, outcomeCohortCounts, nestingCohortCounts) %>%
+    mutate(cohortEntries = case_when(is.na(.data$cohortEntries) ~ as.integer(0),
+                                     TRUE ~ as.integer(.data$cohortEntries)),
+           cohortSubjects = case_when(is.na(.data$cohortSubjects) ~ as.integer(0),
+                                      TRUE ~ as.integer(.data$cohortSubjects)))
+  readr::write_csv(cohortCounts, file.path(workFolder, "cohortCounts.csv"))  
+  ParallelLogger::logInfo("Cohort counts written to ", file.path(workFolder, "cohortCounts.csv")) 
 }
 
+countCohorts <- function(connection, cohortDatabaseSchema, cohortTable, cohortIds) {
+  sql <- "SELECT cohort_definition_id AS cohort_id,
+    COUNT(*) AS cohort_entries,
+    COUNT(DISTINCT subject_id) AS cohort_subjects
+  FROM @cohort_database_schema.@cohort_table 
+  WHERE cohort_definition_id IN (@cohort_ids)
+  GROUP BY cohort_definition_id;"
+  cohortCounts <- DatabaseConnector::renderTranslateQuerySql(connection = connection,
+                                                             sql = sql,
+                                                             cohort_database_schema = cohortDatabaseSchema,
+                                                             cohort_table = cohortTable,
+                                                             cohort_ids = cohortIds,
+                                                             snakeCaseToCamelCase = TRUE)
+  return(cohortCounts)
+}
 
 #' Synthesize positive controls for reference set
 #'
@@ -189,7 +380,7 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
 #'                                 table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
 #'                                 COHORT_END_DATE.
 #' @param referenceSet             The name of the reference set for which positive controls need to be
-#'                                 synthesized. Currently supported are "ohdsiMethodsBenchmark".
+#'                                 synthesized. Currently supported are "ohdsiMethodsBenchmark" and "ohdsiDevelopment".
 #' @param maxCores                 How many parallel cores should be used? If more cores are made
 #'                                 available this can speed up the analyses.
 #' @param workFolder               Name of local folder to place intermediary results; make sure to use
@@ -210,19 +401,24 @@ synthesizeReferenceSetPositiveControls <- function(connectionDetails,
                                                    maxCores = 1,
                                                    workFolder,
                                                    summaryFileName = file.path(workFolder, "allControls.csv")) {
-  if (referenceSet != "ohdsiMethodsBenchmark") {
-    stop("Currently only supporting positive control synthesis for the ohdsiMethodsBenchmark reference set")
+  if (!referenceSet %in% c("ohdsiMethodsBenchmark", "ohdsiDevelopment")) {
+    stop("Currently only supporting positive control synthesis for the ohdsiMethodsBenchmark and ohdsiDevelopment reference sets")
   }
   injectionFolder <- file.path(workFolder, "SignalInjection")
   if (!file.exists(injectionFolder))
     dir.create(injectionFolder)
   
   injectionSummaryFile <- file.path(workFolder, "injectionSummary.rds")
+  if (referenceSet == "ohdsiMethodsBenchmark") {
+    negativeControls <- readRDS(system.file("ohdsiNegativeControls.rds",
+                                            package = "MethodEvaluation"))
+  } else {
+    negativeControls <- readRDS(system.file("ohdsiDevelopmentNegativeControls.rds",
+                                            package = "MethodEvaluation"))
+  }
   if (!file.exists(injectionSummaryFile)) {
-    ohdsiNegativeControls <- readRDS(system.file("ohdsiNegativeControls.rds",
-                                                 package = "MethodEvaluation"))
-    exposureOutcomePairs <- data.frame(exposureId = ohdsiNegativeControls$targetId,
-                                       outcomeId = ohdsiNegativeControls$outcomeId)
+    exposureOutcomePairs <- data.frame(exposureId = negativeControls$targetId,
+                                       outcomeId = negativeControls$outcomeId)
     exposureOutcomePairs <- unique(exposureOutcomePairs)
     
     prior <- Cyclops::createPrior("laplace", exclude = 0, useCrossValidation = TRUE)
@@ -248,55 +444,53 @@ synthesizeReferenceSetPositiveControls <- function(connectionDetails,
                                                                     longTermStartDays = 365,
                                                                     endDays = 0)
     
-    result <- injectSignals(connectionDetails,
-                            cdmDatabaseSchema = cdmDatabaseSchema,
-                            oracleTempSchema = oracleTempSchema,
-                            exposureDatabaseSchema = exposureDatabaseSchema,
-                            exposureTable = exposureTable,
-                            outcomeDatabaseSchema = outcomeDatabaseSchema,
-                            outcomeTable = outcomeTable,
-                            outputDatabaseSchema = outcomeDatabaseSchema,
-                            outputTable = outcomeTable,
-                            createOutputTable = FALSE,
-                            outputIdOffset = 10000,
-                            exposureOutcomePairs = exposureOutcomePairs,
-                            firstExposureOnly = FALSE,
-                            firstOutcomeOnly = TRUE,
-                            removePeopleWithPriorOutcomes = TRUE,
-                            modelType = "survival",
-                            washoutPeriod = 365,
-                            riskWindowStart = 0,
-                            riskWindowEnd = 0,
-                            addExposureDaysToEnd = TRUE,
-                            effectSizes = c(1.5, 2, 4),
-                            precision = 0.01,
-                            prior = prior,
-                            control = control,
-                            maxSubjectsForModel = 250000,
-                            minOutcomeCountForModel = 100,
-                            minOutcomeCountForInjection = 25,
-                            workFolder = injectionFolder,
-                            modelThreads = max(1, round(maxCores/8)),
-                            generationThreads = min(6, maxCores),
-                            covariateSettings = covariateSettings)
+    result <- synthesizePositiveControls(connectionDetails,
+                                         cdmDatabaseSchema = cdmDatabaseSchema,
+                                         oracleTempSchema = oracleTempSchema,
+                                         exposureDatabaseSchema = exposureDatabaseSchema,
+                                         exposureTable = exposureTable,
+                                         outcomeDatabaseSchema = outcomeDatabaseSchema,
+                                         outcomeTable = outcomeTable,
+                                         outputDatabaseSchema = outcomeDatabaseSchema,
+                                         outputTable = outcomeTable,
+                                         createOutputTable = FALSE,
+                                         outputIdOffset = 10000,
+                                         exposureOutcomePairs = exposureOutcomePairs,
+                                         firstExposureOnly = FALSE,
+                                         firstOutcomeOnly = TRUE,
+                                         removePeopleWithPriorOutcomes = TRUE,
+                                         modelType = "survival",
+                                         washoutPeriod = 365,
+                                         riskWindowStart = 0,
+                                         riskWindowEnd = 0,
+                                         endAnchor = "cohort end",
+                                         effectSizes = c(1.5, 2, 4),
+                                         precision = 0.01,
+                                         prior = prior,
+                                         control = control,
+                                         maxSubjectsForModel = 250000,
+                                         minOutcomeCountForModel = 100,
+                                         minOutcomeCountForInjection = 25,
+                                         workFolder = injectionFolder,
+                                         modelThreads = max(1, round(maxCores/8)),
+                                         generationThreads = min(6, maxCores),
+                                         covariateSettings = covariateSettings)
     saveRDS(result, injectionSummaryFile)
   }
-  ohdsiNegativeControls <- readRDS(system.file("ohdsiNegativeControls.rds",
-                                               package = "MethodEvaluation"))
   injectedSignals <- readRDS(injectionSummaryFile)
   injectedSignals$targetId <- injectedSignals$exposureId
-  injectedSignals <- merge(injectedSignals, ohdsiNegativeControls)
+  injectedSignals <- merge(injectedSignals, negativeControls)
   injectedSignals <- injectedSignals[injectedSignals$trueEffectSize != 0, ]
   injectedSignals$outcomeName <- paste0(injectedSignals$outcomeName,
                                         ", RR=",
                                         injectedSignals$targetEffectSize)
   injectedSignals$oldOutcomeId <- injectedSignals$outcomeId
   injectedSignals$outcomeId <- injectedSignals$newOutcomeId
-  ohdsiNegativeControls$targetEffectSize <- 1
-  ohdsiNegativeControls$trueEffectSize <- 1
-  ohdsiNegativeControls$trueEffectSizeFirstExposure <- 1
-  ohdsiNegativeControls$oldOutcomeId <- ohdsiNegativeControls$outcomeId
-  allControls <- rbind(ohdsiNegativeControls, injectedSignals[, names(ohdsiNegativeControls)])
+  negativeControls$targetEffectSize <- 1
+  negativeControls$trueEffectSize <- 1
+  negativeControls$trueEffectSizeFirstExposure <- 1
+  negativeControls$oldOutcomeId <- negativeControls$outcomeId
+  allControls <- rbind(negativeControls, injectedSignals[, names(negativeControls)])
   exposureOutcomes <- data.frame()
   exposureOutcomes <- rbind(exposureOutcomes, data.frame(exposureId = allControls$targetId,
                                                          outcomeId = allControls$outcomeId))
@@ -318,5 +512,6 @@ synthesizeReferenceSetPositiveControls <- function(connectionDetails,
   allControls <- merge(allControls, data.frame(comparatorId = mdrr$exposureId,
                                                outcomeId = mdrr$outcomeId,
                                                mdrrComparator = mdrr$mdrr), all.x = TRUE)
-  write.csv(allControls, summaryFileName, row.names = FALSE)
+  readr::write_csv(allControls, summaryFileName)
+  ParallelLogger::logInfo("Positive and negative control summary written to ", summaryFileName) 
 }

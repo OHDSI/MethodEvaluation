@@ -2,17 +2,10 @@
 library(MethodEvaluation)
 options(andromedaTempFolder = "c:/andromedaTemp")
 
-dbms <- "pdw"
-user <- NULL
-pw <- NULL
-server <- Sys.getenv("PDW_SERVER")
-port <- Sys.getenv("PDW_PORT")
+connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "pdw",
+                                                                server = keyring::key_get("pdwServer"),
+                                                                port = keyring::key_get("pdwPort"))
 oracleTempSchema <- NULL
-connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
-                                                                server = server,
-                                                                user = user,
-                                                                password = pw,
-                                                                port = port)
 cdmDatabaseSchema <- "cdm_truven_mdcd_v699.dbo"
 exposureDatabaseSchema <- cdmDatabaseSchema
 outcomeDatabaseSchema <- "scratch.dbo"
@@ -280,7 +273,6 @@ analysisSum[analysisSum$analysisId == 2 & analysisSum$outcomeId == 1002, ]
 
 # MDRR --------------------------------------------------------------------
 library(MethodEvaluation)
-options(fftempdir = "s:/fftemp")
 
 pw <- Sys.getenv("pwPostgres")
 dbms <- "postgresql"
@@ -290,36 +282,6 @@ cdmDatabaseSchema <- "cdm_synpuf"
 scratchDatabaseSchema <- "scratch"
 outputTable <- "mschuemi_injected_signals"
 port <- NULL
-
-pw <- ""
-dbms <- "sql server"
-user <- NULL
-server <- "RNDUSRDHIT07"
-cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
-scratchDatabaseSchema <- "scratch.dbo"
-outputTable <- "mschuemi_injected_signals"
-port <- NULL
-cdmVersion <- "4"
-
-pw <- ""
-dbms <- "pdw"
-user <- NULL
-server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "cdm_truven_mdcd.dbo"
-scratchDatabaseSchema <- "scratch.dbo"
-outputTable <- "mschuemi_injected_signals2"
-port <- 17001
-cdmVersion <- "4"
-
-pw <- ""
-dbms <- "pdw"
-user <- NULL
-server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "cdm_truven_mdcd_v446.dbo"
-scratchDatabaseSchema <- "scratch.dbo"
-outputTable <- "mschuemi_injected_signals"
-port <- 17001
-cdmVersion <- "5"
 
 
 connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
@@ -359,18 +321,6 @@ scratchDatabaseSchema <- "scratch"
 outputTable <- "mschuemi_injected_signals"
 port <- NULL
 
-
-pw <- ""
-dbms <- "pdw"
-user <- NULL
-server <- "JRDUSAPSCTL01"
-cdmDatabaseSchema <- "cdm_truven_mdcd_v569.dbo"
-scratchDatabaseSchema <- "scratch.dbo"
-outputTable <- "mschuemi_injected_signals"
-port <- 17001
-cdmVersion <- "5"
-
-
 connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = dbms,
                                                                 server = server,
                                                                 user = user,
@@ -396,3 +346,189 @@ createReferenceSetCohorts(connectionDetails,
                           referenceSet = "ohdsiNegativeControls")
 
 
+# Run full benchmark ---------------------------------------------------------
+library(MethodEvaluation)
+options(andromedaTempFolder = "s:/andromedaTemp")
+referenceSet <- "ohdsiDevelopment"
+maxCores <- parallel::detectCores() - 1
+
+# PDW settings
+connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "pdw",
+                                                                server = keyring::key_get("pdwServer"),
+                                                                port = keyring::key_get("pdwPort"))
+oracleTempSchema <- NULL
+# cdmDatabaseSchema <- "CDM_IBM_CCAE_v1353.dbo"
+cdmDatabaseSchema <- "CDM_IBM_MDCD_V1327.dbo"
+exposureDatabaseSchema <- "scratch.dbo"
+exposureTable <- "mschuemie_cohorts_temp"
+outcomeDatabaseSchema <- exposureDatabaseSchema
+outcomeTable <- exposureTable
+nestingDatabaseSchema <- exposureDatabaseSchema
+nestingTable <- exposureTable
+cdmVersion <- "5"
+outputFolder <- "s:/BenchmarkTest"
+
+# RedShift settings
+connectionDetails <- DatabaseConnector::createConnectionDetails(dbms = "redshift",
+                                                                connectionString = keyring::key_get("redShiftConnectionStringMdcd"),
+                                                                user = keyring::key_get("redShiftUserName"),
+                                                                password = keyring::key_get("redShiftPassword"))
+
+Sys.setenv("AWS_OBJECT_KEY" = "bulk")
+Sys.setenv("AWS_ACCESS_KEY_ID" = Sys.getenv("bulkUploadS3Key"))
+Sys.setenv("AWS_SECRET_ACCESS_KEY" = Sys.getenv("bulkUploadS3Secret"))
+Sys.setenv("AWS_BUCKET_NAME" = Sys.getenv("bulkUploadS3Bucket"))
+Sys.setenv("AWS_DEFAULT_REGION" = "us-east-1")
+Sys.setenv("AWS_SSE_TYPE" = "AES256")
+Sys.setenv("USE_MPP_BULK_LOAD" = TRUE)
+
+oracleTempSchema <- NULL
+cdmDatabaseSchema <- "cdm"
+exposureDatabaseSchema <- "scratch_mschuemi2"
+exposureTable <- "mschuemie_cohorts_temp"
+outcomeDatabaseSchema <- exposureDatabaseSchema
+outcomeTable <- exposureTable
+nestingDatabaseSchema <- exposureDatabaseSchema
+nestingTable <- exposureTable
+cdmVersion <- "5"
+outputFolder <- "s:/BenchmarkTest"
+
+# Create cohorts
+createReferenceSetCohorts(connectionDetails,
+                          oracleTempSchema = oracleTempSchema,
+                          cdmDatabaseSchema = cdmDatabaseSchema,
+                          exposureDatabaseSchema = exposureDatabaseSchema,
+                          exposureTable = exposureTable,
+                          outcomeDatabaseSchema = outcomeDatabaseSchema,
+                          outcomeTable = outcomeTable,
+                          nestingDatabaseSchema = nestingDatabaseSchema,
+                          nestingTable = nestingTable,
+                          referenceSet = referenceSet,
+                          workFolder = outputFolder)
+
+synthesizeReferenceSetPositiveControls(connectionDetails,
+                                       oracleTempSchema = oracleTempSchema,
+                                       cdmDatabaseSchema = cdmDatabaseSchema,
+                                       exposureDatabaseSchema = exposureDatabaseSchema,
+                                       exposureTable = exposureTable,
+                                       outcomeDatabaseSchema = outcomeDatabaseSchema,
+                                       outcomeTable = outcomeTable,
+                                       referenceSet = referenceSet,
+                                       maxCores = maxCores,
+                                       workFolder = outputFolder)
+
+# Run CohortMethod
+cmFolder <- file.path(outputFolder, "cohortMethod")
+if (!file.exists(cmFolder))
+  dir.create(cmFolder)
+
+allControls <- read.csv(file.path(outputFolder , "allControls.csv"))
+tcs <- unique(allControls[, c("targetId", "comparatorId", "targetConceptIds", "comparatorConceptIds")])
+tcosList <- list()
+for (i in 1:nrow(tcs)) {
+  outcomeIds <- allControls$outcomeId[allControls$targetId == tcs$targetId[i] &
+                                        allControls$comparatorId == tcs$comparatorId[i] &
+                                        !is.na(allControls$mdrrComparator)]
+  excludedCovariateConceptIds = c(as.numeric(strsplit(tcs$targetConceptIds[i], ";")[[1]]), 
+                                  as.numeric(strsplit(tcs$comparatorConceptIds[i], ";")[[1]]))
+  if (length(outcomeIds) != 0) {
+    tcos <- CohortMethod::createTargetComparatorOutcomes(targetId = tcs$targetId[i],
+                                                         comparatorId = tcs$comparatorId[i],
+                                                         outcomeIds = outcomeIds,
+                                                         excludedCovariateConceptIds = excludedCovariateConceptIds)
+    tcosList[[length(tcosList) + 1]] <- tcos
+  }
+}
+covariateSettings <- FeatureExtraction::createDefaultCovariateSettings(addDescendantsToExclude = TRUE)
+getDbCmDataArgs <- CohortMethod::createGetDbCohortMethodDataArgs(washoutPeriod = 365,
+                                                                 firstExposureOnly = TRUE,
+                                                                 removeDuplicateSubjects = "remove all",
+                                                                 maxCohortSize = 1e6,
+                                                                 covariateSettings = covariateSettings)
+createStudyPopArgs <- CohortMethod::createCreateStudyPopulationArgs(removeSubjectsWithPriorOutcome = TRUE,
+                                                                    minDaysAtRisk = 1,
+                                                                    riskWindowStart = 0,
+                                                                    startAnchor = "cohort start",
+                                                                    riskWindowEnd = 0,
+                                                                    endAnchor = "cohort end")
+createPsArgs <- CohortMethod::createCreatePsArgs(errorOnHighCorrelation = TRUE,
+                                                 stopOnError = FALSE,
+                                                 maxCohortSizeForFitting = 150000,
+                                                 control = Cyclops::createControl(cvType = "auto",
+                                                                                  startingVariance = 0.01,
+                                                                                  noiseLevel = "quiet",
+                                                                                  tolerance  = 2e-07,
+                                                                                  cvRepetitions = 1))
+matchOnPsArgs <- CohortMethod::createMatchOnPsArgs(maxRatio = 1)
+fitOutcomeModelArgs <- CohortMethod::createFitOutcomeModelArgs(modelType = "cox", stratified = FALSE)
+cmAnalysis <- CohortMethod::createCmAnalysis(analysisId = 1,
+                                             description = "1-on-1 matching",
+                                             getDbCohortMethodDataArgs = getDbCmDataArgs,
+                                             createStudyPopArgs = createStudyPopArgs,
+                                             createPs = TRUE,
+                                             createPsArgs = createPsArgs,
+                                             matchOnPs = TRUE,
+                                             matchOnPsArgs = matchOnPsArgs,
+                                             fitOutcomeModel = TRUE,
+                                             fitOutcomeModelArgs = fitOutcomeModelArgs)
+cmAnalysisList <- list(cmAnalysis)
+cmResult <- CohortMethod::runCmAnalyses(connectionDetails = connectionDetails,
+                                        cdmDatabaseSchema = cdmDatabaseSchema,
+                                        oracleTempSchema = oracleTempSchema,
+                                        exposureDatabaseSchema = exposureDatabaseSchema,
+                                        exposureTable = exposureTable,
+                                        outcomeDatabaseSchema = outcomeDatabaseSchema,
+                                        outcomeTable = outcomeTable,
+                                        outputFolder = cmFolder,
+                                        cdmVersion = cdmVersion,
+                                        cmAnalysisList = cmAnalysisList,
+                                        targetComparatorOutcomesList = tcosList,
+                                        refitPsForEveryOutcome = FALSE,
+                                        refitPsForEveryStudyPopulation = FALSE,
+                                        getDbCohortMethodDataThreads = 1, #min(3, maxCores),
+                                        createStudyPopThreads = min(3, maxCores),
+                                        createPsThreads = min(3, maxCores),
+                                        psCvThreads = min(10, floor(maxCores/3)),
+                                        trimMatchStratifyThreads = min(10, maxCores),
+                                        fitOutcomeModelThreads = min(max(1, floor(maxCores/8)), 3),
+                                        outcomeCvThreads = min(10, maxCores))
+cmSummary <- CohortMethod::summarizeAnalyses(cmResult, cmFolder)
+saveRDS(cmSummary, file.path(outputFolder, "cmResults.rds"))
+
+# Analyze results
+estimates <- readRDS(file.path(outputFolder, "cmResults.rds"))
+controlSummary <- read.csv(file.path(outputFolder, "allControls.csv"))
+estimates <- data.frame(analysisId = estimates$analysisId,
+                        targetId = estimates$targetId,
+                        outcomeId = estimates$outcomeId,
+                        logRr = estimates$logRr,
+                        seLogRr = estimates$seLogRr,
+                        ci95Lb = estimates$ci95lb,
+                        ci95Ub = estimates$ci95ub)
+analysisRef <- data.frame(method = "CohortMethod",
+                          analysisId = 1,
+                          description = "1-on-1 matching",
+                          details = "",
+                          comparative = TRUE,
+                          nesting = FALSE,
+                          firstExposureOnly = TRUE)
+exportFolder <- file.path(outputFolder, "export")
+estimates <- merge(estimates, 
+                   controlSummary[, c("targetId", 
+                                      "outcomeId", 
+                                      "targetEffectSize", 
+                                      "trueEffectSize", 
+                                      "trueEffectSizeFirstExposure")])
+MethodEvaluation::computeMetrics(logRr = estimates$logRr,
+                                 seLogRr = estimates$seLogRr,
+                                 ci95Lb = estimates$ci95Lb,
+                                 ci95Ub = estimates$ci95Ub,
+                                 p = estimates$p,
+                                 trueLogRr = log(estimates$trueEffectSizeFirstExposure))
+MethodEvaluation::packageOhdsiBenchmarkResults(estimates = estimates,
+                                               controlSummary = controlSummary,
+                                               analysisRef = analysisRef,
+                                               databaseName = "MDCD",
+                                               exportFolder = exportFolder,
+                                               referenceSet = referenceSet)
+MethodEvaluation::launchMethodEvaluationApp(exportFolder = exportFolder)

@@ -48,7 +48,7 @@ table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
 COHORT_END_DATE.}
 
 \item{referenceSet}{The name of the reference set for which positive controls need to be
-synthesized. Currently supported are "ohdsiMethodsBenchmark".}
+synthesized. Currently supported are "ohdsiMethodsBenchmark" and "ohdsiDevelopment".}
 
 \item{maxCores}{How many parallel cores should be used? If more cores are made
 available this can speed up the analyses.}

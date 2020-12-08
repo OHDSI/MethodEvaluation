@@ -64,13 +64,36 @@ saveRDS(ohdsiNegativeControls, file = "inst/ohdsiNegativeControls.rds")
 38000184
 OhdsiRTools::insertCohortDefinitionInPackage(152767,
                                              "acute_pancreatitis",
-                                             baseUrl = "http://api.ohdsi.org:80/WebAPI")
+                                             baseUrl = keyring::key_get("ohdsiBaseUrl"))
 OhdsiRTools::insertCohortDefinitionInPackage(152768,
                                              "gi_bleed",
-                                             baseUrl = "http://api.ohdsi.org:80/WebAPI")
+                                             baseUrl = keyring::key_get("ohdsiBaseUrl"))
 OhdsiRTools::insertCohortDefinitionInPackage(152769,
                                              "ibd",
-                                             baseUrl = "http://api.ohdsi.org:80/WebAPI")
+                                             baseUrl = keyring::key_get("ohdsiBaseUrl"))
 OhdsiRTools::insertCohortDefinitionInPackage(152772,
                                              "stroke",
-                                             baseUrl = "http://api.ohdsi.org:80/WebAPI")
+                                             baseUrl = keyring::key_get("ohdsiBaseUrl"))
+
+# OHDSI development
+ncs <- read.csv("../Legend/inst/settings/NegativeControls.csv", stringsAsFactors = FALSE)
+ncs <- ncs[ncs$indicationId == "Hypertension", ]
+ohdsiDevelopmentNegativeControls <- data.frame(targetId = 1,
+                                               targetName = "ACE inhibitors",
+                                               comparatorId = 2,
+                                               comparatorName = "Thiazides or thiazide-like diuretics",
+                                               nestingId = 316866,
+                                               nestingName = "Hypertension",
+                                               outcomeId = ncs$conceptId,
+                                               outcomeName = ncs$name,
+                                               targetConceptIds = "1335471;1340128;1341927;1363749;1308216;1310756;1373225;1331235;1334456;1342439",
+                                               comparatorConceptIds = "1395058;974166;978555;907013",
+                                               type = "Outcome control")
+save(ohdsiDevelopmentNegativeControls, file = "data/ohdsiDevelopmentNegativeControls.rda", compress = "xz")
+saveRDS(ohdsiDevelopmentNegativeControls, file = "inst/ohdsiDevelopmentNegativeControls.rds")
+OhdsiRTools::insertCohortDefinitionInPackage(1775839,
+                                             "ace_inhibitors",
+                                             baseUrl = keyring::key_get("ohdsiBaseUrl"))
+OhdsiRTools::insertCohortDefinitionInPackage(1775840,
+                                             "thiazides_diuretics",
+                                             baseUrl = keyring::key_get("ohdsiBaseUrl"))

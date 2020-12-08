@@ -133,7 +133,7 @@ computeMdrr <- function(connectionDetails,
   }
   
   conn <- DatabaseConnector::connect(connectionDetails)
-  
+  on.exit(DatabaseConnector::disconnect(conn))
   
   renderedSql <- SqlRender::loadRenderTranslateSql("MDRR.sql",
                                                    packageName = "MethodEvaluation",
@@ -159,19 +159,16 @@ computeMdrr <- function(connectionDetails,
   DatabaseConnector::executeSql(conn, renderedSql)
   
   sql <- "SELECT * FROM #mdrr"
-  sql <- SqlRender::translateSql(sql,
-                                 targetDialect = connectionDetails$dbms,
-                                 oracleTempSchema = oracleTempSchema)$sql
-  mdrr <- DatabaseConnector::querySql(conn, sql)
-  colnames(mdrr) <- SqlRender::snakeCaseToCamelCase(colnames(mdrr))
+  sql <- SqlRender::translate(sql,
+                              targetDialect = connectionDetails$dbms,
+                              oracleTempSchema = oracleTempSchema)
+  mdrr <- DatabaseConnector::querySql(conn, sql, snakeCaseToCamelCase = TRUE)
   
   renderedSql <- SqlRender::loadRenderTranslateSql("MDRR_Drop_temp_tables.sql",
                                                    packageName = "MethodEvaluation",
                                                    dbms = connectionDetails$dbms,
                                                    oracleTempSchema = oracleTempSchema)
   DatabaseConnector::executeSql(conn, renderedSql, progressBar = FALSE, reportOverallTime = FALSE)
-  
-  DatabaseConnector::disconnect(conn)
   
   mdrr <- data.frame(exposureId = mdrr$drugConceptId,
                      outcomeId = mdrr$conditionConceptId,

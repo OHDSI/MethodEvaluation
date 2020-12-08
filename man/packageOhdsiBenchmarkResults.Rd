@@ -9,7 +9,8 @@ packageOhdsiBenchmarkResults(
   controlSummary,
   analysisRef,
   databaseName,
-  exportFolder
+  exportFolder,
+  referenceSet = "ohdsiMethodsBenchmark"
 )
 }
 \arguments{
@@ -24,6 +25,9 @@ required columns.}
 \item{databaseName}{A character string to identify the database the method was executed on.}
 
 \item{exportFolder}{The folder where the output CSV files will written.}
+
+\item{referenceSet}{The name of the reference set for which to package the results. Currently 
+supported are "ohdsiMethodsBenchmark" and "ohdsiDevelopment".}
 }
 \description{
 Stores the results of a method on the OHDSI Methods Benchmark in a standardized format, for example
