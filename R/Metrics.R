@@ -95,7 +95,7 @@ computeMetrics <- function(logRr, seLogRr = NULL, ci95Lb = NULL, ci95Ub = NULL, 
 }
 
 checkHasColumns <- function(df, columnNames, argName) {
-  if (class(df) != "data.frame") {
+  if (!is(df, "data.frame")) {
     stop("Argument '", argName, "' is not a data.frame")
   }
   for (columnName in columnNames) {
