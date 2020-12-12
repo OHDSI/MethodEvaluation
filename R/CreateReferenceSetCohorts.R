@@ -284,7 +284,7 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
                                            cdm_database_schema = cdmDatabaseSchema,
                                            target_database_schema = outcomeDatabaseSchema,
                                            target_cohort_table = outcomeTable,
-                                           outcome_ids = otherOutcomeCohorts$cohortId)
+                                           outcome_ids = otherOutcomeCohortIds)
   DatabaseConnector::executeSql(connection, sql)
   outcomeCohorts <- ohdsiNegativeControls %>%
     distinct(cohortId = .data$outcomeId, cohortName = .data$outcomeName)  
@@ -302,11 +302,16 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
                                            nesting_ids = nestingCohorts$cohortId)
   DatabaseConnector::executeSql(connection, sql)
   
+  exposureCohorts <- bind_rows(ohdsiNegativeControls %>%
+                                 distinct(cohortId = .data$targetId, cohortName = .data$targetName)  ,
+                               ohdsiNegativeControls %>%
+                                 distinct(cohortId = .data$comparatorId, cohortName = .data$comparatorName)) %>%
+    distinct()
+  
   ParallelLogger::logInfo("Counting cohorts")
-  exposureCohortCounts <- countCohorts(connection = connection, 
-                                       cohortDatabaseSchema = exposureDatabaseSchema, 
-                                       cohortTable = exposureTable, 
-                                       cohortIds = exposureCohorts$cohortId) %>%
+  exposureCohortCounts <- countDrugEras(connection = connection, 
+                                        cdmDatabaseSchema = cdmDatabaseSchema, 
+                                        cohortIds = exposureCohorts$cohortId) %>%
     right_join(exposureCohorts, by = "cohortId") %>%
     mutate(type = "Exposure")
   outcomeCohortCounts <- countCohorts(connection = connection, 
@@ -341,6 +346,21 @@ countCohorts <- function(connection, cohortDatabaseSchema, cohortTable, cohortId
                                                              sql = sql,
                                                              cohort_database_schema = cohortDatabaseSchema,
                                                              cohort_table = cohortTable,
+                                                             cohort_ids = cohortIds,
+                                                             snakeCaseToCamelCase = TRUE)
+  return(cohortCounts)
+}
+
+countDrugEras <- function(connection, cdmDatabaseSchema, cohortIds) {
+  sql <- "SELECT drug_concept_id AS cohort_id,
+    COUNT(*) AS cohort_entries,
+    COUNT(DISTINCT person_id) AS cohort_subjects
+  FROM @cdm_database_schema.drug_era
+  WHERE drug_concept_id IN (@cohort_ids)
+  GROUP BY drug_concept_id;"
+  cohortCounts <- DatabaseConnector::renderTranslateQuerySql(connection = connection,
+                                                             sql = sql,
+                                                             cdm_database_schema = cdmDatabaseSchema,
                                                              cohort_ids = cohortIds,
                                                              snakeCaseToCamelCase = TRUE)
   return(cohortCounts)
