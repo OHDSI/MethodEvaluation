@@ -134,7 +134,7 @@
 #' @export
 synthesizePositiveControls <- function(connectionDetails,
                                        cdmDatabaseSchema,
-                                       oracleTempSchema = cdmDatabaseSchema,
+                                       oracleTempSchema = NULL,
                                        exposureDatabaseSchema = cdmDatabaseSchema,
                                        exposureTable = "drug_era",
                                        outcomeDatabaseSchema = cdmDatabaseSchema,
@@ -251,8 +251,7 @@ synthesizePositiveControls <- function(connectionDetails,
                                                      packageName = "MethodEvaluation",
                                                      dbms = connectionDetails$dbms,
                                                      oracleTempSchema = oracleTempSchema)
-    exposures <- DatabaseConnector::querySql(conn, exposureSql)
-    names(exposures) <- SqlRender::snakeCaseToCamelCase(names(exposures))
+    exposures <- DatabaseConnector::querySql(conn, exposureSql, snakeCaseToCamelCase = TRUE)
     exposures <- exposures[order(exposures$rowId), ]
     saveRDS(exposures, exposuresFile)
   }
@@ -280,8 +279,7 @@ synthesizePositiveControls <- function(connectionDetails,
                                                       outcome_database_schema = outcomeDatabaseSchema,
                                                       outcome_table = outcomeTable,
                                                       first_outcome_only = firstOutcomeOnly)
-      priorOutcomes <- DatabaseConnector::querySql(conn, outcomeSql)
-      names(priorOutcomes) <- SqlRender::snakeCaseToCamelCase(names(priorOutcomes))
+      priorOutcomes <- DatabaseConnector::querySql(conn, outcomeSql, snakeCaseToCamelCase = TRUE)
       saveRDS(priorOutcomes, priorOutcomesFile)
       sql <- "TRUNCATE TABLE #exposure_outcome; DROP TABLE #exposure_outcome;"
       sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms, oracleTempSchema = oracleTempSchema)
@@ -311,8 +309,7 @@ synthesizePositiveControls <- function(connectionDetails,
                                                     outcome_database_schema = outcomeDatabaseSchema,
                                                     outcome_table = outcomeTable,
                                                     first_outcome_only = firstOutcomeOnly)
-    outcomeCounts <- DatabaseConnector::querySql(conn, outcomeSql)
-    names(outcomeCounts) <- SqlRender::snakeCaseToCamelCase(names(outcomeCounts))
+    outcomeCounts <- DatabaseConnector::querySql(conn, outcomeSql, snakeCaseToCamelCase = TRUE)
     saveRDS(outcomeCounts, outcomesFile)
     sql <- "TRUNCATE TABLE #exposure_outcome; DROP TABLE #exposure_outcome;"
     sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms, oracleTempSchema = oracleTempSchema)
@@ -363,8 +360,7 @@ synthesizePositiveControls <- function(connectionDetails,
         mutate(outcomeId = !!outcomeId)
       return(resultRows)
     }
-    resultRows <- lapply(unique(result$outcomeId), generateCounts)
-    resultRows <- bind_rows(resultRows)
+    resultRows <- purrr::map_dfr(unique(result$outcomeId), generateCounts)
     result <- left_join(result, resultRows, by = c("exposureId", "outcomeId")) %>%
       mutate(exposures = case_when(is.na(exposures) ~ as.integer(0), 
                                   TRUE ~ as.integer(.data$exposures)),
@@ -388,7 +384,7 @@ synthesizePositiveControls <- function(connectionDetails,
     return(exposureIds[order(exposureIds)])
   }
   outcomeIds <- unique(exposureOutcomePairs$outcomeId)
-  groups <- lapply(unique(outcomeIds), group)
+  groups <- purrr::map(unique(outcomeIds), group)
   uniqueGroups <- unique(groups)
   saveRDS(uniqueGroups, file.path(workFolder, "uniqueGroups.rds"))
   outcomeIdToGroupId <- data.frame(outcomeIds = outcomeIds, groupIds = match(groups, uniqueGroups))
@@ -460,7 +456,8 @@ synthesizePositiveControls <- function(connectionDetails,
   tasks <- list()
   modelsWithEnoughOutcomes <- 0
   outcomeIds <- unique(exposureOutcomePairs$outcomeId)
-  for (outcomeId in outcomeIds) {
+  for (i in 1:length(outcomeIds)) {
+    outcomeId <- outcomeIds[i]
     groupId <- outcomeIdToGroupId$groupId[outcomeIdToGroupId$outcomeId == outcomeId]
     groupExposureIds <- uniqueGroups[[groupId]]
     idx <- result$outcomeId == outcomeId & 

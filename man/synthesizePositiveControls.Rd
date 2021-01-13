@@ -7,7 +7,7 @@
 synthesizePositiveControls(
   connectionDetails,
   cdmDatabaseSchema,
-  oracleTempSchema = cdmDatabaseSchema,
+  oracleTempSchema = NULL,
   exposureDatabaseSchema = cdmDatabaseSchema,
   exposureTable = "drug_era",
   outcomeDatabaseSchema = cdmDatabaseSchema,

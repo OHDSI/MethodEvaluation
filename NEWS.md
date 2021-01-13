@@ -11,7 +11,7 @@ Bugfixes:
 
 1. Fixed error during positive control synthesis for platforms using `oracleTempSchema`.
 
-2. Correctly handling 64-bit integer covariate IDs.
+2. Correctly handling 64-bit integer covariate and cohort IDs.
 
 
 MethodEvaluation 2.0.0

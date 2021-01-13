@@ -28,6 +28,7 @@ Imports:
   dplyr,
   bit64,
   readr,
+  purrr,
   rlang,
   SqlRender (>= 1.6.5),
   pROC,
