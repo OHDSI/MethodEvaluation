@@ -1053,7 +1053,8 @@ injectSurvival <- function(exposures, effectSize, precision, addIntentToTreat) {
                              daysAtRisk = exposures$daysAtRisk,
                              value = exp(intercept))
   } else {
-    covariateIdIsInteger64 <- cohortMethodData$covariateRef %>% 
+    covariateIdIsInteger64 <- covariates %>% 
+      head(10000) %>%
       pull(.data$covariateId) %>%
       is("integer64")
     
