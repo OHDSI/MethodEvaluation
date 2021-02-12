@@ -1,7 +1,7 @@
 MethodEvaluation
 ================
 
-[![Build Status](https://travis-ci.org/OHDSI/MethodEvaluation.svg?branch=master)](https://travis-ci.org/OHDSI/MethodEvaluation)
+[![Build Status](https://github.com/OHDSI/MethodEvaluation/workflows/R-CMD-check/badge.svg)](https://github.com/OHDSI/MethodEvaluation/actions?query=workflow%3AR-CMD-check)
 
 MethodEvaluation is part of [HADES](https://ohdsi.github.io/Hades).
 

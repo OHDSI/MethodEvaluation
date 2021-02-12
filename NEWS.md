@@ -11,7 +11,7 @@ Bugfixes:
 
 1. Fixed error during positive control synthesis for platforms using `oracleTempSchema`.
 
-2. Correctly handling 64-bit integer covariate and cohort IDs.
+2. Adding initial support for 64-bit integer covariate and cohort IDs.Still requires [this issue](https://github.com/truecluster/bit64/issues/8) to be resolved.
 
 
 MethodEvaluation 2.0.0

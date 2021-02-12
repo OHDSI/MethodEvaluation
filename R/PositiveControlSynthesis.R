@@ -1053,6 +1053,13 @@ injectSurvival <- function(exposures, effectSize, precision, addIntentToTreat) {
                              daysAtRisk = exposures$daysAtRisk,
                              value = exp(intercept))
   } else {
+    covariateIdIsInteger64 <- cohortMethodData$covariateRef %>% 
+      pull(.data$covariateId) %>%
+      is("integer64")
+    
+    if (!covariateIdIsInteger64) {
+      betas$covariateId <- as.numeric(betas$covariateId)
+    }
     prediction <- covariates %>%
       inner_join(select(betas, .data$beta, .data$covariateId), by = "covariateId", copy = TRUE) %>%
       mutate(value = .data$beta * .data$covariateValue) %>%
@@ -1066,22 +1073,6 @@ injectSurvival <- function(exposures, effectSize, precision, addIntentToTreat) {
       right_join(select(exposures, .data$rowId, .data$daysAtRisk), by = "rowId") %>%
       mutate(value = coalesce(.data$value, 0) + intercept) %>%
       mutate(value = exp(.data$value))
-    
-    # 
-    # prediction <- ffbase::merge.ffdf(covariates, ff::as.ffdf(betas[, c("covariateId", "beta")]))
-    # if (is.null(prediction)) {
-    #   prediction <- data.frame(rowId = exposures$rowId,
-    #                            daysAtRisk = exposures$daysAtRisk,
-    #                            value = exp(intercept))
-    # } else {
-    #   prediction$value <- prediction$covariateValue * prediction$beta
-    #   prediction <- FeatureExtraction::bySumFf(prediction$value, prediction$rowId)
-    #   colnames(prediction) <- c("rowId", "value")
-    #   prediction <- merge(exposures[, c("rowId",
-    #                                     "daysAtRisk")], prediction, by = "rowId", all.x = TRUE)
-    #   prediction$value[is.na(prediction$value)] <- 0
-    #   prediction$value <- exp(prediction$value + intercept)
-    # }
   }
   if (modelType == "poisson") {
     prediction$value <- prediction$value * (prediction$daysAtRisk + 1)
