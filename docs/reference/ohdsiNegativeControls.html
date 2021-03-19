@@ -14,9 +14,9 @@ drug (where the comparator is also a negative control), allowing for evaluation 
 effect estimation, and a nesting cohort for evaluating methods such as the nested case-control
 design.
 The exposure, outcome, and nesting cohorts can be created using the
-<code><a href='createReferenceSetCohorts.html'>createReferenceSetCohorts</a></code> function.
+createReferenceSetCohorts function.
 These negative controls can form the basis to generate positive controls using the
-<code><a href='injectSignals.html'>injectSignals</a></code> function. — ohdsiNegativeControls • MethodEvaluation</title>
+injectSignals function. — ohdsiNegativeControls • MethodEvaluation</title>
 
 
 <!-- jquery -->
@@ -57,9 +57,9 @@ drug (where the comparator is also a negative control), allowing for evaluation 
 effect estimation, and a nesting cohort for evaluating methods such as the nested case-control
 design.
 The exposure, outcome, and nesting cohorts can be created using the
-<code><a href='createReferenceSetCohorts.html'>createReferenceSetCohorts</a></code> function.
+createReferenceSetCohorts function.
 These negative controls can form the basis to generate positive controls using the
-<code><a href='injectSignals.html'>injectSignals</a></code> function. — ohdsiNegativeControls" />
+injectSignals function. — ohdsiNegativeControls" />
 <meta property="og:description" content="The OHDSI Method Evaluation Benchmark - Negative Controls
 A set of 200 negative controls, centered around four outcomes of interest (acute pancreatitis, GI
 bleeding, Stroke, and IBD), and 4 exposures of interest (diclofenac, ciprofloxacin, metformin, and
@@ -102,7 +102,7 @@ injectSignals function." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">MethodEvaluation</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.1.0</span>
       </span>
     </div>
 
@@ -110,7 +110,7 @@ injectSignals function." />
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -139,7 +139,7 @@ injectSignals function." />
 </li>
 <li>
   <a href="https://github.com/OHDSI/MethodEvaluation/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -185,18 +185,20 @@ These negative controls can form the basis to generate positive controls using t
 <code><a href='injectSignals.html'>injectSignals</a></code> function.</p>
     </div>
 
-    <pre class="usage"><span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span>(<span class='no'>ohdsiNegativeControls</span>)</pre>
+    <pre class="usage"><span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='va'>ohdsiNegativeControls</span><span class='op'>)</span></pre>
 
 
     <h2 class="hasAnchor" id="format"><a class="anchor" href="#format"></a>Format</h2>
 
-    <p>A data frame with 200 rows and 9 variables:</p><dl'>
+    <p>A data frame with 200 rows and 9 variables:</p><dl>
 <dt>targetId</dt><dd><p>Cohort ID identifying the
 target exposure</p></dd> <dt>targetName</dt><dd><p>Name of the target cohort</p></dd> <dt>comparatorId</dt><dd><p>Cohort ID
 identifying the comparator exposure</p></dd> <dt>comparatorName</dt><dd><p>Name of the comparator cohort</p></dd>
 <dt>nestingId</dt><dd><p>Cohort ID identifying the nesting cohort</p></dd> <dt>nestingName</dt><dd><p>Name of the nesting
 cohort</p></dd> <dt>outcomeId</dt><dd><p>Cohort ID identifying the outcome</p></dd> <dt>outcomeName</dt><dd><p>Name of the outcome</p></dd>
-<dt>type</dt><dd><p>THe type of control: exposure or outcome</p></dd>
+<dt>type</dt><dd><p>THe type of control: exposure or outcome</p></dd> <dt>targetConceptIds</dt><dd><p>A semi-colon separated list of concept IDs
+that together form the target exposure definitions.</p></dd> <dt>comparatorConceptIds</dt><dd><p>A semi-colon separated list of concept IDs
+that together form the comparator exposure definitions.</p></dd>
 </dl>
 
 
@@ -215,7 +217,7 @@ cohort</p></dd> <dt>outcomeId</dt><dd><p>Cohort ID identifying the outcome</p></
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

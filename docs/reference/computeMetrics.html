@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">MethodEvaluation</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.1.0</span>
       </span>
     </div>
 
@@ -80,7 +80,7 @@
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -109,7 +109,7 @@
 </li>
 <li>
   <a href="https://github.com/OHDSI/MethodEvaluation/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -135,14 +135,14 @@
     <p>Compute method performance metrics</p>
     </div>
 
-    <pre class="usage"><span class='fu'>computeMetrics</span>(
-  <span class='no'>logRr</span>,
-  <span class='kw'>seLogRr</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>ci95Lb</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>ci95Ub</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='kw'>p</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='no'>trueLogRr</span>
-)</pre>
+    <pre class="usage"><span class='fu'>computeMetrics</span><span class='op'>(</span>
+  <span class='va'>logRr</span>,
+  seLogRr <span class='op'>=</span> <span class='cn'>NULL</span>,
+  ci95Lb <span class='op'>=</span> <span class='cn'>NULL</span>,
+  ci95Ub <span class='op'>=</span> <span class='cn'>NULL</span>,
+  p <span class='op'>=</span> <span class='cn'>NULL</span>,
+  <span class='va'>trueLogRr</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -181,12 +181,14 @@ provided it will be inferred from the standard error.</p></td>
 
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>Compute the AUC, coverage, mean precision, MSE, type 1 error, type 2 error, and the fraction non-estimable..</p>
+    <p>Compute the AUC, coverage, mean precision, MSE, type 1 error, type 2 error, and the fraction non-
+estimable.</p>
 
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
-    <pre class="examples"><div class='input'><span class='fu'><a href='https://rdrr.io/r/base/library.html'>library</a></span>(<span class='no'>EmpiricalCalibration</span>)
-<span class='no'>data</span> <span class='kw'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/pkg/EmpiricalCalibration/man/simulateControls.html'>simulateControls</a></span>(<span class='kw'>n</span> <span class='kw'>=</span> <span class='fl'>50</span> * <span class='fl'>3</span>, <span class='kw'>trueLogRr</span> <span class='kw'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/Log.html'>log</a></span>(<span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='fl'>1</span>, <span class='fl'>2</span>, <span class='fl'>4</span>)))
-<span class='fu'>computeMetrics</span>(<span class='kw'>logRr</span> <span class='kw'>=</span> <span class='no'>data</span>$<span class='no'>logRr</span>, <span class='kw'>seLogRr</span> <span class='kw'>=</span> <span class='no'>data</span>$<span class='no'>seLogRr</span>, <span class='kw'>trueLogRr</span> <span class='kw'>=</span> <span class='no'>data</span>$<span class='no'>trueLogRr</span>)</div><div class='output co'>#&gt; <span class='message'>Setting levels: control = FALSE, case = TRUE</span></div><div class='output co'>#&gt; <span class='message'>Setting direction: controls &lt; cases</span></div><div class='output co'>#&gt;          auc     coverage        meanP          mse        type1        type2 
+    <pre class="examples"><div class='input'><span class='kw'><a href='https://rdrr.io/r/base/library.html'>library</a></span><span class='op'>(</span><span class='va'><a href='https://ohdsi.github.io/EmpiricalCalibration'>EmpiricalCalibration</a></span><span class='op'>)</span>
+<span class='va'>data</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/pkg/EmpiricalCalibration/man/simulateControls.html'>simulateControls</a></span><span class='op'>(</span>n <span class='op'>=</span> <span class='fl'>50</span> <span class='op'>*</span> <span class='fl'>3</span>, trueLogRr <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/Log.html'>log</a></span><span class='op'>(</span><span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='fl'>1</span>, <span class='fl'>2</span>, <span class='fl'>4</span><span class='op'>)</span><span class='op'>)</span><span class='op'>)</span>
+<span class='fu'>computeMetrics</span><span class='op'>(</span>logRr <span class='op'>=</span> <span class='va'>data</span><span class='op'>$</span><span class='va'>logRr</span>, seLogRr <span class='op'>=</span> <span class='va'>data</span><span class='op'>$</span><span class='va'>seLogRr</span>, trueLogRr <span class='op'>=</span> <span class='va'>data</span><span class='op'>$</span><span class='va'>trueLogRr</span><span class='op'>)</span>
+</div><div class='output co'>#&gt; <span class='message'>Setting levels: control = FALSE, case = TRUE</span></div><div class='output co'>#&gt; <span class='message'>Setting direction: controls &lt; cases</span></div><div class='output co'>#&gt;          auc     coverage        meanP          mse        type1        type2 
 #&gt;         1.00         0.71       136.82         0.03         0.30         0.01 
 #&gt; nonEstimable 
 #&gt;         0.00 </div><div class='input'>
@@ -206,7 +208,7 @@ provided it will be inferred from the standard error.</p></td>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>

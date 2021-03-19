@@ -1,6 +1,6 @@
 # @file MethodEvaluation.R
 #
-# Copyright 2020 Observational Health Data Sciences and Informatics
+# Copyright 2021 Observational Health Data Sciences and Informatics
 #
 # This file is part of MethodEvaluation
 # 
@@ -22,7 +22,7 @@
 #' @importFrom SqlRender loadRenderTranslateSql translateSql
 #' @importFrom grDevices rgb
 #' @importFrom stats aggregate coef pnorm predict qnorm quantile rexp rpois
-#' @importFrom utils write.csv install.packages menu read.csv
+#' @importFrom utils write.csv install.packages menu read.csv head
 #' @importFrom methods is
 #' @importFrom rlang .data
 #' @import Cyclops

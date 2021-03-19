@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">MethodEvaluation</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.1.0</span>
       </span>
     </div>
 
@@ -80,7 +80,7 @@
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -109,7 +109,7 @@
 </li>
 <li>
   <a href="https://github.com/OHDSI/MethodEvaluation/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -135,16 +135,19 @@
     <p>Create cohorts used in a reference set.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>createReferenceSetCohorts</span>(
-  <span class='no'>connectionDetails</span>,
-  <span class='kw'>oracleTempSchema</span> <span class='kw'>=</span> <span class='kw'>NULL</span>,
-  <span class='no'>cdmDatabaseSchema</span>,
-  <span class='kw'>outcomeDatabaseSchema</span> <span class='kw'>=</span> <span class='no'>cdmDatabaseSchema</span>,
-  <span class='kw'>outcomeTable</span> <span class='kw'>=</span> <span class='st'>"outcomes"</span>,
-  <span class='kw'>nestingDatabaseSchema</span> <span class='kw'>=</span> <span class='no'>cdmDatabaseSchema</span>,
-  <span class='kw'>nestingTable</span> <span class='kw'>=</span> <span class='st'>"nesting"</span>,
-  <span class='kw'>referenceSet</span> <span class='kw'>=</span> <span class='st'>"ohdsiMethodsBenchmark"</span>
-)</pre>
+    <pre class="usage"><span class='fu'>createReferenceSetCohorts</span><span class='op'>(</span>
+  <span class='va'>connectionDetails</span>,
+  oracleTempSchema <span class='op'>=</span> <span class='cn'>NULL</span>,
+  <span class='va'>cdmDatabaseSchema</span>,
+  exposureDatabaseSchema <span class='op'>=</span> <span class='va'>cdmDatabaseSchema</span>,
+  exposureTable <span class='op'>=</span> <span class='st'>"exposures"</span>,
+  outcomeDatabaseSchema <span class='op'>=</span> <span class='va'>cdmDatabaseSchema</span>,
+  outcomeTable <span class='op'>=</span> <span class='st'>"outcomes"</span>,
+  nestingDatabaseSchema <span class='op'>=</span> <span class='va'>cdmDatabaseSchema</span>,
+  nestingTable <span class='op'>=</span> <span class='st'>"nesting"</span>,
+  referenceSet <span class='op'>=</span> <span class='st'>"ohdsiMethodsBenchmark"</span>,
+  <span class='va'>workFolder</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -158,13 +161,25 @@ function <code>createConnectionDetails</code> in the
     <tr>
       <th>oracleTempSchema</th>
       <td><p>Should be used in Oracle to specify a schema where the user has write
-priviliges for storing temporary tables.</p></td>
+privileges for storing temporary tables.</p></td>
     </tr>
     <tr>
       <th>cdmDatabaseSchema</th>
       <td><p>A database schema containing health care data in the OMOP Commond
 Data Model. Note that for SQL Server, botth the database and schema
-should be specified, e.g. 'cdm_schema.dbo'</p></td>
+should be specified, e.g. 'cdm_schema.dbo'.</p></td>
+    </tr>
+    <tr>
+      <th>exposureDatabaseSchema</th>
+      <td><p>The name of the database schema where the exposure cohorts will be 
+created. Only needed if <code>referenceSet = 'ohdsiDevelopment'</code>. Note
+that for SQL Server, both the database and schema should be specified, 
+e.g. 'cdm_schema.dbo'.</p></td>
+    </tr>
+    <tr>
+      <th>exposureTable</th>
+      <td><p>The name of the table that will be created to store the exposure 
+cohorts. Only needed if <code>referenceSet = 'ohdsiDevelopment'</code>.</p></td>
     </tr>
     <tr>
       <th>outcomeDatabaseSchema</th>
@@ -178,20 +193,27 @@ specified, e.g. 'cdm_schema.dbo'</p></td>
     </tr>
     <tr>
       <th>nestingDatabaseSchema</th>
-      <td><p>(For the OHDSI Methods Benchmark only) The database schema where the
-nesting outcome table is located. Note that for SQL Server, both the
-database and schema should be specified, e.g. 'cdm_schema.dbo'.</p></td>
+      <td><p>(For the OHDSI Methods Benchmark and OHDSI Development Set only) The
+database schema where the nesting outcome table is located. Note that 
+for SQL Server, both the database and schema should be specified, e.g.
+ 'cdm_schema.dbo'.</p></td>
     </tr>
     <tr>
       <th>nestingTable</th>
-      <td><p>(For the OHDSI Methods Benchmark only) The name of the table where
-the nesting cohorts will be stored.</p></td>
+      <td><p>(For the OHDSI Methods Benchmark and OHDSI Development Set only) The 
+name of the table where the nesting cohorts will be stored.</p></td>
     </tr>
     <tr>
       <th>referenceSet</th>
       <td><p>The name of the reference set for which outcomes need to be created.
-Currently supported are "omopReferenceSet", "euadrReferenceSet", and
-"ohdsiMethodsBenchmark".</p></td>
+Currently supported are "omopReferenceSet", "euadrReferenceSet", 
+"ohdsiMethodsBenchmark", and "ohdsiDevelopment".</p></td>
+    </tr>
+    <tr>
+      <th>workFolder</th>
+      <td><p>Name of local folder to place intermediary results; make sure to use
+forward slashes (/). Do not use a folder on a network drive since
+this greatly impacts performance.</p></td>
     </tr>
     </table>
 
@@ -200,6 +222,9 @@ Currently supported are "omopReferenceSet", "euadrReferenceSet", and
     <p>This function will create the outcomes of interest and nesting cohorts referenced in the various
 reference sets. The outcomes of interest are derives using information like diagnoses, procedures,
 and drug prescriptions. The outcomes are stored in a table on the database server.</p>
+<p>For the 'ohdsiMethodsBenchmark' reference set, the exposures are taken from the drug_era table, and
+are therefore not generated as separate cohorts, and an exposure cohort table therefore needn't be supplied. 
+For the 'ohdsiDevelopment' reference set, exposure cohorts will be generated.</p>
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
@@ -216,7 +241,7 @@ and drug prescriptions. The outcomes are stored in a table on the database serve
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.5.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
 </div>
 
       </footer>
