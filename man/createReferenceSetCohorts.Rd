@@ -7,6 +7,7 @@
 createReferenceSetCohorts(
   connectionDetails,
   oracleTempSchema = NULL,
+  tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
   cdmDatabaseSchema,
   exposureDatabaseSchema = cdmDatabaseSchema,
   exposureTable = "exposures",
@@ -23,8 +24,11 @@ createReferenceSetCohorts(
 function \code{createConnectionDetails} in the
 \code{DatabaseConnector} package.}
 
-\item{oracleTempSchema}{Should be used in Oracle to specify a schema where the user has write
-privileges for storing temporary tables.}
+\item{oracleTempSchema}{DEPRECATED: use `tempEmulationSchema` instead.}
+
+\item{tempEmulationSchema}{Some database platforms like Oracle and Impala do not truly support temp tables. To
+emulate temp tables, provide a schema with write privileges where temp tables
+can be created.}
 
 \item{cdmDatabaseSchema}{A database schema containing health care data in the OMOP Commond
 Data Model. Note that for SQL Server, botth the database and schema

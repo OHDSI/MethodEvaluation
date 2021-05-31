@@ -1,8 +1,8 @@
 Package: MethodEvaluation
 Type: Package
 Title: Package for Evaluation of Estimation Methods
-Version: 2.1.0
-Date: 2021-03-19
+Version: 2.2.0
+Date: 2021-05-31
 Authors@R: c(
   person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre"))
   )
@@ -30,7 +30,7 @@ Imports:
   readr,
   purrr,
   rlang,
-  SqlRender (>= 1.6.5),
+  SqlRender (>= 1.7.0),
   pROC,
   ggplot2,
   ParallelLogger (>= 2.0.0),

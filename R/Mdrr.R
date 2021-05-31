@@ -28,9 +28,10 @@
 #'                                 function \code{createConnectionDetails} in the
 #'                                 \code{DatabaseConnector} package.
 #' @param cdmDatabaseSchema        Name of database schema that contains OMOP CDM and vocabulary.
-#' @param oracleTempSchema         For Oracle only: the name of the database schema where you want all
-#'                                 temporary tables to be managed. Requires create/insert permissions
-#'                                 to this database.
+#' @param oracleTempSchema    DEPRECATED: use `tempEmulationSchema` instead.
+#' @param tempEmulationSchema Some database platforms like Oracle and Impala do not truly support temp tables. To
+#'                            emulate temp tables, provide a schema with write privileges where temp tables
+#'                            can be created.
 #' @param exposureOutcomePairs     A data frame with at least two columns:
 #'                                 \itemize{
 #'                                   \item {"exposureId" or "targetId" containing the drug_concept_ID or
@@ -80,13 +81,18 @@
 #' @export
 computeMdrr <- function(connectionDetails,
                         cdmDatabaseSchema,
-                        oracleTempSchema = cdmDatabaseSchema,
+                        oracleTempSchema = NULL,
+                        tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
                         exposureOutcomePairs,
                         exposureDatabaseSchema = cdmDatabaseSchema,
                         exposureTable = "drug_era",
                         outcomeDatabaseSchema = cdmDatabaseSchema,
                         outcomeTable = "condition_era",
                         cdmVersion = "5") {
+  if (!is.null(oracleTempSchema) && oracleTempSchema != "") {
+    warning("The 'oracleTempSchema' argument is deprecated. Use 'tempEmulationSchema' instead.")
+    tempEmulationSchema <- oracleTempSchema
+  }
   if (is.null(exposureOutcomePairs$exposureId) && !is.null(exposureOutcomePairs$targetId))
     exposureOutcomePairs$exposureId <- exposureOutcomePairs$targetId
   if (is.null(exposureOutcomePairs$exposureId))
@@ -138,7 +144,7 @@ computeMdrr <- function(connectionDetails,
   renderedSql <- SqlRender::loadRenderTranslateSql("MDRR.sql",
                                                    packageName = "MethodEvaluation",
                                                    dbms = connectionDetails$dbms,
-                                                   oracleTempSchema = oracleTempSchema,
+                                                   tempEmulationSchema = tempEmulationSchema,
                                                    cdm_database_schema = cdmDatabaseSchema,
                                                    exposures_of_interest = unique(exposureOutcomePairs$exposureId),
                                                    outcomes_of_interest = unique(exposureOutcomePairs$outcomeId),
@@ -161,13 +167,13 @@ computeMdrr <- function(connectionDetails,
   sql <- "SELECT * FROM #mdrr"
   sql <- SqlRender::translate(sql,
                               targetDialect = connectionDetails$dbms,
-                              oracleTempSchema = oracleTempSchema)
+                              tempEmulationSchema = tempEmulationSchema)
   mdrr <- DatabaseConnector::querySql(conn, sql, snakeCaseToCamelCase = TRUE)
   
   renderedSql <- SqlRender::loadRenderTranslateSql("MDRR_Drop_temp_tables.sql",
                                                    packageName = "MethodEvaluation",
                                                    dbms = connectionDetails$dbms,
-                                                   oracleTempSchema = oracleTempSchema)
+                                                   tempEmulationSchema = tempEmulationSchema)
   DatabaseConnector::executeSql(conn, renderedSql, progressBar = FALSE, reportOverallTime = FALSE)
   
   mdrr <- data.frame(exposureId = mdrr$drugConceptId,
