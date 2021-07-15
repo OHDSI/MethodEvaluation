@@ -379,7 +379,7 @@ countDrugEras <- function(connection, cdmDatabaseSchema, cohortIds) {
 #' This function will synthesize positive controls for a given reference set based on the real
 #' negative controls. Data from the database will be used to fit outcome models for each negative
 #' control outcome, and these models will be used to sample additional synthetic outcomes during
-#' eposure to increase the true hazard ratio.
+#' exposure to increase the true hazard ratio.
 #' The positive control outcome cohorts will be stored in the same database table as the negative
 #' control outcome cohorts.
 #' A summary file will be created listing all positive and negative controls. This list should then be
