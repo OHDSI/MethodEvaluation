@@ -170,7 +170,7 @@ injectSignals <- function(connectionDetails,
                           cdmVersion = "5",
                           modelThreads = 1,
                           generationThreads = 1) {
-  .Deprecated("synhtesizePositiveControls")
+  .Deprecated("synthesizePositiveControls")
   
   if (addExposureDaysToEnd) {
     endAnchor <- "cohort end"

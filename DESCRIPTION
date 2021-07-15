@@ -37,6 +37,7 @@ Imports:
   methods,
   EmpiricalCalibration
 Suggests:
+  Eunomia,
   testthat,
   DT,
   shiny,
