@@ -28,6 +28,15 @@ test_that("Synthesize positive controls", {
     "Not enough negative controls")
   
   # TODO: need to check an actual synthesis
+  
+  expect_error(
+    suppressWarnings( # Deprecated
+      injectSignals(connectionDetails = connectionDetails,
+                    cdmDatabaseSchema = "main",
+                    exposureOutcomePairs = data.frame(
+                      exposureId = c(1),
+                      outcomeId = c(4)))),
+    "Not enough negative controls")
 })
 
 test_that("Create reference set cohort", {
