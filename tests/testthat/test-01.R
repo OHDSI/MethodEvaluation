@@ -4,8 +4,6 @@ library(dplyr)
 connectionDetails <- Eunomia::getEunomiaConnectionDetails()
 Eunomia::createCohorts(connectionDetails)
 
-# connection <- DatabaseConnector::connect(connectionDetails )
-
 test_that("Compute MDRR", {
   result <- computeMdrr(connectionDetails = connectionDetails,
                         cdmDatabaseSchema = "main",

@@ -20,7 +20,8 @@ test_that("Package results", {
                             comparative = TRUE,
                             nesting = FALSE,
                             firstExposureOnly = TRUE)
-  tempDir <- tempdir()
+  tempFolder <- tempfile()
+  dir.create(tempFolder)
   
   packageOhdsiBenchmarkResults(estimates = estimates,
                                controlSummary = controlSummary,
@@ -34,5 +35,5 @@ test_that("Package results", {
     metrics <- computeOhdsiBenchmarkMetrics(exportFolder = tempDir),
     "'response' must have two levels")
   
-  unlink(tempDir, recursive = TRUE)
+  unlink(tempFolder, recursive = TRUE)
 })

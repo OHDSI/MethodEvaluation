@@ -3,7 +3,7 @@ library(testthat)
 test_that("Plot ROCs", {
   set.seed(123)
   data <- EmpiricalCalibration::simulateControls(n = 50 * 3, trueLogRr = log(c(1, 2, 4)))
-  fileName <- tempfile(pattern = "roc", fileext = ".png")
+  fileName <- tempfile(fileext = ".png")
   
   plot <- plotRocsInjectedSignals(logRr = data$logRr, trueLogRr = data$trueLogRr, showAucs = TRUE,
                                   fileName = fileName)
@@ -17,7 +17,7 @@ test_that("Plot ROCs", {
 test_that("Plot coverage", {
   set.seed(123)
   data <- EmpiricalCalibration::simulateControls(n = 50 * 3, trueLogRr = log(c(1, 2, 4)))
-  fileName <- tempfile(pattern = "cov", fileext = ".png")
+  fileName <- tempfile(fileext = ".png")
   
   plot <- plotCoverageInjectedSignals(logRr = data$logRr, seLogRr = data$seLogRr, trueLogRr = data$trueLogRr,
                                   fileName = fileName)
@@ -31,7 +31,7 @@ test_that("Plot coverage", {
 test_that("Plot controls", {
   set.seed(123)
   data <- EmpiricalCalibration::simulateControls(n = 50 * 3, trueLogRr = log(c(1, 2, 4)))
-  fileName <- tempfile(pattern = "con", fileext = ".png")
+  fileName <- tempfile(fileext = ".png")
   
   plot <- plotControls(logRr = data$logRr, seLogRr = data$seLogRr, trueLogRr = data$trueLogRr,
                                       fileName = fileName)
