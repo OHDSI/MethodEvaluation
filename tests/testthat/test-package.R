@@ -27,12 +27,12 @@ test_that("Package results", {
                                controlSummary = controlSummary,
                                analysisRef = analysisRef,
                                databaseName = "test",
-                               exportFolder = tempDir)
-  result <- read.csv(file.path(tempDir, "estimates_CohortMethod_test.csv"))
+                               exportFolder = tempFolder)
+  result <- read.csv(file.path(tempFolder, "estimates_CohortMethod_test.csv"))
   expect_equal(result$analysisId[1], 1)
   
   expect_error(
-    metrics <- computeOhdsiBenchmarkMetrics(exportFolder = tempDir),
+    metrics <- computeOhdsiBenchmarkMetrics(exportFolder = tempFolder),
     "'response' must have two levels")
   
   unlink(tempFolder, recursive = TRUE)
