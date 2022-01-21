@@ -3,6 +3,16 @@ MethodEvaluation 2.1.0
 
 Changes:
 
+1. Updating from 'oracleTempSchema' to 'tempEmulationSchema' for newer versions of SqlRender.
+
+2. Added unit tests.
+
+
+MethodEvaluation 2.1.0
+======================
+
+Changes:
+
 1. Added 'ohdsiDevelopment' reference set, intended to be used when developing methods. This set is based on 76 negative controls from the LEGEND Hypertension study.
 
 2. Now generating cohort counts when generating reference set cohorts.

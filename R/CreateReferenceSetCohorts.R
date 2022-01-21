@@ -1,4 +1,4 @@
-# Copyright 2021 Observational Health Data Sciences and Informatics
+# Copyright 2022 Observational Health Data Sciences and Informatics
 #
 # This file is part of MethodEvaluation
 # 
@@ -28,8 +28,10 @@
 #' @param connectionDetails       An R object of type \code{ConnectionDetails} created using the
 #'                                function \code{createConnectionDetails} in the
 #'                                \code{DatabaseConnector} package.
-#' @param oracleTempSchema        Should be used in Oracle to specify a schema where the user has write
-#'                                privileges for storing temporary tables.
+#' @param oracleTempSchema    DEPRECATED: use `tempEmulationSchema` instead.
+#' @param tempEmulationSchema Some database platforms like Oracle and Impala do not truly support temp tables. To
+#'                            emulate temp tables, provide a schema with write privileges where temp tables
+#'                            can be created.
 #' @param cdmDatabaseSchema       A database schema containing health care data in the OMOP Commond
 #'                                Data Model. Note that for SQL Server, botth the database and schema
 #'                                should be specified, e.g. 'cdm_schema.dbo'.
@@ -60,6 +62,7 @@
 #' @export
 createReferenceSetCohorts <- function(connectionDetails,
                                       oracleTempSchema = NULL,
+                                      tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
                                       cdmDatabaseSchema,
                                       exposureDatabaseSchema = cdmDatabaseSchema,
                                       exposureTable = "exposures",
@@ -69,6 +72,10 @@ createReferenceSetCohorts <- function(connectionDetails,
                                       nestingTable = "nesting",
                                       referenceSet = "ohdsiMethodsBenchmark",
                                       workFolder) {
+  if (!is.null(oracleTempSchema) && oracleTempSchema != "") {
+    warning("The 'oracleTempSchema' argument is deprecated. Use 'tempEmulationSchema' instead.")
+    tempEmulationSchema <- oracleTempSchema
+  }
   if (referenceSet == "omopReferenceSet") {
     ParallelLogger::logInfo("Generating HOIs for the OMOP reference set")
     renderedSql <- SqlRender::loadRenderTranslateSql("CreateOmopHois.sql",
@@ -94,7 +101,7 @@ createReferenceSetCohorts <- function(connectionDetails,
                                       outcomeTable = outcomeTable,
                                       nestingDatabaseSchema = nestingDatabaseSchema,
                                       nestingTable = nestingTable,
-                                      oracleTempSchema = oracleTempSchema,
+                                      tempEmulationSchema = tempEmulationSchema,
                                       workFolder = workFolder)
   } else if (referenceSet == "ohdsiDevelopment") {
     ParallelLogger::logInfo("Generating HOIs and nesting cohorts for the OHDSI Development set")
@@ -106,7 +113,7 @@ createReferenceSetCohorts <- function(connectionDetails,
                                                  outcomeTable = outcomeTable,
                                                  nestingDatabaseSchema = nestingDatabaseSchema,
                                                  nestingTable = nestingTable,
-                                                 oracleTempSchema = oracleTempSchema,
+                                                 tempEmulationSchema = tempEmulationSchema,
                                                  workFolder = workFolder)
   } else {
     stop(paste("Unknow reference set:", referenceSet))
@@ -121,7 +128,7 @@ createOhdsiDevelopmentNegativeControlCohorts <- function(connectionDetails,
                                                          outcomeTable,
                                                          nestingDatabaseSchema,
                                                          nestingTable,
-                                                         oracleTempSchema,
+                                                         tempEmulationSchema,
                                                          workFolder) {
   if (!file.exists(workFolder)) {
     dir.create(workFolder, recursive = TRUE)
@@ -135,7 +142,7 @@ createOhdsiDevelopmentNegativeControlCohorts <- function(connectionDetails,
   sql <- SqlRender::loadRenderTranslateSql(sqlFilename = "CreateCohortTable.sql",
                                            packageName = "MethodEvaluation",
                                            dbms = connectionDetails$dbms,
-                                           oracleTempSchema = oracleTempSchema,
+                                           tempEmulationSchema = tempEmulationSchema,
                                            cohort_database_schema = outcomeDatabaseSchema,
                                            cohort_table = outcomeTable)
   DatabaseConnector::executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
@@ -144,7 +151,7 @@ createOhdsiDevelopmentNegativeControlCohorts <- function(connectionDetails,
     sql <- SqlRender::loadRenderTranslateSql(sqlFilename = "CreateCohortTable.sql",
                                              packageName = "MethodEvaluation",
                                              dbms = connectionDetails$dbms,
-                                             oracleTempSchema = oracleTempSchema,
+                                             tempEmulationSchema = tempEmulationSchema,
                                              cohort_database_schema = nestingDatabaseSchema,
                                              cohort_table = nestingTable)
     DatabaseConnector::executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
@@ -153,7 +160,7 @@ createOhdsiDevelopmentNegativeControlCohorts <- function(connectionDetails,
     sql <- SqlRender::loadRenderTranslateSql(sqlFilename = "CreateCohortTable.sql",
                                              packageName = "MethodEvaluation",
                                              dbms = connectionDetails$dbms,
-                                             oracleTempSchema = oracleTempSchema,
+                                             tempEmulationSchema = tempEmulationSchema,
                                              cohort_database_schema = exposureDatabaseSchema,
                                              cohort_table = exposureTable)
     DatabaseConnector::executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
@@ -165,7 +172,7 @@ createOhdsiDevelopmentNegativeControlCohorts <- function(connectionDetails,
     sql <- SqlRender::loadRenderTranslateSql(sqlFilename = paste0(exposureCohorts$cohortName[i], ".sql"),
                                              packageName = "MethodEvaluation",
                                              dbms = connectionDetails$dbms,
-                                             oracleTempSchema = oracleTempSchema,
+                                             tempEmulationSchema = tempEmulationSchema,
                                              cdm_database_schema = cdmDatabaseSchema,
                                              vocabulary_database_schema = cdmDatabaseSchema,
                                              target_database_schema = exposureDatabaseSchema,
@@ -179,7 +186,7 @@ createOhdsiDevelopmentNegativeControlCohorts <- function(connectionDetails,
   sql <- SqlRender::loadRenderTranslateSql("NegativeControls.sql",
                                            "MethodEvaluation",
                                            dbms = connectionDetails$dbms,
-                                           oracleTempSchema = oracleTempSchema,
+                                           tempEmulationSchema = tempEmulationSchema,
                                            cdm_database_schema = cdmDatabaseSchema,
                                            target_database_schema = outcomeDatabaseSchema,
                                            target_cohort_table = outcomeTable,
@@ -192,7 +199,7 @@ createOhdsiDevelopmentNegativeControlCohorts <- function(connectionDetails,
   sql <- SqlRender::loadRenderTranslateSql("NestingCohorts.sql",
                                            "MethodEvaluation",
                                            dbms = connectionDetails$dbms,
-                                           oracleTempSchema = oracleTempSchema,
+                                           tempEmulationSchema = tempEmulationSchema,
                                            cdm_database_schema = cdmDatabaseSchema,
                                            target_database_schema = nestingDatabaseSchema,
                                            target_cohort_table = nestingTable,
@@ -233,7 +240,7 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
                                               outcomeTable,
                                               nestingDatabaseSchema,
                                               nestingTable,
-                                              oracleTempSchema,
+                                              tempEmulationSchema,
                                               workFolder) {
   ohdsiNegativeControls <- readRDS(system.file("ohdsiNegativeControls.rds",
                                                package = "MethodEvaluation"))
@@ -244,7 +251,7 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
   sql <- SqlRender::loadRenderTranslateSql(sqlFilename = "CreateCohortTable.sql",
                                            packageName = "MethodEvaluation",
                                            dbms = connectionDetails$dbms,
-                                           oracleTempSchema = oracleTempSchema,
+                                           tempEmulationSchema = tempEmulationSchema,
                                            cohort_database_schema = outcomeDatabaseSchema,
                                            cohort_table = outcomeTable)
   DatabaseConnector::executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
@@ -252,7 +259,7 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
   sql <- SqlRender::loadRenderTranslateSql(sqlFilename = "CreateCohortTable.sql",
                                            packageName = "MethodEvaluation",
                                            dbms = connectionDetails$dbms,
-                                           oracleTempSchema = oracleTempSchema,
+                                           tempEmulationSchema = tempEmulationSchema,
                                            cohort_database_schema = nestingDatabaseSchema,
                                            cohort_table = nestingTable)
   DatabaseConnector::executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
@@ -264,7 +271,7 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
     sql <- SqlRender::loadRenderTranslateSql(sqlFilename = paste0(complexOutcomeCohorts$sqlName[i], ".sql"),
                                              packageName = "MethodEvaluation",
                                              dbms = connectionDetails$dbms,
-                                             oracleTempSchema = oracleTempSchema,
+                                             tempEmulationSchema = tempEmulationSchema,
                                              cdm_database_schema = cdmDatabaseSchema,
                                              vocabulary_database_schema = cdmDatabaseSchema,
                                              target_database_schema = outcomeDatabaseSchema,
@@ -280,7 +287,7 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
   sql <- SqlRender::loadRenderTranslateSql("NegativeControls.sql",
                                            "MethodEvaluation",
                                            dbms = connectionDetails$dbms,
-                                           oracleTempSchema = oracleTempSchema,
+                                           tempEmulationSchema = tempEmulationSchema,
                                            cdm_database_schema = cdmDatabaseSchema,
                                            target_database_schema = outcomeDatabaseSchema,
                                            target_cohort_table = outcomeTable,
@@ -295,7 +302,7 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
   sql <- SqlRender::loadRenderTranslateSql("NestingCohorts.sql",
                                            "MethodEvaluation",
                                            dbms = connectionDetails$dbms,
-                                           oracleTempSchema = oracleTempSchema,
+                                           tempEmulationSchema = tempEmulationSchema,
                                            cdm_database_schema = cdmDatabaseSchema,
                                            target_database_schema = nestingDatabaseSchema,
                                            target_cohort_table = nestingTable,
@@ -372,7 +379,7 @@ countDrugEras <- function(connection, cdmDatabaseSchema, cohortIds) {
 #' This function will synthesize positive controls for a given reference set based on the real
 #' negative controls. Data from the database will be used to fit outcome models for each negative
 #' control outcome, and these models will be used to sample additional synthetic outcomes during
-#' eposure to increase the true hazard ratio.
+#' exposure to increase the true hazard ratio.
 #' The positive control outcome cohorts will be stored in the same database table as the negative
 #' control outcome cohorts.
 #' A summary file will be created listing all positive and negative controls. This list should then be
@@ -381,8 +388,10 @@ countDrugEras <- function(connection, cdmDatabaseSchema, cohortIds) {
 #' @param connectionDetails        An R object of type \code{ConnectionDetails} created using the
 #'                                 function \code{createConnectionDetails} in the
 #'                                 \code{DatabaseConnector} package.
-#' @param oracleTempSchema         Should be used in Oracle to specify a schema where the user has
-#'                                 write priviliges for storing temporary tables.
+#' @param oracleTempSchema    DEPRECATED: use `tempEmulationSchema` instead.
+#' @param tempEmulationSchema Some database platforms like Oracle and Impala do not truly support temp tables. To
+#'                            emulate temp tables, provide a schema with write privileges where temp tables
+#'                            can be created.
 #' @param cdmDatabaseSchema        A database schema containing health care data in the OMOP Commond
 #'                                 Data Model. Note that for SQL Server, botth the database and schema
 #'                                 should be specified, e.g. 'cdm_schema.dbo'
@@ -413,6 +422,7 @@ countDrugEras <- function(connection, cdmDatabaseSchema, cohortIds) {
 synthesizeReferenceSetPositiveControls <- function(connectionDetails,
                                                    cdmDatabaseSchema,
                                                    oracleTempSchema = NULL,
+                                                   tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
                                                    outcomeDatabaseSchema = cdmDatabaseSchema,
                                                    outcomeTable = "cohort",
                                                    exposureDatabaseSchema = cdmDatabaseSchema,
@@ -421,6 +431,10 @@ synthesizeReferenceSetPositiveControls <- function(connectionDetails,
                                                    maxCores = 1,
                                                    workFolder,
                                                    summaryFileName = file.path(workFolder, "allControls.csv")) {
+  if (!is.null(oracleTempSchema) && oracleTempSchema != "") {
+    warning("The 'oracleTempSchema' argument is deprecated. Use 'tempEmulationSchema' instead.")
+    tempEmulationSchema <- oracleTempSchema
+  }
   if (!referenceSet %in% c("ohdsiMethodsBenchmark", "ohdsiDevelopment")) {
     stop("Currently only supporting positive control synthesis for the ohdsiMethodsBenchmark and ohdsiDevelopment reference sets")
   }
@@ -466,7 +480,7 @@ synthesizeReferenceSetPositiveControls <- function(connectionDetails,
     
     result <- synthesizePositiveControls(connectionDetails,
                                          cdmDatabaseSchema = cdmDatabaseSchema,
-                                         oracleTempSchema = oracleTempSchema,
+                                         tempEmulationSchema = tempEmulationSchema,
                                          exposureDatabaseSchema = exposureDatabaseSchema,
                                          exposureTable = exposureTable,
                                          outcomeDatabaseSchema = outcomeDatabaseSchema,
@@ -519,7 +533,7 @@ synthesizeReferenceSetPositiveControls <- function(connectionDetails,
   exposureOutcomes <- unique(exposureOutcomes)
   mdrr <- computeMdrr(connectionDetails = connectionDetails,
                       cdmDatabaseSchema = cdmDatabaseSchema,
-                      oracleTempSchema = oracleTempSchema,
+                      tempEmulationSchema = tempEmulationSchema,
                       exposureOutcomePairs = exposureOutcomes,
                       exposureDatabaseSchema = exposureDatabaseSchema,
                       exposureTable = exposureTable,

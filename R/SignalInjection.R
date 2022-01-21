@@ -1,6 +1,6 @@
 # @file SignalInjection.R
 #
-# Copyright 2021 Observational Health Data Sciences and Informatics
+# Copyright 2022 Observational Health Data Sciences and Informatics
 #
 # This file is part of MethodEvaluation
 #
@@ -170,7 +170,7 @@ injectSignals <- function(connectionDetails,
                           cdmVersion = "5",
                           modelThreads = 1,
                           generationThreads = 1) {
-  .Deprecated("synhtesizePositiveControls")
+  .Deprecated("synthesizePositiveControls")
   
   if (addExposureDaysToEnd) {
     endAnchor <- "cohort end"

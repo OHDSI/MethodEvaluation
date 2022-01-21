@@ -2,6 +2,8 @@ MethodEvaluation
 ================
 
 [![Build Status](https://github.com/OHDSI/MethodEvaluation/workflows/R-CMD-check/badge.svg)](https://github.com/OHDSI/MethodEvaluation/actions?query=workflow%3AR-CMD-check)
+[![codecov.io](https://codecov.io/github/OHDSI/MethodEvaluation/coverage.svg?branch=main)](https://codecov.io/github/OHDSI/MethodEvaluation?branch=main)
+
 
 MethodEvaluation is part of [HADES](https://ohdsi.github.io/Hades).
 
@@ -43,8 +45,8 @@ Documentation can be found on the [package website](https://ohdsi.github.io/Meth
 
 PDF versions of the documentation are also available:
 
-* Package manual: [MethodEvaluation.pdf](https://raw.githubusercontent.com/OHDSI/MethodEvaluation/master/extras/MethodEvaluation.pdf) 
-* Vignette: [Running the OHDSI Methods Benchmark](https://raw.githubusercontent.com/OHDSI/MethodEvaluation/master/inst/doc/OhdsiMethodsBenchmark.pdf)
+* Package manual: [MethodEvaluation.pdf](https://raw.githubusercontent.com/OHDSI/MethodEvaluation/main/extras/MethodEvaluation.pdf) 
+* Vignette: [Running the OHDSI Methods Benchmark](https://raw.githubusercontent.com/OHDSI/MethodEvaluation/main/inst/doc/OhdsiMethodsBenchmark.pdf)
 
 Support
 =======

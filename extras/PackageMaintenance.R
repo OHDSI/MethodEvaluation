@@ -1,4 +1,4 @@
-# Copyright 2021 Observational Health Data Sciences and Informatics
+# Copyright 2022 Observational Health Data Sciences and Informatics
 #
 # This file is part of MethodEvaluation
 # 
@@ -15,7 +15,7 @@
 # limitations under the License.
 
 # Format and check code ---------------------------------------------------
-OhdsiRTools::formatRFolder()
+styler::style_pkg()
 OhdsiRTools::checkUsagePackage("MethodEvaluation")
 OhdsiRTools::updateCopyrightYearFolder()
 devtools::spell_check()

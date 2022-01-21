@@ -1,4 +1,4 @@
-# Copyright 2021 Observational Health Data Sciences and Informatics
+# Copyright 2022 Observational Health Data Sciences and Informatics
 #
 # This file is part of MethodEvaluation
 #
@@ -31,9 +31,10 @@
 #'                                        \code{DatabaseConnector} package.
 #' @param cdmDatabaseSchema               Name of database schema that contains OMOP CDM and
 #'                                        vocabulary.
-#' @param oracleTempSchema                For Oracle only: the name of the database schema where you
-#'                                        want all temporary tables to be managed. Requires
-#'                                        create/insert permissions to this database.
+#' @param oracleTempSchema    DEPRECATED: use `tempEmulationSchema` instead.
+#' @param tempEmulationSchema Some database platforms like Oracle and Impala do not truly support temp tables. To
+#'                            emulate temp tables, provide a schema with write privileges where temp tables
+#'                            can be created.
 #' @param exposureDatabaseSchema          The name of the database schema that is the location where
 #'                                        the exposure data used to define the exposure cohorts is
 #'                                        available.  If exposureTable = DRUG_ERA,
@@ -135,6 +136,7 @@
 synthesizePositiveControls <- function(connectionDetails,
                                        cdmDatabaseSchema,
                                        oracleTempSchema = NULL,
+                                       tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
                                        exposureDatabaseSchema = cdmDatabaseSchema,
                                        exposureTable = "drug_era",
                                        outcomeDatabaseSchema = cdmDatabaseSchema,
@@ -182,6 +184,10 @@ synthesizePositiveControls <- function(connectionDetails,
                                        cdmVersion = "5",
                                        modelThreads = 1,
                                        generationThreads = 1) {
+  if (!is.null(oracleTempSchema) && oracleTempSchema != "") {
+    warning("The 'oracleTempSchema' argument is deprecated. Use 'tempEmulationSchema' instead.")
+    tempEmulationSchema <- oracleTempSchema
+  }
   if (min(effectSizes) < 1)
     stop("Effect sizes smaller than 1 are currently not supported")
   if (modelType != "poisson" && modelType != "survival")
@@ -229,7 +235,7 @@ synthesizePositiveControls <- function(connectionDetails,
   renderedSql <- SqlRender::loadRenderTranslateSql("CreateExposedCohorts.sql",
                                                    packageName = "MethodEvaluation",
                                                    dbms = connectionDetails$dbms,
-                                                   oracleTempSchema = oracleTempSchema,
+                                                   tempEmulationSchema = tempEmulationSchema,
                                                    cdm_database_schema = cdmDatabaseSchema,
                                                    exposure_ids = exposureIds,
                                                    washout_period = washoutPeriod,
@@ -250,7 +256,7 @@ synthesizePositiveControls <- function(connectionDetails,
     exposureSql <- SqlRender::loadRenderTranslateSql("GetExposedCohorts.sql",
                                                      packageName = "MethodEvaluation",
                                                      dbms = connectionDetails$dbms,
-                                                     oracleTempSchema = oracleTempSchema)
+                                                     tempEmulationSchema = tempEmulationSchema)
     exposures <- DatabaseConnector::querySql(conn, exposureSql, snakeCaseToCamelCase = TRUE)
     exposures <- exposures[order(exposures$rowId), ]
     saveRDS(exposures, exposuresFile)
@@ -270,11 +276,11 @@ synthesizePositiveControls <- function(connectionDetails,
                                      dropTableIfExists = TRUE,
                                      createTable = TRUE,
                                      tempTable = TRUE,
-                                     oracleTempSchema = oracleTempSchema)
+                                     tempEmulationSchema = tempEmulationSchema)
       outcomeSql <- SqlRender::loadRenderTranslateSql("GetPriorOutcomes.sql",
                                                       packageName = "MethodEvaluation",
                                                       dbms = connectionDetails$dbms,
-                                                      oracleTempSchema = oracleTempSchema,
+                                                      tempEmulationSchema = tempEmulationSchema,
                                                       cdm_database_schema = cdmDatabaseSchema,
                                                       outcome_database_schema = outcomeDatabaseSchema,
                                                       outcome_table = outcomeTable,
@@ -282,7 +288,7 @@ synthesizePositiveControls <- function(connectionDetails,
       priorOutcomes <- DatabaseConnector::querySql(conn, outcomeSql, snakeCaseToCamelCase = TRUE)
       saveRDS(priorOutcomes, priorOutcomesFile)
       sql <- "TRUNCATE TABLE #exposure_outcome; DROP TABLE #exposure_outcome;"
-      sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms, oracleTempSchema = oracleTempSchema)
+      sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms, tempEmulationSchema = tempEmulationSchema)
       DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
     }
   }
@@ -300,11 +306,11 @@ synthesizePositiveControls <- function(connectionDetails,
                                    dropTableIfExists = TRUE,
                                    createTable = TRUE,
                                    tempTable = TRUE,
-                                   oracleTempSchema = oracleTempSchema)
+                                   tempEmulationSchema = tempEmulationSchema)
     outcomeSql <- SqlRender::loadRenderTranslateSql("GetOutcomes.sql",
                                                     packageName = "MethodEvaluation",
                                                     dbms = connectionDetails$dbms,
-                                                    oracleTempSchema = oracleTempSchema,
+                                                    tempEmulationSchema = tempEmulationSchema,
                                                     cdm_database_schema = cdmDatabaseSchema,
                                                     outcome_database_schema = outcomeDatabaseSchema,
                                                     outcome_table = outcomeTable,
@@ -312,7 +318,7 @@ synthesizePositiveControls <- function(connectionDetails,
     outcomeCounts <- DatabaseConnector::querySql(conn, outcomeSql, snakeCaseToCamelCase = TRUE)
     saveRDS(outcomeCounts, outcomesFile)
     sql <- "TRUNCATE TABLE #exposure_outcome; DROP TABLE #exposure_outcome;"
-    sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms, oracleTempSchema = oracleTempSchema)
+    sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms, tempEmulationSchema = tempEmulationSchema)
     DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
   }
   
@@ -398,7 +404,7 @@ synthesizePositiveControls <- function(connectionDetails,
       sql <- "SELECT COUNT(*) AS entries FROM (SELECT DISTINCT subject_id, cohort_start_date FROM #cohort_person WHERE cohort_definition_id IN (@cohort_ids)) tmp;"
       count <- DatabaseConnector::renderTranslateQuerySql(connection = conn, 
                                                           sql = sql,
-                                                          oracleTempSchema = oracleTempSchema,
+                                                          tempEmulationSchema = tempEmulationSchema,
                                                           cohort_ids = cohortIds,
                                                           snakeCaseToCamelCase = TRUE)$entries
       if (count > maxSubjectsForModel) {
@@ -406,7 +412,7 @@ synthesizePositiveControls <- function(connectionDetails,
         renderedSql <- SqlRender::loadRenderTranslateSql("SampleExposedCohorts.sql",
                                                          packageName = "MethodEvaluation",
                                                          dbms = connectionDetails$dbms,
-                                                         oracleTempSchema = oracleTempSchema,
+                                                         tempEmulationSchema = tempEmulationSchema,
                                                          sample_size = maxSubjectsForModel,
                                                          cohort_ids = cohortIds)
         DatabaseConnector::executeSql(conn, renderedSql)
@@ -414,7 +420,7 @@ synthesizePositiveControls <- function(connectionDetails,
         sql <- "SELECT row_id FROM #sampled_person"
         sampledRowIds <- DatabaseConnector::renderTranslateQuerySql(connection = conn, 
                                                                     sql = sql,
-                                                                    oracleTempSchema = oracleTempSchema,
+                                                                    tempEmulationSchema = tempEmulationSchema,
                                                                     snakeCaseToCamelCase = TRUE)
         sampledExposuresFile <- file.path(workFolder, sprintf("sampledRowIds_g%s.rds", i))
         saveRDS(sampledRowIds, sampledExposuresFile)
@@ -423,14 +429,14 @@ synthesizePositiveControls <- function(connectionDetails,
         sql <- "SELECT * INTO #sampled_person FROM #cohort_person WHERE cohort_definition_id IN (@cohort_ids);"
         DatabaseConnector::renderTranslateExecuteSql(connection = conn, 
                                                      sql = sql, 
-                                                     oracleTempSchema = oracleTempSchema,
+                                                     tempEmulationSchema = tempEmulationSchema,
                                                      cohort_ids = cohortIds,
                                                      progressBar = FALSE, 
                                                      reportOverallTime = FALSE)
       }
       ParallelLogger::logInfo("Extracting covariates for fitting outcome model(s)")
       covariateData <- FeatureExtraction::getDbCovariateData(connection = conn,
-                                                             oracleTempSchema = oracleTempSchema,
+                                                             oracleTempSchema = tempEmulationSchema,
                                                              cdmDatabaseSchema = cdmDatabaseSchema,
                                                              cohortTable = "#sampled_person",
                                                              cohortTableIsTemp = TRUE,
@@ -445,7 +451,7 @@ synthesizePositiveControls <- function(connectionDetails,
 
       sql <- "TRUNCATE TABLE #sampled_person; DROP TABLE #sampled_person;"
       DatabaseConnector::renderTranslateExecuteSql(connection = conn, 
-                                                   oracleTempSchema = oracleTempSchema,
+                                                   tempEmulationSchema = tempEmulationSchema,
                                                    sql = sql, 
                                                    progressBar = FALSE, 
                                                    reportOverallTime = FALSE)
@@ -538,10 +544,10 @@ synthesizePositiveControls <- function(connectionDetails,
         sql <- SqlRender::render(sql, cohort_ids = uniqueGroups[[i]])
         sql <- SqlRender::translate(sql,
                                     targetDialect = connectionDetails$dbms,
-                                    oracleTempSchema = oracleTempSchema)
+                                    tempEmulationSchema = tempEmulationSchema)
         DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
         covariateData <- FeatureExtraction::getDbCovariateData(connection = conn,
-                                                               oracleTempSchema = oracleTempSchema,
+                                                               oracleTempSchema = tempEmulationSchema,
                                                                cdmDatabaseSchema = cdmDatabaseSchema,
                                                                cohortTable = "#selected_person",
                                                                cohortTableIsTemp = TRUE,
@@ -557,7 +563,7 @@ synthesizePositiveControls <- function(connectionDetails,
         sql <- "TRUNCATE TABLE #selected_person; DROP TABLE #selected_person;"
         sql <- SqlRender::translate(sql,
                                     targetDialect = connectionDetails$dbms,
-                                    oracleTempSchema = oracleTempSchema)
+                                    tempEmulationSchema = tempEmulationSchema)
         DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
       }
     }
@@ -634,7 +640,7 @@ synthesizePositiveControls <- function(connectionDetails,
                                  dropTableIfExists = TRUE,
                                  createTable = TRUE,
                                  tempTable = tempTable,
-                                 oracleTempSchema = oracleTempSchema,
+                                 tempEmulationSchema = tempEmulationSchema,
                                  progressBar = TRUE)
   
   toCopy <- result[result$modelFolder != "", c("outcomeId", "newOutcomeId")]
@@ -645,14 +651,14 @@ synthesizePositiveControls <- function(connectionDetails,
                                  dropTableIfExists = TRUE,
                                  createTable = TRUE,
                                  tempTable = TRUE,
-                                 oracleTempSchema = oracleTempSchema)
+                                 tempEmulationSchema = tempEmulationSchema)
   
   ParallelLogger::logInfo("Copying negative control outcomes into database")
   copySql <- SqlRender::loadRenderTranslateSql("CopyOutcomes.sql",
                                                packageName = "MethodEvaluation",
                                                dbms = connectionDetails$dbms,
                                                cdm_database_schema = cdmDatabaseSchema,
-                                               oracleTempSchema = oracleTempSchema,
+                                               tempEmulationSchema = tempEmulationSchema,
                                                outcome_database_schema = outcomeDatabaseSchema,
                                                outcome_table = outcomeTable,
                                                output_database_schema = outputDatabaseSchema,
@@ -663,16 +669,16 @@ synthesizePositiveControls <- function(connectionDetails,
   DatabaseConnector::executeSql(conn, copySql)
   
   sql <- "TRUNCATE TABLE #cohort_person; DROP TABLE #cohort_person;"
-  sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms, oracleTempSchema = oracleTempSchema)
+  sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms, tempEmulationSchema = tempEmulationSchema)
   DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
   
   sql <- "TRUNCATE TABLE #to_copy; DROP TABLE #to_copy;"
-  sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms, oracleTempSchema = oracleTempSchema)
+  sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms, tempEmulationSchema = tempEmulationSchema)
   DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
   
   sql <- "TRUNCATE TABLE @temp_outcomes_table; DROP TABLE @temp_outcomes_table;"
   sql <- SqlRender::render(sql, temp_outcomes_table = tableName)
-  sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms, oracleTempSchema = oracleTempSchema)
+  sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms, tempEmulationSchema = tempEmulationSchema)
   DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
   
   return(result)

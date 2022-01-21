@@ -8,6 +8,7 @@ synthesizePositiveControls(
   connectionDetails,
   cdmDatabaseSchema,
   oracleTempSchema = NULL,
+  tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
   exposureDatabaseSchema = cdmDatabaseSchema,
   exposureTable = "drug_era",
   outcomeDatabaseSchema = cdmDatabaseSchema,
@@ -56,9 +57,11 @@ the function \code{createConnectionDetails} in the
 \item{cdmDatabaseSchema}{Name of database schema that contains OMOP CDM and
 vocabulary.}
 
-\item{oracleTempSchema}{For Oracle only: the name of the database schema where you
-want all temporary tables to be managed. Requires
-create/insert permissions to this database.}
+\item{oracleTempSchema}{DEPRECATED: use `tempEmulationSchema` instead.}
+
+\item{tempEmulationSchema}{Some database platforms like Oracle and Impala do not truly support temp tables. To
+emulate temp tables, provide a schema with write privileges where temp tables
+can be created.}
 
 \item{exposureDatabaseSchema}{The name of the database schema that is the location where
 the exposure data used to define the exposure cohorts is

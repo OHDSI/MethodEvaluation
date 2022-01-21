@@ -8,6 +8,7 @@ synthesizeReferenceSetPositiveControls(
   connectionDetails,
   cdmDatabaseSchema,
   oracleTempSchema = NULL,
+  tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
   outcomeDatabaseSchema = cdmDatabaseSchema,
   outcomeTable = "cohort",
   exposureDatabaseSchema = cdmDatabaseSchema,
@@ -27,8 +28,11 @@ function \code{createConnectionDetails} in the
 Data Model. Note that for SQL Server, botth the database and schema
 should be specified, e.g. 'cdm_schema.dbo'}
 
-\item{oracleTempSchema}{Should be used in Oracle to specify a schema where the user has
-write priviliges for storing temporary tables.}
+\item{oracleTempSchema}{DEPRECATED: use `tempEmulationSchema` instead.}
+
+\item{tempEmulationSchema}{Some database platforms like Oracle and Impala do not truly support temp tables. To
+emulate temp tables, provide a schema with write privileges where temp tables
+can be created.}
 
 \item{outcomeDatabaseSchema}{The database schema where the target outcome table is located. Note
 that for SQL Server, both the database and schema should be
@@ -67,7 +71,7 @@ Synthesize positive controls for reference set
 This function will synthesize positive controls for a given reference set based on the real
 negative controls. Data from the database will be used to fit outcome models for each negative
 control outcome, and these models will be used to sample additional synthetic outcomes during
-eposure to increase the true hazard ratio.
+exposure to increase the true hazard ratio.
 The positive control outcome cohorts will be stored in the same database table as the negative
 control outcome cohorts.
 A summary file will be created listing all positive and negative controls. This list should then be
