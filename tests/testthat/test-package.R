@@ -3,7 +3,7 @@ library(dplyr)
 
 test_that("Package results", {
   
-  packageOhdsiBenchmarkResults
+  # packageOhdsiBenchmarkResults
   
   estimates <- readr::read_delim(col_names = TRUE, delim = ";", trim_ws = TRUE, file = "
     targetId ; outcomeId ; analysisId ; logRr ; seLogRr ; ci95Lb ; ci95Ub

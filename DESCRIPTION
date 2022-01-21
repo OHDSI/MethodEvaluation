@@ -2,7 +2,7 @@ Package: MethodEvaluation
 Type: Package
 Title: Package for Evaluation of Estimation Methods
 Version: 2.2.0
-Date: 2021-05-31
+Date: 2022-01-21
 Authors@R: c(
   person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre"))
   )
@@ -44,6 +44,7 @@ Suggests:
   knitr,
   rmarkdown
 Remotes:
-  ohdsi/FeatureExtraction
-RoxygenNote: 7.1.1
+  ohdsi/FeatureExtraction,
+  ohdsi/Eunomia
+RoxygenNote: 7.1.2
 Encoding: UTF-8

@@ -1,4 +1,4 @@
-# Copyright 2021 Observational Health Data Sciences and Informatics
+# Copyright 2022 Observational Health Data Sciences and Informatics
 #
 # This file is part of MethodEvaluation
 #
@@ -436,7 +436,7 @@ synthesizePositiveControls <- function(connectionDetails,
       }
       ParallelLogger::logInfo("Extracting covariates for fitting outcome model(s)")
       covariateData <- FeatureExtraction::getDbCovariateData(connection = conn,
-                                                             tempEmulationSchema = tempEmulationSchema,
+                                                             oracleTempSchema = tempEmulationSchema,
                                                              cdmDatabaseSchema = cdmDatabaseSchema,
                                                              cohortTable = "#sampled_person",
                                                              cohortTableIsTemp = TRUE,

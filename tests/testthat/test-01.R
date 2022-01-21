@@ -4,6 +4,8 @@ library(dplyr)
 connectionDetails <- Eunomia::getEunomiaConnectionDetails()
 Eunomia::createCohorts(connectionDetails)
 
+# connection <- DatabaseConnector::connect(connectionDetails )
+
 test_that("Compute MDRR", {
   result <- computeMdrr(connectionDetails = connectionDetails,
                         cdmDatabaseSchema = "main",
@@ -20,40 +22,43 @@ test_that("Compute MDRR", {
 test_that("Synthesize positive controls", {
   
   expect_error(
-    synthesizePositiveControls(connectionDetails = connectionDetails,
-                               cdmDatabaseSchema = "main",
-                               exposureOutcomePairs = data.frame(
-                                 exposureId = c(1),
-                                 outcomeId = c(4))),
+    suppressWarnings(
+      synthesizePositiveControls(connectionDetails = connectionDetails,
+                                 cdmDatabaseSchema = "main",
+                                 exposureOutcomePairs = data.frame(
+                                   exposureId = c(1),
+                                   outcomeId = c(4)))
+    ),
     "Not enough negative controls")
   
   # TODO: need to check an actual synthesis
   
   expect_error(
-    suppressWarnings( # Deprecated
+    suppressWarnings( 
       injectSignals(connectionDetails = connectionDetails,
                     cdmDatabaseSchema = "main",
                     exposureOutcomePairs = data.frame(
                       exposureId = c(1),
-                      outcomeId = c(4)))),
+                      outcomeId = c(4)))
+    ),
     "Not enough negative controls")
 })
 
 test_that("Create reference set cohort", {
-
+  tempFolder <- tempfile()
+  dir.create(tempFolder)
   createReferenceSetCohorts(connectionDetails = connectionDetails,
                             cdmDatabaseSchema = "main",
                             referenceSet = "omopReferenceSet",
-                            workFolder = tempDir)
+                            workFolder = tempFolder)
   
   # TODO Need a check for completion
   
-  tempDir <- tempdir()  
   createReferenceSetCohorts(connectionDetails = connectionDetails,
                             cdmDatabaseSchema = "main",
                             referenceSet = "ohdsiMethodsBenchmark",
-                            workFolder = tempDir)
-  cohortCounts <- read.csv(file.path(tempDir, "cohortCounts.csv"))
+                            workFolder = tempFolder)
+  cohortCounts <- read.csv(file.path(tempFolder, "cohortCounts.csv"))
   controls <- readRDS(system.file("ohdsiNegativeControls.rds",
                                   package = "MethodEvaluation")) %>%
     filter(.data$outcomeId > 4) %>%
@@ -61,39 +66,39 @@ test_that("Create reference set cohort", {
   expect_equal(
     nrow(cohortCounts %>% filter(type == "Outcome")),
     nrow(controls) + 4) # adding c("acute_pancreatitis", "gi_bleed", "stroke", "ibd")
-  unlink(tempDir, recursive = TRUE)
   
-  tempDir <- tempdir()  
   createReferenceSetCohorts(connectionDetails = connectionDetails,
                             cdmDatabaseSchema = "main",
                             referenceSet = "ohdsiDevelopment",
-                            workFolder = tempDir)
-  cohortCounts <- read.csv(file.path(tempDir, "cohortCounts.csv"))
+                            workFolder = tempFolder)
+  cohortCounts <- read.csv(file.path(tempFolder, "cohortCounts.csv"))
   controls <- readRDS(system.file("ohdsiDevelopmentNegativeControls.rds",
                                   package = "MethodEvaluation"))
   expect_equal(
     nrow(cohortCounts %>% filter(type == "Outcome")),
     nrow(controls))
-  unlink(tempDir, recursive = TRUE)
+  unlink(tempFolder, recursive = TRUE)
 })
 
 
 test_that("Synthesize positive control reference set cohort", {
-  tempDir <- tempdir()
+  tempFolder <- tempfile()
+  dir.create(tempFolder)
   expect_error(
-    synthesizeReferenceSetPositiveControls(connectionDetails =  connectionDetails,
-                                           cdmDatabaseSchema = "main", 
-                                           referenceSet = "ohdsiMethodsBenchmark",
-                                           workFolder = tempDir),
+    suppressWarnings(
+      synthesizeReferenceSetPositiveControls(connectionDetails =  connectionDetails,
+                                             cdmDatabaseSchema = "main", 
+                                             referenceSet = "ohdsiMethodsBenchmark",
+                                             workFolder = tempFolder)
+    ),
     "Not enough negative controls")
-  unlink(tempDir, recursive = TRUE)
-  
-  tempDir <- tempdir()
   expect_error(
-    synthesizeReferenceSetPositiveControls(connectionDetails =  connectionDetails,
-                                           cdmDatabaseSchema = "main", 
-                                           referenceSet = "ohdsiDevelopment",
-                                           workFolder = tempDir),
+    suppressWarnings(
+      synthesizeReferenceSetPositiveControls(connectionDetails =  connectionDetails,
+                                             cdmDatabaseSchema = "main", 
+                                             referenceSet = "ohdsiDevelopment",
+                                             workFolder = tempFolder)
+    ),
     "Not enough negative controls")
-  unlink(tempDir, recursive = TRUE)
+  unlink(tempFolder, recursive = TRUE)
 })

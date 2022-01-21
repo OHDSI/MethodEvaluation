@@ -5,6 +5,8 @@ Changes:
 
 1. Updating from 'oracleTempSchema' to 'tempEmulationSchema' for newer versions of SqlRender.
 
+2. Added unit tests.
+
 
 MethodEvaluation 2.1.0
 ======================
