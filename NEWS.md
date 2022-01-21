@@ -1,4 +1,4 @@
-MethodEvaluation 2.1.0
+MethodEvaluation 2.2.0
 ======================
 
 Changes:
