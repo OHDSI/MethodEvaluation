@@ -29,8 +29,8 @@ synthesizePositiveControls(
     useMeasurementLongTerm = TRUE, useObservationLongTerm = TRUE, useCharlsonIndex =
     TRUE, useDcsi = TRUE, useChads2Vasc = TRUE, longTermStartDays = 365, endDays = 0),
   prior = Cyclops::createPrior("laplace", exclude = 0, useCrossValidation = TRUE),
-  control = Cyclops::createControl(cvType = "auto", startingVariance = 0.1, noiseLevel
-    = "quiet", threads = 10),
+  control = Cyclops::createControl(cvType = "auto", startingVariance = 0.1, seed = 1,
+    resetCoefficients = TRUE, noiseLevel = "quiet", threads = 10),
   firstExposureOnly = FALSE,
   washoutPeriod = 183,
   riskWindowStart = 0,

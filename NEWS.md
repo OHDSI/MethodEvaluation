@@ -1,9 +1,17 @@
+MethodEvaluation 2.2.1
+======================
+
+Changes:
+
+1. Fixing seeds and setting `resetCoefficients = TRUE` to ensure reproducibility of positive control synthesis.
+
+
 MethodEvaluation 2.2.0
 ======================
 
 Changes:
 
-1. Updating from 'oracleTempSchema' to 'tempEmulationSchema' for newer versions of SqlRender.
+1. Updating from `oracleTempSchema` to `tempEmulationSchema` for newer versions of SqlRender.
 
 2. Added unit tests.
 

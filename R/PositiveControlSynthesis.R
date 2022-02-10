@@ -166,6 +166,8 @@ synthesizePositiveControls <- function(connectionDetails,
                                        prior = Cyclops::createPrior("laplace", exclude = 0, useCrossValidation = TRUE),
                                        control = Cyclops::createControl(cvType = "auto",
                                                                         startingVariance = 0.1,
+                                                                        seed = 1,
+                                                                        resetCoefficients = TRUE,
                                                                         noiseLevel = "quiet",
                                                                         threads = 10),
                                        firstExposureOnly = FALSE,
@@ -795,6 +797,7 @@ generateOutcomes <- function(task,
                           task$exposureId,
                           " and outcome ",
                           task$outcomeId)
+  set.seed(1)
   resultSubset <- result[result$exposureId == task$exposureId & result$outcomeId == task$outcomeId, ]
   if (file.exists(file.path(task$modelFolder, "Error.txt"))) {
     return(resultSubset)
@@ -812,10 +815,6 @@ generateOutcomes <- function(task,
         covariateData <- FeatureExtraction::loadCovariateData(task$covarFileName)
         covariates <- covariateData$covariates %>%
           filter(.data$rowId %in% local(exposures$rowId))
-        
-        # ffbase::load.ffdf(task$covarFileName)
-        # open(covariates, readOnly = TRUE)
-        # covariates <- covariates[ffbase::`%in%`(covariates$rowId, exposures$rowId), ]
       }
       prediction <- .predict(betas, exposures, covariates, modelType)
       saveRDS(prediction, predictionFile)
