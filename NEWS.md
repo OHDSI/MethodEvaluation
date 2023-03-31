@@ -1,3 +1,13 @@
+MethodEvaluation 2.3.0
+======================
+
+Changes:
+
+1. Using `checkmate` to check function input.
+
+2. Adding `packageCustomBenchmarkResults()` to support custom methods benchmarks.
+
+
 MethodEvaluation 2.2.1
 ======================
 

@@ -1,8 +1,8 @@
 Package: MethodEvaluation
 Type: Package
 Title: Package for Evaluation of Estimation Methods
-Version: 2.2.1
-Date: 2022-01-21
+Version: 2.3.0
+Date: 2032-03-31
 Authors@R: c(
   person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre"))
   )
@@ -35,7 +35,8 @@ Imports:
   ggplot2,
   ParallelLogger (>= 2.0.0),
   methods,
-  EmpiricalCalibration
+  EmpiricalCalibration,
+  checkmate
 Suggests:
   Eunomia,
   testthat,
