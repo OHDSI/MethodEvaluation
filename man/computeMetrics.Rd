@@ -18,16 +18,16 @@ computeMetrics(
 
 \item{seLogRr}{The standard error of the log of the effect estimates. Hint: often the standard
 error = (log(<lower bound 95 percent confidence interval>) - log(<effect
-estimate>))/qnorm(0.025). If not provided the standard error will be inferred from 
+estimate>))/qnorm(0.025). If not provided the standard error will be inferred from
 the 95 percent confidence interval.}
 
-\item{ci95Lb}{The lower bound of the 95 percent confidence interval. IF not provided it will be 
+\item{ci95Lb}{The lower bound of the 95 percent confidence interval. IF not provided it will be
 inferred from the standard error.}
 
-\item{ci95Ub}{The upper bound of the 95 percent confidence interval. IF not provided it will be 
+\item{ci95Ub}{The upper bound of the 95 percent confidence interval. IF not provided it will be
 inferred from the standard error.}
 
-\item{p}{The two-sided p-value corresponding to the null hypothesis of no effect. IF not 
+\item{p}{The two-sided p-value corresponding to the null hypothesis of no effect. IF not
 provided it will be inferred from the standard error.}
 
 \item{trueLogRr}{A vector of the true effect sizes}

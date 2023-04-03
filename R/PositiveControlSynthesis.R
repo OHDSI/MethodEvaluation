@@ -1,4 +1,4 @@
-# Copyright 2022 Observational Health Data Sciences and Informatics
+# Copyright 2023 Observational Health Data Sciences and Informatics
 #
 # This file is part of MethodEvaluation
 #
@@ -73,7 +73,7 @@
 #' @param modelType                       Can be either "poisson" or "survival"
 #' @param minOutcomeCountForModel         Minimum number of outcome events required to build a model.
 #' @param minOutcomeCountForInjection     Minimum number of outcome events required to inject a signal.
-#' @param minModelCount                   Minimum number of negative controls having enough outcomes to 
+#' @param minModelCount                   Minimum number of negative controls having enough outcomes to
 #'                                        fit an outcome model.
 #' @param covariateSettings               An object of type \code{covariateSettings} as created using
 #'                                        the \code{createCovariateSettings} function in the
@@ -149,27 +149,31 @@ synthesizePositiveControls <- function(connectionDetails,
                                        minOutcomeCountForModel = 100,
                                        minOutcomeCountForInjection = 25,
                                        minModelCount = 5,
-                                       covariateSettings = FeatureExtraction::createCovariateSettings(useDemographicsAgeGroup = TRUE,
-                                                                                                      useDemographicsGender = TRUE,
-                                                                                                      useDemographicsIndexYear = TRUE,
-                                                                                                      useDemographicsIndexMonth = TRUE,
-                                                                                                      useConditionGroupEraLongTerm = TRUE,
-                                                                                                      useDrugGroupEraLongTerm = TRUE,
-                                                                                                      useProcedureOccurrenceLongTerm = TRUE,
-                                                                                                      useMeasurementLongTerm = TRUE,
-                                                                                                      useObservationLongTerm = TRUE,
-                                                                                                      useCharlsonIndex = TRUE,
-                                                                                                      useDcsi = TRUE,
-                                                                                                      useChads2Vasc = TRUE,
-                                                                                                      longTermStartDays = 365,
-                                                                                                      endDays = 0),
+                                       covariateSettings = FeatureExtraction::createCovariateSettings(
+                                         useDemographicsAgeGroup = TRUE,
+                                         useDemographicsGender = TRUE,
+                                         useDemographicsIndexYear = TRUE,
+                                         useDemographicsIndexMonth = TRUE,
+                                         useConditionGroupEraLongTerm = TRUE,
+                                         useDrugGroupEraLongTerm = TRUE,
+                                         useProcedureOccurrenceLongTerm = TRUE,
+                                         useMeasurementLongTerm = TRUE,
+                                         useObservationLongTerm = TRUE,
+                                         useCharlsonIndex = TRUE,
+                                         useDcsi = TRUE,
+                                         useChads2Vasc = TRUE,
+                                         longTermStartDays = 365,
+                                         endDays = 0
+                                       ),
                                        prior = Cyclops::createPrior("laplace", exclude = 0, useCrossValidation = TRUE),
-                                       control = Cyclops::createControl(cvType = "auto",
-                                                                        startingVariance = 0.1,
-                                                                        seed = 1,
-                                                                        resetCoefficients = TRUE,
-                                                                        noiseLevel = "quiet",
-                                                                        threads = 10),
+                                       control = Cyclops::createControl(
+                                         cvType = "auto",
+                                         startingVariance = 0.1,
+                                         seed = 1,
+                                         resetCoefficients = TRUE,
+                                         noiseLevel = "quiet",
+                                         threads = 10
+                                       ),
                                        firstExposureOnly = FALSE,
                                        washoutPeriod = 183,
                                        riskWindowStart = 0,
@@ -190,16 +194,22 @@ synthesizePositiveControls <- function(connectionDetails,
     warning("The 'oracleTempSchema' argument is deprecated. Use 'tempEmulationSchema' instead.")
     tempEmulationSchema <- oracleTempSchema
   }
-  if (min(effectSizes) < 1)
+  if (min(effectSizes) < 1) {
     stop("Effect sizes smaller than 1 are currently not supported")
-  if (modelType != "poisson" && modelType != "survival")
-    stop(paste0("Unknown modelType '",
-                modelType,
-                "', please select either 'poisson' or 'survival'"))
-  if (!firstExposureOnly && addIntentToTreat)
+  }
+  if (modelType != "poisson" && modelType != "survival") {
+    stop(paste0(
+      "Unknown modelType '",
+      modelType,
+      "', please select either 'poisson' or 'survival'"
+    ))
+  }
+  if (!firstExposureOnly && addIntentToTreat) {
     stop("Cannot have addIntentToTreat = TRUE and firstExposureOnly = FALSE at the same time")
-  if (modelType == "poisson" && addIntentToTreat)
+  }
+  if (modelType == "poisson" && addIntentToTreat) {
     stop("Intent to treat injection not yet implemented for Poisson models")
+  }
   if (cdmVersion == "4") {
     stop("CDM version 4 is not supported")
   }
@@ -216,54 +226,58 @@ synthesizePositiveControls <- function(connectionDetails,
   outcomesFile <- file.path(workFolder, "outcomes.rds")
   priorOutcomesFile <- file.path(workFolder, "priorOutcomes.rds")
   countsFile <- file.path(workFolder, "counts.rds")
-  result <- tibble(exposureId = rep(exposureOutcomePairs$exposureId, each = length(effectSizes)),
-                   outcomeId = rep(exposureOutcomePairs$outcomeId, each = length(effectSizes)),
-                   targetEffectSize = rep(effectSizes, nrow(exposureOutcomePairs)),
-                   newOutcomeId = outputIdOffset + (0:(nrow(exposureOutcomePairs) * length(effectSizes) - 1)), 
-                   trueEffectSize = 0, 
-                   trueEffectSizeFirstExposure = 0, 
-                   trueEffectSizeItt = 0, 
-                   injectedOutcomes = 0, 
-                   modelFolder = "", 
-                   outcomesToInjectFile = "")
-  
+  result <- tibble(
+    exposureId = rep(exposureOutcomePairs$exposureId, each = length(effectSizes)),
+    outcomeId = rep(exposureOutcomePairs$outcomeId, each = length(effectSizes)),
+    targetEffectSize = rep(effectSizes, nrow(exposureOutcomePairs)),
+    newOutcomeId = outputIdOffset + (0:(nrow(exposureOutcomePairs) * length(effectSizes) - 1)),
+    trueEffectSize = 0,
+    trueEffectSizeFirstExposure = 0,
+    trueEffectSizeItt = 0,
+    injectedOutcomes = 0,
+    modelFolder = "",
+    outcomesToInjectFile = ""
+  )
+
   exposureIds <- unique(exposureOutcomePairs$exposureId)
-  
+
   conn <- DatabaseConnector::connect(connectionDetails)
   on.exit(DatabaseConnector::disconnect(conn))
-  
+
   # Create exposure cohorts ------------------------------------
   ParallelLogger::logInfo("\nCreating risk windows")
   renderedSql <- SqlRender::loadRenderTranslateSql("CreateExposedCohorts.sql",
-                                                   packageName = "MethodEvaluation",
-                                                   dbms = connectionDetails$dbms,
-                                                   tempEmulationSchema = tempEmulationSchema,
-                                                   cdm_database_schema = cdmDatabaseSchema,
-                                                   exposure_ids = exposureIds,
-                                                   washout_period = washoutPeriod,
-                                                   exposure_database_schema = exposureDatabaseSchema,
-                                                   exposure_table = exposureTable,
-                                                   first_exposure_only = firstExposureOnly,
-                                                   risk_window_start = riskWindowStart,
-                                                   risk_window_end = riskWindowEnd,
-                                                   add_exposure_days_to_end = isEnd(endAnchor))
-  
+    packageName = "MethodEvaluation",
+    dbms = connectionDetails$dbms,
+    tempEmulationSchema = tempEmulationSchema,
+    cdm_database_schema = cdmDatabaseSchema,
+    exposure_ids = exposureIds,
+    washout_period = washoutPeriod,
+    exposure_database_schema = exposureDatabaseSchema,
+    exposure_table = exposureTable,
+    first_exposure_only = firstExposureOnly,
+    risk_window_start = riskWindowStart,
+    risk_window_end = riskWindowEnd,
+    add_exposure_days_to_end = isEnd(endAnchor)
+  )
+
   DatabaseConnector::executeSql(conn, renderedSql)
-  
+
   # Get exposure cohorts from database -------------------------------
   if (file.exists(exposuresFile)) {
     exposures <- readRDS(exposuresFile)
   } else {
     ParallelLogger::logInfo("\nRetrieving exposure cohorts")
     exposureSql <- SqlRender::loadRenderTranslateSql("GetExposedCohorts.sql",
-                                                     packageName = "MethodEvaluation",
-                                                     dbms = connectionDetails$dbms,
-                                                     tempEmulationSchema = tempEmulationSchema)
+      packageName = "MethodEvaluation",
+      dbms = connectionDetails$dbms,
+      tempEmulationSchema = tempEmulationSchema
+    )
     exposures <- DatabaseConnector::querySql(conn, exposureSql, snakeCaseToCamelCase = TRUE)
     exposures <- exposures[order(exposures$rowId), ]
     saveRDS(exposures, exposuresFile)
   }
-  
+
   # Get prior outcomes (if needed) ------------------------------------
   if (removePeopleWithPriorOutcomes) {
     if (file.exists(priorOutcomesFile)) {
@@ -272,21 +286,24 @@ synthesizePositiveControls <- function(connectionDetails,
       ParallelLogger::logInfo("Finding people with prior outcomes")
       table <- exposureOutcomePairs
       colnames(table) <- SqlRender::camelCaseToSnakeCase(colnames(table))
-      DatabaseConnector::insertTable(connection = conn,
-                                     tableName = "#exposure_outcome",
-                                     data = table,
-                                     dropTableIfExists = TRUE,
-                                     createTable = TRUE,
-                                     tempTable = TRUE,
-                                     tempEmulationSchema = tempEmulationSchema)
+      DatabaseConnector::insertTable(
+        connection = conn,
+        tableName = "#exposure_outcome",
+        data = table,
+        dropTableIfExists = TRUE,
+        createTable = TRUE,
+        tempTable = TRUE,
+        tempEmulationSchema = tempEmulationSchema
+      )
       outcomeSql <- SqlRender::loadRenderTranslateSql("GetPriorOutcomes.sql",
-                                                      packageName = "MethodEvaluation",
-                                                      dbms = connectionDetails$dbms,
-                                                      tempEmulationSchema = tempEmulationSchema,
-                                                      cdm_database_schema = cdmDatabaseSchema,
-                                                      outcome_database_schema = outcomeDatabaseSchema,
-                                                      outcome_table = outcomeTable,
-                                                      first_outcome_only = firstOutcomeOnly)
+        packageName = "MethodEvaluation",
+        dbms = connectionDetails$dbms,
+        tempEmulationSchema = tempEmulationSchema,
+        cdm_database_schema = cdmDatabaseSchema,
+        outcome_database_schema = outcomeDatabaseSchema,
+        outcome_table = outcomeTable,
+        first_outcome_only = firstOutcomeOnly
+      )
       priorOutcomes <- DatabaseConnector::querySql(conn, outcomeSql, snakeCaseToCamelCase = TRUE)
       saveRDS(priorOutcomes, priorOutcomesFile)
       sql <- "TRUNCATE TABLE #exposure_outcome; DROP TABLE #exposure_outcome;"
@@ -294,7 +311,7 @@ synthesizePositiveControls <- function(connectionDetails,
       DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
     }
   }
-  
+
   # Get outcomes ---------------------------------------
   if (file.exists(outcomesFile)) {
     outcomeCounts <- readRDS(outcomesFile)
@@ -302,28 +319,31 @@ synthesizePositiveControls <- function(connectionDetails,
     ParallelLogger::logInfo("Extracting outcome counts")
     table <- exposureOutcomePairs
     colnames(table) <- SqlRender::camelCaseToSnakeCase(colnames(table))
-    DatabaseConnector::insertTable(connection = conn,
-                                   tableName = "#exposure_outcome",
-                                   data = table,
-                                   dropTableIfExists = TRUE,
-                                   createTable = TRUE,
-                                   tempTable = TRUE,
-                                   tempEmulationSchema = tempEmulationSchema)
+    DatabaseConnector::insertTable(
+      connection = conn,
+      tableName = "#exposure_outcome",
+      data = table,
+      dropTableIfExists = TRUE,
+      createTable = TRUE,
+      tempTable = TRUE,
+      tempEmulationSchema = tempEmulationSchema
+    )
     outcomeSql <- SqlRender::loadRenderTranslateSql("GetOutcomes.sql",
-                                                    packageName = "MethodEvaluation",
-                                                    dbms = connectionDetails$dbms,
-                                                    tempEmulationSchema = tempEmulationSchema,
-                                                    cdm_database_schema = cdmDatabaseSchema,
-                                                    outcome_database_schema = outcomeDatabaseSchema,
-                                                    outcome_table = outcomeTable,
-                                                    first_outcome_only = firstOutcomeOnly)
+      packageName = "MethodEvaluation",
+      dbms = connectionDetails$dbms,
+      tempEmulationSchema = tempEmulationSchema,
+      cdm_database_schema = cdmDatabaseSchema,
+      outcome_database_schema = outcomeDatabaseSchema,
+      outcome_table = outcomeTable,
+      first_outcome_only = firstOutcomeOnly
+    )
     outcomeCounts <- DatabaseConnector::querySql(conn, outcomeSql, snakeCaseToCamelCase = TRUE)
     saveRDS(outcomeCounts, outcomesFile)
     sql <- "TRUNCATE TABLE #exposure_outcome; DROP TABLE #exposure_outcome;"
     sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms, tempEmulationSchema = tempEmulationSchema)
     DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
   }
-  
+
   # Generate counts for result object -------------------------------
   if (file.exists(countsFile)) {
     result <- readRDS(countsFile)
@@ -331,11 +351,14 @@ synthesizePositiveControls <- function(connectionDetails,
     ParallelLogger::logInfo("Computing counts per exposure - outcome pair")
     temp <- select(exposures, .data$rowId, .data$exposureId, .data$eraNumber) %>%
       inner_join(select(outcomeCounts, .data$rowId, .data$outcomeId, .data$y, .data$yItt),
-                 by = "rowId")
+        by = "rowId"
+      )
     if (modelType == "survival") {
       temp <- temp %>%
-        mutate(y = .data$y != 0,
-               yItt = .data$yItt != 0)
+        mutate(
+          y = .data$y != 0,
+          yItt = .data$yItt != 0
+        )
     }
     generateCounts <- function(outcomeId) {
       tempOutcomes <- temp %>%
@@ -351,18 +374,22 @@ synthesizePositiveControls <- function(connectionDetails,
       } else {
         tempExposures <- exposures
       }
-      exposureSummary <- tempExposures %>% 
+      exposureSummary <- tempExposures %>%
         group_by(.data$exposureId) %>%
-        summarize(exposures = n(),
-                  firstExposures = sum(.data$eraNumber == 1),
-                  .groups = "drop_last")
+        summarize(
+          exposures = n(),
+          firstExposures = sum(.data$eraNumber == 1),
+          .groups = "drop_last"
+        )
       outcomeSummary <- tempOutcomes %>%
         group_by(.data$exposureId) %>%
-        summarize(observedOutcomes = sum(.data$y),
-                  observedOutcomesFirstExposure = sum(.data$y & .data$eraNumber == 1),
-                  observedOutcomesItt = sum(.data$yItt),
-                  observedOutcomesFirstExposureItt = sum(.data$yItt & .data$eraNumber == 1),
-                  .groups = "drop_last")
+        summarize(
+          observedOutcomes = sum(.data$y),
+          observedOutcomesFirstExposure = sum(.data$y & .data$eraNumber == 1),
+          observedOutcomesItt = sum(.data$yItt),
+          observedOutcomesFirstExposureItt = sum(.data$yItt & .data$eraNumber == 1),
+          .groups = "drop_last"
+        )
       resultRows <- exposureSummary %>%
         left_join(outcomeSummary, by = "exposureId") %>%
         mutate(outcomeId = !!outcomeId)
@@ -370,21 +397,35 @@ synthesizePositiveControls <- function(connectionDetails,
     }
     resultRows <- purrr::map_dfr(unique(result$outcomeId), generateCounts)
     result <- left_join(result, resultRows, by = c("exposureId", "outcomeId")) %>%
-      mutate(exposures = case_when(is.na(exposures) ~ as.integer(0), 
-                                  TRUE ~ as.integer(.data$exposures)),
-             firstExposures = case_when(is.na(firstExposures) ~ as.integer(0), 
-                                       TRUE ~ as.integer(.data$firstExposures)),
-             observedOutcomes = case_when(is.na(observedOutcomes) ~ as.integer(0), 
-                                          TRUE ~ as.integer(.data$observedOutcomes)),
-             observedOutcomesFirstExposure = case_when(is.na(observedOutcomesFirstExposure) ~ as.integer(0), 
-                                                       TRUE ~ as.integer(.data$observedOutcomesFirstExposure)),
-             observedOutcomesItt = case_when(is.na(observedOutcomesItt) ~ as.integer(0), 
-                                             TRUE ~ as.integer(.data$observedOutcomesItt)),
-             observedOutcomesFirstExposureItt = case_when(is.na(observedOutcomesFirstExposureItt) ~ as.integer(0), 
-                                                       TRUE ~ as.integer(.data$observedOutcomesFirstExposureItt)))
+      mutate(
+        exposures = case_when(
+          is.na(exposures) ~ as.integer(0),
+          TRUE ~ as.integer(.data$exposures)
+        ),
+        firstExposures = case_when(
+          is.na(firstExposures) ~ as.integer(0),
+          TRUE ~ as.integer(.data$firstExposures)
+        ),
+        observedOutcomes = case_when(
+          is.na(observedOutcomes) ~ as.integer(0),
+          TRUE ~ as.integer(.data$observedOutcomes)
+        ),
+        observedOutcomesFirstExposure = case_when(
+          is.na(observedOutcomesFirstExposure) ~ as.integer(0),
+          TRUE ~ as.integer(.data$observedOutcomesFirstExposure)
+        ),
+        observedOutcomesItt = case_when(
+          is.na(observedOutcomesItt) ~ as.integer(0),
+          TRUE ~ as.integer(.data$observedOutcomesItt)
+        ),
+        observedOutcomesFirstExposureItt = case_when(
+          is.na(observedOutcomesFirstExposureItt) ~ as.integer(0),
+          TRUE ~ as.integer(.data$observedOutcomesFirstExposureItt)
+        )
+      )
     saveRDS(result, countsFile)
   }
-  
+
   # Build models ---------------------------- Find all exposures for each outcome, then identify unique
   # groups of exposures
   group <- function(outcomeId) {
@@ -397,69 +438,82 @@ synthesizePositiveControls <- function(connectionDetails,
   saveRDS(uniqueGroups, file.path(workFolder, "uniqueGroups.rds"))
   outcomeIdToGroupId <- data.frame(outcomeIds = outcomeIds, groupIds = match(groups, uniqueGroups))
   saveRDS(outcomeIdToGroupId, file.path(workFolder, "outcomeIdToGroupId.rds"))
-  
+
   # Fetch covariates for each group of exposures
   for (i in 1:length(uniqueGroups)) {
     covarFileName <- file.path(workFolder, sprintf("covarsForModel_g%s.zip", i))
     if (!file.exists(covarFileName)) {
       cohortIds <- uniqueGroups[[i]]
       sql <- "SELECT COUNT(*) AS entries FROM (SELECT DISTINCT subject_id, cohort_start_date FROM #cohort_person WHERE cohort_definition_id IN (@cohort_ids)) tmp;"
-      count <- DatabaseConnector::renderTranslateQuerySql(connection = conn, 
-                                                          sql = sql,
-                                                          tempEmulationSchema = tempEmulationSchema,
-                                                          cohort_ids = cohortIds,
-                                                          snakeCaseToCamelCase = TRUE)$entries
+      count <- DatabaseConnector::renderTranslateQuerySql(
+        connection = conn,
+        sql = sql,
+        tempEmulationSchema = tempEmulationSchema,
+        cohort_ids = cohortIds,
+        snakeCaseToCamelCase = TRUE
+      )$entries
       if (count > maxSubjectsForModel) {
         ParallelLogger::logInfo("Sampling exposed cohorts for model(s)")
         renderedSql <- SqlRender::loadRenderTranslateSql("SampleExposedCohorts.sql",
-                                                         packageName = "MethodEvaluation",
-                                                         dbms = connectionDetails$dbms,
-                                                         tempEmulationSchema = tempEmulationSchema,
-                                                         sample_size = maxSubjectsForModel,
-                                                         cohort_ids = cohortIds)
+          packageName = "MethodEvaluation",
+          dbms = connectionDetails$dbms,
+          tempEmulationSchema = tempEmulationSchema,
+          sample_size = maxSubjectsForModel,
+          cohort_ids = cohortIds
+        )
         DatabaseConnector::executeSql(conn, renderedSql)
-        
+
         sql <- "SELECT row_id FROM #sampled_person"
-        sampledRowIds <- DatabaseConnector::renderTranslateQuerySql(connection = conn, 
-                                                                    sql = sql,
-                                                                    tempEmulationSchema = tempEmulationSchema,
-                                                                    snakeCaseToCamelCase = TRUE)
+        sampledRowIds <- DatabaseConnector::renderTranslateQuerySql(
+          connection = conn,
+          sql = sql,
+          tempEmulationSchema = tempEmulationSchema,
+          snakeCaseToCamelCase = TRUE
+        )
         sampledExposuresFile <- file.path(workFolder, sprintf("sampledRowIds_g%s.rds", i))
         saveRDS(sampledRowIds, sampledExposuresFile)
       } else {
         # Don't sample, just copy:
         sql <- "SELECT * INTO #sampled_person FROM #cohort_person WHERE cohort_definition_id IN (@cohort_ids);"
-        DatabaseConnector::renderTranslateExecuteSql(connection = conn, 
-                                                     sql = sql, 
-                                                     tempEmulationSchema = tempEmulationSchema,
-                                                     cohort_ids = cohortIds,
-                                                     progressBar = FALSE, 
-                                                     reportOverallTime = FALSE)
+        DatabaseConnector::renderTranslateExecuteSql(
+          connection = conn,
+          sql = sql,
+          tempEmulationSchema = tempEmulationSchema,
+          cohort_ids = cohortIds,
+          progressBar = FALSE,
+          reportOverallTime = FALSE
+        )
       }
       ParallelLogger::logInfo("Extracting covariates for fitting outcome model(s)")
-      covariateData <- FeatureExtraction::getDbCovariateData(connection = conn,
-                                                             oracleTempSchema = tempEmulationSchema,
-                                                             cdmDatabaseSchema = cdmDatabaseSchema,
-                                                             cohortTable = "#sampled_person",
-                                                             cohortTableIsTemp = TRUE,
-                                                             rowIdField = "row_id",
-                                                             covariateSettings = covariateSettings,
-                                                             cdmVersion = cdmVersion,
-                                                             aggregated = FALSE)
-      covariateData <- FeatureExtraction::tidyCovariateData(covariateData = covariateData,
-                                                            normalize = TRUE,
-                                                            removeRedundancy = TRUE)
+      covariateData <- FeatureExtraction::getDbCovariateData(
+        connection = conn,
+        oracleTempSchema = tempEmulationSchema,
+        cdmDatabaseSchema = cdmDatabaseSchema,
+        cohortTable = "#sampled_person",
+        cohortTableIsTemp = TRUE,
+        rowIdField = "row_id",
+        covariateSettings = covariateSettings,
+        cdmVersion = cdmVersion,
+        aggregated = FALSE
+      )
+      covariateData <- FeatureExtraction::tidyCovariateData(
+        covariateData = covariateData,
+        normalize = TRUE,
+        removeRedundancy = TRUE
+      )
       FeatureExtraction::saveCovariateData(covariateData, covarFileName)
 
       sql <- "TRUNCATE TABLE #sampled_person; DROP TABLE #sampled_person;"
-      DatabaseConnector::renderTranslateExecuteSql(connection = conn, 
-                                                   tempEmulationSchema = tempEmulationSchema,
-                                                   sql = sql, 
-                                                   progressBar = FALSE, 
-                                                   reportOverallTime = FALSE)
+      DatabaseConnector::renderTranslateExecuteSql(
+        connection = conn,
+        tempEmulationSchema = tempEmulationSchema,
+        sql = sql,
+        progressBar = FALSE,
+        reportOverallTime = FALSE
+      )
     }
   }
-  
+
   ParallelLogger::logInfo("Fitting outcome models")
   tasks <- list()
   modelsWithEnoughOutcomes <- 0
@@ -468,49 +522,55 @@ synthesizePositiveControls <- function(connectionDetails,
     outcomeId <- outcomeIds[i]
     groupId <- outcomeIdToGroupId$groupId[outcomeIdToGroupId$outcomeId == outcomeId]
     groupExposureIds <- uniqueGroups[[groupId]]
-    idx <- result$outcomeId == outcomeId & 
-      result$exposureId %in% groupExposureIds & 
+    idx <- result$outcomeId == outcomeId &
+      result$exposureId %in% groupExposureIds &
       result$targetEffectSize == effectSizes[1]
     if (sum(result$observedOutcomes[idx]) >= minOutcomeCountForModel) {
       modelsWithEnoughOutcomes <- modelsWithEnoughOutcomes + 1
       modelFolder <- file.path(workFolder, paste0("model_o", outcomeId))
       result$modelFolder[result$outcomeId == outcomeId] <- modelFolder
       if (!file.exists(modelFolder)) {
-        task <- list(outcomeId = outcomeId,
-                     modelFolder = modelFolder,
-                     covarFileName = file.path(workFolder, sprintf("covarsForModel_g%s.zip", groupId)),
-                     sampledExposuresFile = file.path(workFolder, sprintf("sampledRowIds_g%s.rds", groupId)),
-                     groupExposureIds = groupExposureIds)
+        task <- list(
+          outcomeId = outcomeId,
+          modelFolder = modelFolder,
+          covarFileName = file.path(workFolder, sprintf("covarsForModel_g%s.zip", groupId)),
+          sampledExposuresFile = file.path(workFolder, sprintf("sampledRowIds_g%s.rds", groupId)),
+          groupExposureIds = groupExposureIds
+        )
         tasks[[length(tasks) + 1]] <- task
       }
     }
   }
   if (modelsWithEnoughOutcomes < minModelCount) {
-    stop("Not enough negative controls with sufficent outcome count to fit outcome model. Found ", 
-         modelsWithEnoughOutcomes, 
-         " controls with enough outcomes (> ", 
-         minOutcomeCountForModel, 
-         "), but require ",
-         minModelCount,
-         " controls.")
+    stop(
+      "Not enough negative controls with sufficent outcome count to fit outcome model. Found ",
+      modelsWithEnoughOutcomes,
+      " controls with enough outcomes (> ",
+      minOutcomeCountForModel,
+      "), but require ",
+      minModelCount,
+      " controls."
+    )
   }
-  
+
   if (length(tasks) > 0) {
     cluster <- ParallelLogger::makeCluster(modelThreads)
-    ParallelLogger::clusterApply(cluster,
-                                 tasks,
-                                 fitModel,
-                                 result,
-                                 exposuresFile,
-                                 outcomesFile,
-                                 priorOutcomesFile,
-                                 removePeopleWithPriorOutcomes,
-                                 modelType,
-                                 prior,
-                                 control)
+    ParallelLogger::clusterApply(
+      cluster,
+      tasks,
+      fitModel,
+      result,
+      exposuresFile,
+      outcomesFile,
+      priorOutcomesFile,
+      removePeopleWithPriorOutcomes,
+      modelType,
+      prior,
+      control
+    )
     ParallelLogger::stopCluster(cluster)
   }
-  
+
   # Generate new outcomes ----------------------------------------- Fetch covariates for all rows if
   # covars for model were based on a sample:
   for (i in 1:length(uniqueGroups)) {
@@ -535,9 +595,11 @@ synthesizePositiveControls <- function(connectionDetails,
       }
       modelCovariateIds <- unique(modelCovariateIds)
       modelCovariateIds <- modelCovariateIds[modelCovariateIds != 0]
-      
-      ParallelLogger::logInfo(paste("Number of unique covariates across outcome models:",
-                                    length(modelCovariateIds)))
+
+      ParallelLogger::logInfo(paste(
+        "Number of unique covariates across outcome models:",
+        length(modelCovariateIds)
+      ))
       if (length(modelCovariateIds) == 0) {
         dir.create(covarFileName)
       } else {
@@ -545,36 +607,44 @@ synthesizePositiveControls <- function(connectionDetails,
         sql <- "SELECT * INTO #selected_person FROM #cohort_person WHERE cohort_definition_id IN (@cohort_ids);"
         sql <- SqlRender::render(sql, cohort_ids = uniqueGroups[[i]])
         sql <- SqlRender::translate(sql,
-                                    targetDialect = connectionDetails$dbms,
-                                    tempEmulationSchema = tempEmulationSchema)
+          targetDialect = connectionDetails$dbms,
+          tempEmulationSchema = tempEmulationSchema
+        )
         DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
-        covariateData <- FeatureExtraction::getDbCovariateData(connection = conn,
-                                                               oracleTempSchema = tempEmulationSchema,
-                                                               cdmDatabaseSchema = cdmDatabaseSchema,
-                                                               cohortTable = "#selected_person",
-                                                               cohortTableIsTemp = TRUE,
-                                                               rowIdField = "row_id",
-                                                               covariateSettings = covariateSettings,
-                                                               cdmVersion = cdmVersion,
-                                                               aggregated = FALSE)
-        covariateData <- FeatureExtraction::tidyCovariateData(covariateData = covariateData,
-                                                              normalize = TRUE,
-                                                              removeRedundancy = FALSE)
+        covariateData <- FeatureExtraction::getDbCovariateData(
+          connection = conn,
+          oracleTempSchema = tempEmulationSchema,
+          cdmDatabaseSchema = cdmDatabaseSchema,
+          cohortTable = "#selected_person",
+          cohortTableIsTemp = TRUE,
+          rowIdField = "row_id",
+          covariateSettings = covariateSettings,
+          cdmVersion = cdmVersion,
+          aggregated = FALSE
+        )
+        covariateData <- FeatureExtraction::tidyCovariateData(
+          covariateData = covariateData,
+          normalize = TRUE,
+          removeRedundancy = FALSE
+        )
         FeatureExtraction::saveCovariateData(covariateData, covarFileName)
 
         sql <- "TRUNCATE TABLE #selected_person; DROP TABLE #selected_person;"
         sql <- SqlRender::translate(sql,
-                                    targetDialect = connectionDetails$dbms,
-                                    tempEmulationSchema = tempEmulationSchema)
+          targetDialect = connectionDetails$dbms,
+          tempEmulationSchema = tempEmulationSchema
+        )
         DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
       }
     }
   }
-  
+
   ParallelLogger::logInfo("Generating outcomes")
-  temp <- result[result$observedOutcomes > minOutcomeCountForInjection, c("exposureId",
-                                                                          "outcomeId",
-                                                                          "modelFolder")]
+  temp <- result[result$observedOutcomes > minOutcomeCountForInjection, c(
+    "exposureId",
+    "outcomeId",
+    "modelFolder"
+  )]
   temp <- temp[temp$modelFolder != "", ]
   temp <- unique(temp)
   createTask <- function(i) {
@@ -585,104 +655,115 @@ synthesizePositiveControls <- function(connectionDetails,
     } else {
       covarFileName <- file.path(workFolder, sprintf("covarsForModel_g%s.zip", groupId))
     }
-    task <- list(exposureId = temp$exposureId[i],
-                 outcomeId = temp$outcomeId[i],
-                 modelFolder = temp$modelFolder[i],
-                 covarFileName = covarFileName)
+    task <- list(
+      exposureId = temp$exposureId[i],
+      outcomeId = temp$outcomeId[i],
+      modelFolder = temp$modelFolder[i],
+      covarFileName = covarFileName
+    )
     return(task)
   }
   if (nrow(temp) > 0) {
     tasks <- lapply(1:nrow(temp), createTask)
     cluster <- ParallelLogger::makeCluster(generationThreads)
-    results <- ParallelLogger::clusterApply(cluster,
-                                            tasks,
-                                            generateOutcomes,
-                                            result,
-                                            exposuresFile,
-                                            outcomesFile,
-                                            priorOutcomesFile,
-                                            removePeopleWithPriorOutcomes,
-                                            modelType,
-                                            effectSizes,
-                                            precision,
-                                            workFolder,
-                                            addIntentToTreat)
+    results <- ParallelLogger::clusterApply(
+      cluster,
+      tasks,
+      generateOutcomes,
+      result,
+      exposuresFile,
+      outcomesFile,
+      priorOutcomesFile,
+      removePeopleWithPriorOutcomes,
+      modelType,
+      effectSizes,
+      precision,
+      workFolder,
+      addIntentToTreat
+    )
     ParallelLogger::stopCluster(cluster)
     result <- do.call("rbind", results)
   }
-  
+
   # Save summary -----------------------------------------------------------------
   summaryFile <- .createSummaryFileName(workFolder)
   saveRDS(result, summaryFile)
-  
+
   if (!is.null(getOption("skipPositiveControlUpload")) && getOption("skipPositiveControlUpload")) {
     return(result)
   }
-  
+
   # Insert outcomes into database ------------------------------------------------
   ParallelLogger::logInfo("Inserting additional outcomes into database")
   fileNames <- result$outcomesToInjectFile[result$outcomesToInjectFile != ""]
   outcomesToInject <- lapply(fileNames, readRDS)
   outcomesToInject <- do.call("rbind", outcomesToInject)
   colnames(outcomesToInject) <- SqlRender::camelCaseToSnakeCase(colnames(outcomesToInject))
-  if (Sys.getenv("USE_MPP_BULK_LOAD") == "TRUE" || 
-      Sys.getenv("DATABASE_CONNECTOR_BULK_UPLOAD") == "TRUE") {
-    tableName <- paste0(outputDatabaseSchema,
-                        ".temp_outcomes_",
-                        paste(sample(letters, 5), collapse = ""))
+  if (Sys.getenv("USE_MPP_BULK_LOAD") == "TRUE" ||
+    Sys.getenv("DATABASE_CONNECTOR_BULK_UPLOAD") == "TRUE") {
+    tableName <- paste0(
+      outputDatabaseSchema,
+      ".temp_outcomes_",
+      paste(sample(letters, 5), collapse = "")
+    )
     tempTable <- FALSE
   } else {
     tableName <- "#temp_outcomes"
     tempTable <- TRUE
   }
-  
-  DatabaseConnector::insertTable(connection = conn,
-                                 tableName = tableName,
-                                 data = outcomesToInject,
-                                 dropTableIfExists = TRUE,
-                                 createTable = TRUE,
-                                 tempTable = tempTable,
-                                 tempEmulationSchema = tempEmulationSchema,
-                                 progressBar = TRUE)
-  
+
+  DatabaseConnector::insertTable(
+    connection = conn,
+    tableName = tableName,
+    data = outcomesToInject,
+    dropTableIfExists = TRUE,
+    createTable = TRUE,
+    tempTable = tempTable,
+    tempEmulationSchema = tempEmulationSchema,
+    progressBar = TRUE
+  )
+
   toCopy <- result[result$modelFolder != "", c("outcomeId", "newOutcomeId")]
   colnames(toCopy) <- SqlRender::camelCaseToSnakeCase(colnames(toCopy))
-  DatabaseConnector::insertTable(connection = conn,
-                                 tableName = "#to_copy",
-                                 data = toCopy,
-                                 dropTableIfExists = TRUE,
-                                 createTable = TRUE,
-                                 tempTable = TRUE,
-                                 tempEmulationSchema = tempEmulationSchema)
-  
+  DatabaseConnector::insertTable(
+    connection = conn,
+    tableName = "#to_copy",
+    data = toCopy,
+    dropTableIfExists = TRUE,
+    createTable = TRUE,
+    tempTable = TRUE,
+    tempEmulationSchema = tempEmulationSchema
+  )
+
   ParallelLogger::logInfo("Copying negative control outcomes into database")
   copySql <- SqlRender::loadRenderTranslateSql("CopyOutcomes.sql",
-                                               packageName = "MethodEvaluation",
-                                               dbms = connectionDetails$dbms,
-                                               cdm_database_schema = cdmDatabaseSchema,
-                                               tempEmulationSchema = tempEmulationSchema,
-                                               outcome_database_schema = outcomeDatabaseSchema,
-                                               outcome_table = outcomeTable,
-                                               output_database_schema = outputDatabaseSchema,
-                                               output_table = outputTable,
-                                               create_output_table = createOutputTable,
-                                               temp_outcomes_table = tableName)
-  
+    packageName = "MethodEvaluation",
+    dbms = connectionDetails$dbms,
+    cdm_database_schema = cdmDatabaseSchema,
+    tempEmulationSchema = tempEmulationSchema,
+    outcome_database_schema = outcomeDatabaseSchema,
+    outcome_table = outcomeTable,
+    output_database_schema = outputDatabaseSchema,
+    output_table = outputTable,
+    create_output_table = createOutputTable,
+    temp_outcomes_table = tableName
+  )
+
   DatabaseConnector::executeSql(conn, copySql)
-  
+
   sql <- "TRUNCATE TABLE #cohort_person; DROP TABLE #cohort_person;"
   sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms, tempEmulationSchema = tempEmulationSchema)
   DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
-  
+
   sql <- "TRUNCATE TABLE #to_copy; DROP TABLE #to_copy;"
   sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms, tempEmulationSchema = tempEmulationSchema)
   DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
-  
+
   sql <- "TRUNCATE TABLE @temp_outcomes_table; DROP TABLE @temp_outcomes_table;"
   sql <- SqlRender::render(sql, temp_outcomes_table = tableName)
   sql <- SqlRender::translate(sql, targetDialect = connectionDetails$dbms, tempEmulationSchema = tempEmulationSchema)
   DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
-  
+
   return(result)
 }
 
@@ -697,7 +778,7 @@ fitModel <- function(task,
                      control) {
   ParallelLogger::logInfo("Fitting model for outcome ", task$outcomeId)
   exposures <- readRDS(exposuresFile)
-  
+
   outcomes <- readRDS(outcomesFile)
   outcomes <- outcomes[outcomes$outcomeId == task$outcomeId, ]
   if (file.exists(task$sampledExposuresFile)) {
@@ -711,7 +792,7 @@ fitModel <- function(task,
   # Dedupe exposures for model fitting, so we don't overfit:
   exposures <- exposures[order(exposures$personId, exposures$cohortStartDate), ]
   exposures <- exposures[!duplicated(exposures[, c("personId", "cohortStartDate")]), ]
-  
+
   covariateData <- FeatureExtraction::loadCovariateData(task$covarFileName)
   covariates <- covariateData$covariates %>%
     filter(.data$rowId %in% local(exposures$rowId))
@@ -724,9 +805,11 @@ fitModel <- function(task,
     covariates <- covariates %>%
       filter(!.data$rowId %in% removeRowIds)
   }
-  outcomes <- merge(exposures, outcomes[, c("rowId",
-                                            "y",
-                                            "timeToEvent")], by = c("rowId"), all.x = TRUE)
+  outcomes <- merge(exposures, outcomes[, c(
+    "rowId",
+    "y",
+    "timeToEvent"
+  )], by = c("rowId"), all.x = TRUE)
   outcomes <- outcomes[order(outcomes$rowId), ]
   outcomes$y[is.na(outcomes$y)] <- 0
   names(outcomes)[names(outcomes) == "daysAtRisk"] <- "time"
@@ -736,19 +819,23 @@ fitModel <- function(task,
     outcomes$time[outcomes$y != 0] <- outcomes$timeToEvent[outcomes$y != 0]
   }
   outcomes$time <- outcomes$time + 1
-  
+
   # Note: for survival, using Poisson regression with 1 outcome and censored time as equivalent of
   # survival regression:
   covariateData$outcomes <- outcomes
   cyclopsData <- Cyclops::convertToCyclopsData(covariateData$outcomes,
-                                               covariates,
-                                               modelType = "pr",
-                                               quiet = TRUE)
-  fit <- tryCatch({
-    Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
-  }, error = function(e) {
-    e$message
-  })
+    covariates,
+    modelType = "pr",
+    quiet = TRUE
+  )
+  fit <- tryCatch(
+    {
+      Cyclops::fitCyclopsModel(cyclopsData, prior = prior, control = control)
+    },
+    error = function(e) {
+      e$message
+    }
+  )
   if (fit$return_flag != "SUCCESS") {
     fit <- fit$return_flag
   }
@@ -758,24 +845,28 @@ fitModel <- function(task,
     write.csv(fit, file.path(task$modelFolder, "Error.txt"))
   } else {
     betas <- coef(fit)
-    intercept <- tibble(beta = betas[1],
-                        id = bit64::as.integer64(0),
-                        covariateName = "(Intercept)",
-                        row.names = NULL)
+    intercept <- tibble(
+      beta = betas[1],
+      id = bit64::as.integer64(0),
+      covariateName = "(Intercept)",
+      row.names = NULL
+    )
     betas <- betas[betas != 0]
     if (length(betas) > 1) {
       betas <- betas[2:length(betas)]
       betas <- tibble(beta = betas, covariateId = bit64::as.integer64(attr(betas, "names")))
       betas <- betas %>%
-        inner_join(covariateData$covariateRef %>% 
-                     collect() %>%
-                     mutate(covariateId = bit64::as.integer64(.data$covariateId)), 
-                   by = "covariateId") %>%
+        inner_join(
+          covariateData$covariateRef %>%
+            collect() %>%
+            mutate(covariateId = bit64::as.integer64(.data$covariateId)),
+          by = "covariateId"
+        ) %>%
         select(.data$beta, id = .data$covariateId, .data$covariateName) %>%
         arrange(desc(abs(.data$beta)))
       betas <- bind_rows(intercept, betas)
     } else {
-      betas <- intercept 
+      betas <- intercept
     }
     dir.create(task$modelFolder)
     saveRDS(betas, file.path(task$modelFolder, "betas.rds"))
@@ -793,10 +884,12 @@ generateOutcomes <- function(task,
                              precision,
                              workFolder,
                              addIntentToTreat) {
-  ParallelLogger::logInfo("Generating outcomes for exposure ",
-                          task$exposureId,
-                          " and outcome ",
-                          task$outcomeId)
+  ParallelLogger::logInfo(
+    "Generating outcomes for exposure ",
+    task$exposureId,
+    " and outcome ",
+    task$outcomeId
+  )
   set.seed(1)
   resultSubset <- result[result$exposureId == task$exposureId & result$outcomeId == task$outcomeId, ]
   if (file.exists(file.path(task$modelFolder, "Error.txt"))) {
@@ -849,44 +942,54 @@ generateOutcomes <- function(task,
           multiplier <- 1
           ratios <- c()
           while (round(abs(sum(newOutcomeCounts) - targetCount)) > precision * targetCount) {
-            newOutcomeCounts <- rpois(nrow(exposures),
-                                      multiplier * exposures$prediction * (effectSize - 1))
+            newOutcomeCounts <- rpois(
+              nrow(exposures),
+              multiplier * exposures$prediction * (effectSize - 1)
+            )
             newOutcomeCounts[newOutcomeCounts > time] <- time[newOutcomeCounts > time]
-            ratios <- c(ratios, sum(newOutcomeCounts)/targetCount)
+            ratios <- c(ratios, sum(newOutcomeCounts) / targetCount)
             if (length(ratios) == 100) {
-              multiplier <- multiplier * 1/mean(ratios)
+              multiplier <- multiplier * 1 / mean(ratios)
               ratios <- c()
-              ParallelLogger::logDebug(paste("Unable to achieve target RR using model as is. Adding multiplier of",
-                                             multiplier,
-                                             "to force target"))
+              ParallelLogger::logDebug(paste(
+                "Unable to achieve target RR using model as is. Adding multiplier of",
+                multiplier,
+                "to force target"
+              ))
             }
           }
           idx <- which(newOutcomeCounts != 0)
-          temp <- data.frame(personId = exposures$personId[idx],
-                             cohortStartDate = exposures$cohortStartDate[idx],
-                             time = exposures$daysAtRisk[idx] + 1,
-                             nOutcomes = newOutcomeCounts[idx])
+          temp <- data.frame(
+            personId = exposures$personId[idx],
+            cohortStartDate = exposures$cohortStartDate[idx],
+            time = exposures$daysAtRisk[idx] + 1,
+            nOutcomes = newOutcomeCounts[idx]
+          )
           outcomeRows <- sum(temp$nOutcomes)
-          newOutcomes <- data.frame(personId = rep(0, outcomeRows),
-                                    cohortStartDate = rep(as.Date("1900-01-01"), outcomeRows),
-                                    timeToEvent = rep(0, outcomeRows))
+          newOutcomes <- data.frame(
+            personId = rep(0, outcomeRows),
+            cohortStartDate = rep(as.Date("1900-01-01"), outcomeRows),
+            timeToEvent = rep(0, outcomeRows)
+          )
           cursor <- 1
           for (i in 1:nrow(temp)) {
             nOutcomes <- temp$nOutcomes[i]
             if (nOutcomes != 0) {
               newOutcomes$personId[cursor:(cursor + nOutcomes - 1)] <- temp$personId[i]
               newOutcomes$cohortStartDate[cursor:(cursor + nOutcomes - 1)] <- temp$cohortStartDate[i]
-              newOutcomes$timeToEvent[cursor:(cursor + nOutcomes - 1)] <- sample.int(size = nOutcomes,
-                                                                                     temp$time[i]) - 1
+              newOutcomes$timeToEvent[cursor:(cursor + nOutcomes - 1)] <- sample.int(
+                size = nOutcomes,
+                temp$time[i]
+              ) - 1
               cursor <- cursor + nOutcomes
             }
           }
-          injectedRr <- 1 + (nrow(newOutcomes)/resultSubset$observedOutcomes[1])
-          
+          injectedRr <- 1 + (nrow(newOutcomes) / resultSubset$observedOutcomes[1])
+
           # Count outcomes during first episodes:
           newOutcomeCountsFirstExposure <- sum(newOutcomeCounts[exposures$eraNumber == 1])
           injectedRrFirstExposure <- 1 +
-            (newOutcomeCountsFirstExposure/resultSubset$observedOutcomesFirstExposure[1])
+            (newOutcomeCountsFirstExposure / resultSubset$observedOutcomesFirstExposure[1])
         } else {
           # Survival model Generate outcomes under survival model --------------------------------------
           result <- injectSurvival(exposures, effectSize, precision, addIntentToTreat)
@@ -896,15 +999,17 @@ generateOutcomes <- function(task,
           newOutcomes <- result$newOutcomes
         }
       }
-      ParallelLogger::logInfo(paste("Target RR =",
-                                    effectSize,
-                                    ", injected RR =",
-                                    injectedRr,
-                                    ", injected RR during first exposure only =",
-                                    injectedRrFirstExposure,
-                                    ", injected RR during ITT window =",
-                                    injectedRrItt))
-      
+      ParallelLogger::logInfo(paste(
+        "Target RR =",
+        effectSize,
+        ", injected RR =",
+        injectedRr,
+        ", injected RR during first exposure only =",
+        injectedRrFirstExposure,
+        ", injected RR during ITT window =",
+        injectedRrItt
+      ))
+
       newOutcomeId <- resultSubset$newOutcomeId[resultSubset$targetEffectSize == effectSize]
       # Write new outcomes to file for later insertion into DB:
       if (nrow(newOutcomes) != 0) {
@@ -912,13 +1017,15 @@ generateOutcomes <- function(task,
         newOutcomes$timeToEvent <- NULL
         newOutcomes$cohortDefinitionId <- newOutcomeId
         names(newOutcomes)[names(newOutcomes) == "personId"] <- "subjectId"
-        outcomesToInjectFile <- file.path(workFolder, paste0("newOutcomes_e",
-                                                             task$exposureId,
-                                                             "_o",
-                                                             task$outcomeId,
-                                                             "_rr",
-                                                             effectSize,
-                                                             ".rds"))
+        outcomesToInjectFile <- file.path(workFolder, paste0(
+          "newOutcomes_e",
+          task$exposureId,
+          "_o",
+          task$outcomeId,
+          "_rr",
+          effectSize,
+          ".rds"
+        ))
         saveRDS(newOutcomes, outcomesToInjectFile)
         resultSubset$outcomesToInjectFile[resultSubset$targetEffectSize == effectSize] <- outcomesToInjectFile
       }
@@ -943,36 +1050,42 @@ injectSurvival <- function(exposures, effectSize, precision, addIntentToTreat) {
   hasNewOutcome <- c()
   ParallelLogger::logTrace("Generating outcomes during time-at-risk")
   while (round(abs(sum(hasNewOutcome) - correctedTargetCount)) > precision * correctedTargetCount) {
-    timeToNewOutcome <- round(rexp(nrow(exposures),
-                                   multiplier * exposures$prediction * (effectSize - 1)))
+    timeToNewOutcome <- round(rexp(
+      nrow(exposures),
+      multiplier * exposures$prediction * (effectSize - 1)
+    ))
     hasNewOutcome <- timeToNewOutcome < survivalTime
     # Correct for censored time and outcomes:
-    observedRate <- (observedCount/sum(survivalTime))
+    observedRate <- (observedCount / sum(survivalTime))
     timeCensoringAtNewEvents <- (sum(survivalTime[!hasNewOutcome]) + sum(timeToNewOutcome[hasNewOutcome] + 1))
     requiredTotalEvents <- observedRate * timeCensoringAtNewEvents * effectSize
     correctedTargetCount <- requiredTotalEvents - sum(hasOutcome[!hasNewOutcome])
     if (correctedTargetCount < 0) {
       warning("Correct target count became negative. ")
     } else {
-      ratios <- c(ratios, sum(hasNewOutcome)/correctedTargetCount)
+      ratios <- c(ratios, sum(hasNewOutcome) / correctedTargetCount)
     }
     if (length(ratios) == 100) {
-      ParallelLogger::logDebug(paste("Unable to achieve target RR using model as is. Correcting multiplier by",
-                                     1/mean(ratios),
-                                     "to force target"))
-      multiplier <- mean(c(multiplier, multiplier * 1/mean(ratios)))
+      ParallelLogger::logDebug(paste(
+        "Unable to achieve target RR using model as is. Correcting multiplier by",
+        1 / mean(ratios),
+        "to force target"
+      ))
+      multiplier <- mean(c(multiplier, multiplier * 1 / mean(ratios)))
       ratios <- c()
     }
     if (is.na(round(abs(sum(hasNewOutcome) - correctedTargetCount)))) {
       warning("NAs produced when generating outcomes")
     }
   }
-  rateBefore <- observedCount/sum(survivalTime)
-  rateAfter <- (sum(hasOutcome[!hasNewOutcome]) + sum(hasNewOutcome))/(sum(survivalTime[!hasNewOutcome]) + sum(timeToNewOutcome[hasNewOutcome] + 1))
-  injectedRr <- rateAfter/rateBefore
-  newOutcomes <- data.frame(personId = exposures$personId[hasNewOutcome],
-                            cohortStartDate = exposures$cohortStartDate[hasNewOutcome],
-                            timeToEvent = timeToNewOutcome[hasNewOutcome])
+  rateBefore <- observedCount / sum(survivalTime)
+  rateAfter <- (sum(hasOutcome[!hasNewOutcome]) + sum(hasNewOutcome)) / (sum(survivalTime[!hasNewOutcome]) + sum(timeToNewOutcome[hasNewOutcome] + 1))
+  injectedRr <- rateAfter / rateBefore
+  newOutcomes <- data.frame(
+    personId = exposures$personId[hasNewOutcome],
+    cohortStartDate = exposures$cohortStartDate[hasNewOutcome],
+    timeToEvent = timeToNewOutcome[hasNewOutcome]
+  )
   # Count outcomes during first episodes:
   if (max(exposures$eraNumber) == 1) {
     injectedRrFirstExposure <- injectedRr
@@ -982,11 +1095,11 @@ injectSurvival <- function(exposures, effectSize, precision, addIntentToTreat) {
     firstHasOutcome <- hasOutcome[exposures$eraNumber == 1]
     firstTime <- survivalTime[exposures$eraNumber == 1]
     firstObservedCount <- sum(firstHasOutcome)
-    rateBeforeFirstExposure <- firstObservedCount/sum(firstTime)
-    rateAfterFirstExposure <- (sum(firstHasOutcome[!firstHasNewOutcome]) + sum(firstHasNewOutcome))/(sum(firstTime[!firstHasNewOutcome]) + sum(firstTimeToEvent[firstHasNewOutcome] + 1))
-    injectedRrFirstExposure <- rateAfterFirstExposure/rateBeforeFirstExposure
+    rateBeforeFirstExposure <- firstObservedCount / sum(firstTime)
+    rateAfterFirstExposure <- (sum(firstHasOutcome[!firstHasNewOutcome]) + sum(firstHasNewOutcome)) / (sum(firstTime[!firstHasNewOutcome]) + sum(firstTimeToEvent[firstHasNewOutcome] + 1))
+    injectedRrFirstExposure <- rateAfterFirstExposure / rateBeforeFirstExposure
   }
-  
+
   if (addIntentToTreat) {
     hasOutcomeItt <- exposures$yItt > 0
     observedCountItt <- sum(hasOutcomeItt)
@@ -995,29 +1108,31 @@ injectSurvival <- function(exposures, effectSize, precision, addIntentToTreat) {
     survivalTimeItt[hasOutcomeItt] <- exposures$timeToEvent[hasOutcomeItt]
     survivalTimeIttNew <- survivalTimeItt
     survivalTimeIttNew[hasNewOutcome] <- timeToNewOutcome[hasNewOutcome]
-    rateBeforeItt <- observedCountItt/sum(survivalTimeItt)
+    rateBeforeItt <- observedCountItt / sum(survivalTimeItt)
     ratios <- c()
-    multiplier <- rateBeforeItt/rateBefore  # Adjust for fact that background rate may differ in ITT
+    multiplier <- rateBeforeItt / rateBefore # Adjust for fact that background rate may differ in ITT
     hasNewOutcomeItt <- c()
     ParallelLogger::logTrace("Generating outcomes for intent-to-treat")
     while (round(abs(sum(hasNewOutcomeItt) + sum(hasNewOutcome) - correctedTargetCount)) > precision *
-           correctedTargetCount) {
+      correctedTargetCount) {
       timeToNewOutcomeItt <- round(rexp(nrow(exposures), multiplier * exposures$prediction * (effectSize - 1)))
       hasNewOutcomeItt <- timeToNewOutcomeItt > exposures$daysAtRisk & timeToNewOutcomeItt < survivalTimeIttNew
       # Correct for censored time and outcomes:
-      correctedTargetCount <- (observedCountItt/sum(survivalTimeItt)) * 
-        (sum(survivalTimeIttNew[!hasNewOutcomeItt]) + sum(timeToNewOutcomeItt[hasNewOutcomeItt] + 1)) * 
+      correctedTargetCount <- (observedCountItt / sum(survivalTimeItt)) *
+        (sum(survivalTimeIttNew[!hasNewOutcomeItt]) + sum(timeToNewOutcomeItt[hasNewOutcomeItt] + 1)) *
         effectSize - sum(hasOutcomeItt[!hasNewOutcomeItt])
       if (correctedTargetCount < 0) {
         warning("Correct target count became negative. ")
       } else {
-        ratios <- c(ratios, (sum(hasNewOutcomeItt) + sum(hasNewOutcome))/correctedTargetCount)
+        ratios <- c(ratios, (sum(hasNewOutcomeItt) + sum(hasNewOutcome)) / correctedTargetCount)
       }
       if (length(ratios) == 100) {
-        ParallelLogger::logDebug(paste("Unable to achieve target RR using model as is. Correcting multiplier by",
-                                       1/mean(ratios),
-                                       "to force target"))
-        multiplier <- mean(c(multiplier, multiplier * 1/mean(ratios)))
+        ParallelLogger::logDebug(paste(
+          "Unable to achieve target RR using model as is. Correcting multiplier by",
+          1 / mean(ratios),
+          "to force target"
+        ))
+        multiplier <- mean(c(multiplier, multiplier * 1 / mean(ratios)))
         ratios <- c()
       }
       if (is.na(round(abs(sum(hasNewOutcome) - correctedTargetCount)))) {
@@ -1026,17 +1141,21 @@ injectSurvival <- function(exposures, effectSize, precision, addIntentToTreat) {
     }
     rateAfterItt <- (sum(hasOutcomeItt[!hasNewOutcome & !hasNewOutcomeItt]) + sum(hasNewOutcome) + sum(hasNewOutcomeItt)) /
       (sum(survivalTimeIttNew[!hasNewOutcomeItt]) + sum(timeToNewOutcomeItt[hasNewOutcomeItt] + 1))
-    injectedRrItt <- rateAfterItt/rateBeforeItt
-    newOutcomes <- rbind(newOutcomes, data.frame(personId = exposures$personId[hasNewOutcomeItt],
-                                                 cohortStartDate = exposures$cohortStartDate[hasNewOutcomeItt],
-                                                 timeToEvent = timeToNewOutcomeItt[hasNewOutcomeItt]))
+    injectedRrItt <- rateAfterItt / rateBeforeItt
+    newOutcomes <- rbind(newOutcomes, data.frame(
+      personId = exposures$personId[hasNewOutcomeItt],
+      cohortStartDate = exposures$cohortStartDate[hasNewOutcomeItt],
+      timeToEvent = timeToNewOutcomeItt[hasNewOutcomeItt]
+    ))
   } else {
     injectedRrItt <- NA
   }
-  return(list(injectedRr = injectedRr,
-              injectedRrFirstExposure = injectedRrFirstExposure,
-              injectedRrItt = injectedRrItt,
-              newOutcomes = newOutcomes))
+  return(list(
+    injectedRr = injectedRr,
+    injectedRrFirstExposure = injectedRrFirstExposure,
+    injectedRrItt = injectedRrItt,
+    newOutcomes = newOutcomes
+  ))
 }
 
 .createSummaryFileName <- function(folder) {
@@ -1054,15 +1173,17 @@ injectSurvival <- function(exposures, effectSize, precision, addIntentToTreat) {
     colnames(betas)[colnames(betas) == "id"] <- "covariateId"
   }
   if (nrow(betas) == 0) {
-    prediction <- data.frame(rowId = exposures$rowId,
-                             daysAtRisk = exposures$daysAtRisk,
-                             value = exp(intercept))
+    prediction <- data.frame(
+      rowId = exposures$rowId,
+      daysAtRisk = exposures$daysAtRisk,
+      value = exp(intercept)
+    )
   } else {
-    covariateIdIsInteger64 <- covariates %>% 
+    covariateIdIsInteger64 <- covariates %>%
       head(10000) %>%
       pull(.data$covariateId) %>%
       is("integer64")
-    
+
     if (!covariateIdIsInteger64) {
       betas$covariateId <- as.numeric(betas$covariateId)
     }
@@ -1074,7 +1195,7 @@ injectSurvival <- function(exposures, effectSize, precision, addIntentToTreat) {
       select(.data$rowId, .data$value) %>%
       ungroup() %>%
       collect()
-    
+
     prediction <- prediction %>%
       right_join(select(exposures, .data$rowId, .data$daysAtRisk), by = "rowId") %>%
       mutate(value = coalesce(.data$value, 0) + intercept) %>%

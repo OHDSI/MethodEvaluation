@@ -1,15 +1,15 @@
 # @file Metrics.R
 #
-# Copyright 2022 Observational Health Data Sciences and Informatics
+# Copyright 2023 Observational Health Data Sciences and Informatics
 #
 # This file is part of MethodEvaluation
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,16 +25,16 @@
 #' @param logRr       A numeric vector of effect estimates on the log scale.
 #' @param seLogRr     The standard error of the log of the effect estimates. Hint: often the standard
 #'                    error = (log(<lower bound 95 percent confidence interval>) - log(<effect
-#'                    estimate>))/qnorm(0.025). If not provided the standard error will be inferred from 
+#'                    estimate>))/qnorm(0.025). If not provided the standard error will be inferred from
 #'                    the 95 percent confidence interval.
-#' @param ci95Lb      The lower bound of the 95 percent confidence interval. IF not provided it will be 
+#' @param ci95Lb      The lower bound of the 95 percent confidence interval. IF not provided it will be
 #'                    inferred from the standard error.
-#' @param ci95Ub      The upper bound of the 95 percent confidence interval. IF not provided it will be 
+#' @param ci95Ub      The upper bound of the 95 percent confidence interval. IF not provided it will be
 #'                    inferred from the standard error.
-#' @param p           The two-sided p-value corresponding to the null hypothesis of no effect. IF not 
-#'                    provided it will be inferred from the standard error.                   
+#' @param p           The two-sided p-value corresponding to the null hypothesis of no effect. IF not
+#'                    provided it will be inferred from the standard error.
 #' @param trueLogRr   A vector of the true effect sizes
-#' 
+#'
 #' @examples
 #' library(EmpiricalCalibration)
 #' data <- simulateControls(n = 50 * 3, trueLogRr = log(c(1, 2, 4)))
@@ -48,10 +48,12 @@ computeMetrics <- function(logRr, seLogRr = NULL, ci95Lb = NULL, ci95Ub = NULL, 
   if (is.null(seLogRr) && is.null(ci95Lb)) {
     stop("Must specify either standard error or confidence interval")
   }
-  data <- data.frame(logRr = logRr,
-                     trueLogRr = trueLogRr)
+  data <- data.frame(
+    logRr = logRr,
+    trueLogRr = trueLogRr
+  )
   if (is.null(seLogRr)) {
-    data$seLogRr <- (log(ci95Ub) - log(ci95Lb)) / (2*qnorm(0.975))
+    data$seLogRr <- (log(ci95Ub) - log(ci95Lb)) / (2 * qnorm(0.975))
   } else {
     data$seLogRr <- seLogRr
   }
@@ -63,7 +65,7 @@ computeMetrics <- function(logRr, seLogRr = NULL, ci95Lb = NULL, ci95Ub = NULL, 
     data$ci95Ub <- ci95Ub
   }
   if (is.null(p)) {
-    z <- data$logRr/data$seLogRr
+    z <- data$logRr / data$seLogRr
     data$p <- 2 * pmin(pnorm(z), 1 - pnorm(z))
   } else {
     data$p <- p
@@ -80,18 +82,22 @@ computeMetrics <- function(logRr, seLogRr = NULL, ci95Lb = NULL, ci95Ub = NULL, 
   roc <- pROC::roc(data$trueLogRr > 0, data$logRr, algorithm = 3)
   auc <- round(pROC::auc(roc), 2)
   mse <- round(mean((data$logRr - data$trueLogRr)^2), 2)
-  coverage <- round(mean(data$ci95Lb < exp(data$trueLogRr) & data$ci95Ub > exp(data$trueLogRr)),
-                    2)
-  meanP <- round(-1 + exp(mean(log(1 + (1/(data$seLogRr^2))))), 2)
+  coverage <- round(
+    mean(data$ci95Lb < exp(data$trueLogRr) & data$ci95Ub > exp(data$trueLogRr)),
+    2
+  )
+  meanP <- round(-1 + exp(mean(log(1 + (1 / (data$seLogRr^2))))), 2)
   type1 <- round(mean(data$p[data$trueLogRr == 0] < 0.05), 2)
   type2 <- round(mean(data$p[data$trueLogRr > 0] >= 0.05), 2)
-  return(c(auc = auc,
-           coverage = coverage,
-           meanP = meanP,
-           mse = mse,
-           type1 = type1,
-           type2 = type2,
-           nonEstimable = nonEstimable))
+  return(c(
+    auc = auc,
+    coverage = coverage,
+    meanP = meanP,
+    mse = mse,
+    type1 = type1,
+    type2 = type2,
+    nonEstimable = nonEstimable
+  ))
 }
 
 #' Package results of a method on the OHDSI Methods Benchmark
@@ -107,7 +113,7 @@ computeMetrics <- function(logRr, seLogRr = NULL, ci95Lb = NULL, ci95Ub = NULL, 
 #'                         required columns.
 #' @param databaseName     A character string to identify the database the method was executed on.
 #' @param exportFolder     The folder where the output CSV files will written.
-#' @param referenceSet     The name of the reference set for which to package the results. Currently 
+#' @param referenceSet     The name of the reference set for which to package the results. Currently
 #'                         supported are "ohdsiMethodsBenchmark" and "ohdsiDevelopment".
 #'
 #' @details
@@ -142,20 +148,21 @@ packageOhdsiBenchmarkResults <- function(estimates,
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(estimates, add = errorMessages)
   checkmate::assertNames(
-    colnames(estimates), 
+    colnames(estimates),
     must.include = c(
-      "targetId", 
-      "outcomeId", 
-      "analysisId", 
-      "logRr", 
-      "seLogRr", 
-      "ci95Lb", 
-      "ci95Ub"), 
+      "targetId",
+      "outcomeId",
+      "analysisId",
+      "logRr",
+      "seLogRr",
+      "ci95Lb",
+      "ci95Ub"
+    ),
     add = errorMessages
   )
   checkmate::assertDataFrame(controlSummary, add = errorMessages)
   checkmate::assertNames(
-    colnames(controlSummary), 
+    colnames(controlSummary),
     must.include = c(
       "outcomeId",
       "comparatorId",
@@ -171,19 +178,20 @@ packageOhdsiBenchmarkResults <- function(estimates,
       "trueEffectSizeFirstExposure",
       "oldOutcomeId",
       "mdrrTarget",
-      "mdrrComparator"), 
+      "mdrrComparator"
+    ),
     add = errorMessages
   )
   checkmate::assertDataFrame(analysisRef, add = errorMessages)
   checkmate::assertNames(
-    colnames(analysisRef), 
+    colnames(analysisRef),
     must.include = c(
       "analysisId",
       "method",
-      "comparative", 
-      "nesting", 
+      "comparative",
+      "nesting",
       "firstExposureOnly"
-    ), 
+    ),
     add = errorMessages
   )
   checkmate::assertChoice(referenceSet, choices = c("ohdsiMethodsBenchmark", "ohdsiDevelopment"), add = errorMessages)
@@ -198,45 +206,51 @@ packageOhdsiBenchmarkResults <- function(estimates,
   # Create full grid of controls (including those that did not make it in the database:
   if (referenceSet == "ohdsiMethodsBenchmark") {
     ohdsiNegativeControls <- readRDS(system.file("ohdsiNegativeControls.rds",
-                                                 package = "MethodEvaluation"))
+                                                 package = "MethodEvaluation"
+    ))
   } else {
     ohdsiNegativeControls <- readRDS(system.file("ohdsiDevelopmentNegativeControls.rds",
-                                                 package = "MethodEvaluation"))
+                                                 package = "MethodEvaluation"
+    ))
   }
   ohdsiNegativeControls$oldOutcomeId <- ohdsiNegativeControls$outcomeId
   ohdsiNegativeControls$stratum <- ohdsiNegativeControls$outcomeName
   idx <- ohdsiNegativeControls$type == "Outcome control"
   ohdsiNegativeControls$stratum[idx] <- ohdsiNegativeControls$targetName[idx]
-  ohdsiNegativeControls <- ohdsiNegativeControls[, c("targetId",
-                                                     "targetName",
-                                                     "comparatorId",
-                                                     "comparatorName",
-                                                     "nestingId",
-                                                     "nestingName",
-                                                     "oldOutcomeId",
-                                                     "outcomeName",
-                                                     "type",
-                                                     "stratum")]
+  ohdsiNegativeControls <- ohdsiNegativeControls[, c(
+    "targetId",
+    "targetName",
+    "comparatorId",
+    "comparatorName",
+    "nestingId",
+    "nestingName",
+    "oldOutcomeId",
+    "outcomeName",
+    "type",
+    "stratum"
+  )]
   fullGrid <- do.call("rbind", replicate(4, ohdsiNegativeControls, simplify = FALSE))
   fullGrid$targetEffectSize <- rep(c(1, 1.5, 2, 4), each = nrow(ohdsiNegativeControls))
   idx <- fullGrid$targetEffectSize != 1
-  fullGrid$outcomeName[idx] <- paste0(fullGrid$outcomeName[idx],
-                                      ", RR=",
-                                      fullGrid$targetEffectSize[idx])
+  fullGrid$outcomeName[idx] <- paste0(
+    fullGrid$outcomeName[idx],
+    ", RR=",
+    fullGrid$targetEffectSize[idx]
+  )
   allControls <- merge(controlSummary, fullGrid, all.y = TRUE)
   
   .packageBenchmarkResults(
     allControls = allControls,
-    analysisRef = analysisRef, 
+    analysisRef = analysisRef,
     estimates = estimates,
     exportFolder = exportFolder,
     databaseName = databaseName
   )
 }
 
-.packageBenchmarkResults <- function(allControls, 
-                                     analysisRef, 
-                                     estimates, 
+.packageBenchmarkResults <- function(allControls,
+                                     analysisRef,
+                                     estimates,
                                      exportFolder,
                                      databaseName) {
   # Merge estimates into full grid:
@@ -278,18 +292,24 @@ packageOhdsiBenchmarkResults <- function(estimates,
       calibrateLeaveOneOut <- function(leaveOutUnit) {
         subsetMinusOne <- filterSubset[filterSubset$leaveOutUnit != leaveOutUnit, ]
         one <- subset[subset$leaveOutUnit == leaveOutUnit, ]
-        model <- EmpiricalCalibration::fitSystematicErrorModel(logRr = subsetMinusOne$logRr,
-                                                               seLogRr = subsetMinusOne$seLogRr,
-                                                               trueLogRr = log(subsetMinusOne$targetEffectSize),
-                                                               estimateCovarianceMatrix = FALSE)
-        caliCi <- EmpiricalCalibration::calibrateConfidenceInterval(logRr = one$logRr,
-                                                                    seLogRr = one$seLogRr,
-                                                                    model = model)
+        model <- EmpiricalCalibration::fitSystematicErrorModel(
+          logRr = subsetMinusOne$logRr,
+          seLogRr = subsetMinusOne$seLogRr,
+          trueLogRr = log(subsetMinusOne$targetEffectSize),
+          estimateCovarianceMatrix = FALSE
+        )
+        caliCi <- EmpiricalCalibration::calibrateConfidenceInterval(
+          logRr = one$logRr,
+          seLogRr = one$seLogRr,
+          model = model
+        )
         null <- EmpiricalCalibration::fitNull(logRr = subsetMinusOne$logRr[subsetMinusOne$targetEffectSize ==
                                                                              1], seLogRr = subsetMinusOne$seLogRr[subsetMinusOne$targetEffectSize == 1])
-        caliP <- EmpiricalCalibration::calibrateP(null = null,
-                                                  logRr = one$logRr,
-                                                  seLogRr = one$seLogRr)
+        caliP <- EmpiricalCalibration::calibrateP(
+          null = null,
+          logRr = one$logRr,
+          seLogRr = one$seLogRr
+        )
         one$calLogRr <- caliCi$logRr
         one$calSeLogRr <- caliCi$seLogRr
         one$calCi95Lb <- exp(caliCi$logLb95Rr)
@@ -307,15 +327,19 @@ packageOhdsiBenchmarkResults <- function(estimates,
   cluster <- ParallelLogger::makeCluster(4)
   ParallelLogger::clusterRequire(cluster, "dplyr")
   subsets <- split(estimates, paste(estimates$method, estimates$analysisId, estimates$stratum))
-  calibratedEstimates <- ParallelLogger::clusterApply(cluster,
-                                                      subsets,
-                                                      calibrate)
+  calibratedEstimates <- ParallelLogger::clusterApply(
+    cluster,
+    subsets,
+    calibrate
+  )
   calibratedEstimates <- bind_rows(calibratedEstimates)
   ParallelLogger::stopCluster(cluster)
   normMethod <- gsub("[^a-zA-Z]", "", analysisRef$method[1])
   normDatabase <- gsub("[^a-zA-Z]", "", databaseName)
-  estimatesFileName <- file.path(exportFolder,
-                                 sprintf("estimates_%s_%s.csv", normMethod, normDatabase))
+  estimatesFileName <- file.path(
+    exportFolder,
+    sprintf("estimates_%s_%s.csv", normMethod, normDatabase)
+  )
   analysisRefFileName <- file.path(exportFolder, sprintf("analysisRef_%s.csv", normMethod))
   readr::write_csv(calibratedEstimates, estimatesFileName)
   readr::write_csv(analysisRef, analysisRefFileName)
@@ -372,36 +396,38 @@ packageCustomBenchmarkResults <- function(estimates,
   errorMessages <- checkmate::makeAssertCollection()
   checkmate::assertDataFrame(estimates, add = errorMessages)
   checkmate::assertNames(
-    colnames(estimates), 
+    colnames(estimates),
     must.include = c(
-      "targetId", 
-      "outcomeId", 
-      "analysisId", 
-      "logRr", 
-      "seLogRr", 
-      "ci95Lb", 
-      "ci95Ub"), 
+      "targetId",
+      "outcomeId",
+      "analysisId",
+      "logRr",
+      "seLogRr",
+      "ci95Lb",
+      "ci95Ub"
+    ),
     add = errorMessages
   )
   checkmate::assertDataFrame(negativeControls, add = errorMessages)
   checkmate::assertNames(
-    colnames(negativeControls), 
+    colnames(negativeControls),
     must.include = c(
-      "targetId", 
+      "targetId",
       "outcomeId",
-      "type"), 
+      "type"
+    ),
     add = errorMessages
   )
   checkmate::assertDataFrame(analysisRef, add = errorMessages)
   checkmate::assertNames(
-    colnames(analysisRef), 
+    colnames(analysisRef),
     must.include = c(
       "analysisId",
       "method",
-      "comparative", 
-      "nesting", 
+      "comparative",
+      "nesting",
       "firstExposureOnly"
-    ), 
+    ),
     add = errorMessages
   )
   checkmate::assertCharacter(databaseName, len = 1, add = errorMessages)
@@ -410,24 +436,24 @@ packageCustomBenchmarkResults <- function(estimates,
   
   trueEffecSizes <- c(1, unique(synthesisSummary$targetEffectSize))
   negativeControls <- negativeControls %>%
-    mutate(stratum = if_else(type == "Outcome control", .data$targetId, .data$outcomeId)) %>%
-    rename(oldOutcomeId = "outcomeId") 
+    mutate(stratum = if_else(.data$type == "Outcome control", .data$targetId, .data$outcomeId)) %>%
+    rename(oldOutcomeId = "outcomeId")
   fullGrid <- lapply(trueEffecSizes, function(x) mutate(negativeControls, targetEffectSize = x)) %>%
-    bind_rows() 
+    bind_rows()
   synthesisSummary <- synthesisSummary %>%
     rename(targetId = "exposureId") %>%
     rename(oldOutcomeId = "outcomeId") %>%
     rename(outcomeId = "newOutcomeId") %>%
     select("targetId", "oldOutcomeId", "targetEffectSize", "outcomeId", "trueEffectSize", "trueEffectSizeFirstExposure", "trueEffectSizeItt")
   allControls <- left_join(
-    fullGrid, 
+    fullGrid,
     synthesisSummary,
     by = join_by("targetId", "oldOutcomeId", "targetEffectSize")
   ) %>%
     mutate(outcomeId = if_else(.data$targetEffectSize == 1, .data$oldOutcomeId, .data$outcomeId))
   .packageBenchmarkResults(
     allControls = allControls,
-    analysisRef = analysisRef, 
+    analysisRef = analysisRef,
     estimates = estimates,
     exportFolder = exportFolder,
     databaseName = databaseName
@@ -463,14 +489,13 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder,
                                          trueEffectSize = "Overall",
                                          calibrated = FALSE,
                                          comparative = FALSE) {
-  
   # Load and prepare estimates of all methods
   files <- list.files(exportFolder, "estimates.*csv", full.names = TRUE)
   estimates <- lapply(files, read.csv)
   estimates <- do.call("rbind", estimates)
   estimates$trueEffectSize[estimates$firstExposureOnly] <- estimates$trueEffectSizeFirstExposure[estimates$firstExposureOnly]
   estimates$trueEffectSize[is.na(estimates$trueEffectSize)] <- estimates$targetEffectSize[is.na(estimates$trueEffectSize)]
-  z <- estimates$logRr/estimates$seLogRr
+  z <- estimates$logRr / estimates$seLogRr
   estimates$p <- 2 * pmin(pnorm(z), 1 - pnorm(z))
   idx <- is.na(estimates$logRr) | is.infinite(estimates$logRr) | is.na(estimates$seLogRr) | is.infinite(estimates$seLogRr)
   estimates$logRr[idx] <- 0
@@ -519,18 +544,22 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder,
       roc <- pROC::roc(forEval$targetEffectSize > 1, forEval$logRr, algorithm = 3)
       auc <- round(pROC::auc(roc), 2)
       mse <- round(mean((forEval$logRr - log(forEval$trueEffectSize))^2), 2)
-      coverage <- round(mean(forEval$ci95Lb < forEval$trueEffectSize & forEval$ci95Ub > forEval$trueEffectSize),
-                        2)
-      meanP <- round(-1 + exp(mean(log(1 + (1/(forEval$seLogRr^2))))), 2)
+      coverage <- round(
+        mean(forEval$ci95Lb < forEval$trueEffectSize & forEval$ci95Ub > forEval$trueEffectSize),
+        2
+      )
+      meanP <- round(-1 + exp(mean(log(1 + (1 / (forEval$seLogRr^2))))), 2)
       type1 <- round(mean(forEval$p[forEval$targetEffectSize == 1] < 0.05), 2)
       type2 <- round(mean(forEval$p[forEval$targetEffectSize > 1] >= 0.05), 2)
-      return(c(auc = auc,
-               coverage = coverage,
-               meanP = meanP,
-               mse = mse,
-               type1 = type1,
-               type2 = type2,
-               nonEstimable = nonEstimable))
+      return(c(
+        auc = auc,
+        coverage = coverage,
+        meanP = meanP,
+        mse = mse,
+        type1 = type1,
+        type2 = type2,
+        nonEstimable = nonEstimable
+      ))
     }
     combis <- cbind(combis, as.data.frame(t(sapply(1:nrow(combis), computeMetrics))))
   } else {
@@ -539,9 +568,11 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder,
       forEval <- subset[subset$method == combis$method[i] & subset$analysisId == combis$analysisId[i] &
                           subset$targetEffectSize == trueEffectSize, ]
       mse <- round(mean((forEval$logRr - log(forEval$trueEffectSize))^2), 2)
-      coverage <- round(mean(forEval$ci95Lb < forEval$trueEffectSize & forEval$ci95Ub > forEval$trueEffectSize),
-                        2)
-      meanP <- round(-1 + exp(mean(log(1 + (1/(forEval$seLogRr^2))))), 2)
+      coverage <- round(
+        mean(forEval$ci95Lb < forEval$trueEffectSize & forEval$ci95Ub > forEval$trueEffectSize),
+        2
+      )
+      meanP <- round(-1 + exp(mean(log(1 + (1 / (forEval$seLogRr^2))))), 2)
       if (trueEffectSize == 1) {
         auc <- NA
         type1 <- round(mean(forEval$p < 0.05), 2)
@@ -556,29 +587,33 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder,
         type2 <- round(mean(forEval$p[forEval$targetEffectSize > 1] >= 0.05), 2)
         nonEstimable <- round(mean(forEval$seLogRr == 999), 2)
       }
-      return(c(auc = auc,
-               coverage = coverage,
-               meanP = meanP,
-               mse = mse,
-               type1 = type1,
-               type2 = type2,
-               nonEstimable = nonEstimable))
+      return(c(
+        auc = auc,
+        coverage = coverage,
+        meanP = meanP,
+        mse = mse,
+        type1 = type1,
+        type2 = type2,
+        nonEstimable = nonEstimable
+      ))
     }
     combis <- cbind(combis, as.data.frame(t(sapply(1:nrow(combis), computeMetrics))))
   }
   result <- merge(combis, analysisRef[, c("method", "analysisId", "description")])
   result <- result[order(result$database, result$method, result$analysisId), ]
-  result <- result[, c("database",
-                       "method",
-                       "analysisId",
-                       "description",
-                       "auc",
-                       "coverage",
-                       "meanP",
-                       "mse",
-                       "type1",
-                       "type2",
-                       "nonEstimable")]
+  result <- result[, c(
+    "database",
+    "method",
+    "analysisId",
+    "description",
+    "auc",
+    "coverage",
+    "meanP",
+    "mse",
+    "type1",
+    "type2",
+    "nonEstimable"
+  )]
   return(result)
 }
 

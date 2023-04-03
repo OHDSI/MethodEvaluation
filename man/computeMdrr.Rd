@@ -70,14 +70,19 @@ using a standard approach that stratifies by age and gender (Armstrong 1987).
 }
 \examples{
 \dontrun{
-connectionDetails <- createConnectionDetails(dbms = "sql server",
-                                             server = "RNDUSRDHIT07.jnj.com")
-exposureOutcomePairs <- data.frame(exposureId = c(767410, 1314924, 907879),
-                                   outcomeId = c(444382, 79106, 138825))
+connectionDetails <- createConnectionDetails(
+  dbms = "sql server",
+  server = "RNDUSRDHIT07.jnj.com"
+)
+exposureOutcomePairs <- data.frame(
+  exposureId = c(767410, 1314924, 907879),
+  outcomeId = c(444382, 79106, 138825)
+)
 mdrrs <- computeMdrr(connectionDetails,
-                     "cdm_truven_mdcr",
-                     exposureOutcomePairs,
-                     outcomeTable = "condition_era")
+  "cdm_truven_mdcr",
+  exposureOutcomePairs,
+  outcomeTable = "condition_era"
+)
 }
 }
 \references{

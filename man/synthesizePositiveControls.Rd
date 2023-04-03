@@ -21,8 +21,7 @@ synthesizePositiveControls(
   minOutcomeCountForModel = 100,
   minOutcomeCountForInjection = 25,
   minModelCount = 5,
- 
-    covariateSettings = FeatureExtraction::createCovariateSettings(useDemographicsAgeGroup
+  covariateSettings = FeatureExtraction::createCovariateSettings(useDemographicsAgeGroup
     = TRUE, useDemographicsGender = TRUE, useDemographicsIndexYear = TRUE,
     useDemographicsIndexMonth = TRUE, useConditionGroupEraLongTerm = TRUE,
     useDrugGroupEraLongTerm = TRUE, useProcedureOccurrenceLongTerm = TRUE,
@@ -113,7 +112,7 @@ same IDs will first be deleted.}
 
 \item{minOutcomeCountForInjection}{Minimum number of outcome events required to inject a signal.}
 
-\item{minModelCount}{Minimum number of negative controls having enough outcomes to 
+\item{minModelCount}{Minimum number of negative controls having enough outcomes to
 fit an outcome model.}
 
 \item{covariateSettings}{An object of type \code{covariateSettings} as created using

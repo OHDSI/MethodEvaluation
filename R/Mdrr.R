@@ -1,15 +1,15 @@
 # @file Mdrr.R
 #
-# Copyright 2022 Observational Health Data Sciences and Informatics
+# Copyright 2023 Observational Health Data Sciences and Informatics
 #
 # This file is part of MethodEvaluation
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -69,14 +69,19 @@
 #'
 #' @examples
 #' \dontrun{
-#' connectionDetails <- createConnectionDetails(dbms = "sql server",
-#'                                              server = "RNDUSRDHIT07.jnj.com")
-#' exposureOutcomePairs <- data.frame(exposureId = c(767410, 1314924, 907879),
-#'                                    outcomeId = c(444382, 79106, 138825))
+#' connectionDetails <- createConnectionDetails(
+#'   dbms = "sql server",
+#'   server = "RNDUSRDHIT07.jnj.com"
+#' )
+#' exposureOutcomePairs <- data.frame(
+#'   exposureId = c(767410, 1314924, 907879),
+#'   outcomeId = c(444382, 79106, 138825)
+#' )
 #' mdrrs <- computeMdrr(connectionDetails,
-#'                      "cdm_truven_mdcr",
-#'                      exposureOutcomePairs,
-#'                      outcomeTable = "condition_era")
+#'   "cdm_truven_mdcr",
+#'   exposureOutcomePairs,
+#'   outcomeTable = "condition_era"
+#' )
 #' }
 #' @export
 computeMdrr <- function(connectionDetails,
@@ -93,12 +98,15 @@ computeMdrr <- function(connectionDetails,
     warning("The 'oracleTempSchema' argument is deprecated. Use 'tempEmulationSchema' instead.")
     tempEmulationSchema <- oracleTempSchema
   }
-  if (is.null(exposureOutcomePairs$exposureId) && !is.null(exposureOutcomePairs$targetId))
+  if (is.null(exposureOutcomePairs$exposureId) && !is.null(exposureOutcomePairs$targetId)) {
     exposureOutcomePairs$exposureId <- exposureOutcomePairs$targetId
-  if (is.null(exposureOutcomePairs$exposureId))
+  }
+  if (is.null(exposureOutcomePairs$exposureId)) {
     stop("exposureOutcomePairs is missing exposureId and targetId column")
-  if (is.null(exposureOutcomePairs$outcomeId))
+  }
+  if (is.null(exposureOutcomePairs$outcomeId)) {
     stop("exposureOutcomePairs is missing outcomeId column")
+  }
   exposureTable <- tolower(exposureTable)
   outcomeTable <- tolower(outcomeTable)
   if (exposureTable == "drug_era") {
@@ -116,7 +124,7 @@ computeMdrr <- function(connectionDetails,
     }
     exposurePersonId <- "subject_id"
   }
-  
+
   if (outcomeTable == "condition_era") {
     outcomeStartDate <- "condition_era_start_date"
     outcomeEndDate <- "condition_era_end_date"
@@ -137,52 +145,57 @@ computeMdrr <- function(connectionDetails,
     }
     outcomePersonId <- "subject_id"
   }
-  
+
   conn <- DatabaseConnector::connect(connectionDetails)
   on.exit(DatabaseConnector::disconnect(conn))
-  
+
   renderedSql <- SqlRender::loadRenderTranslateSql("MDRR.sql",
-                                                   packageName = "MethodEvaluation",
-                                                   dbms = connectionDetails$dbms,
-                                                   tempEmulationSchema = tempEmulationSchema,
-                                                   cdm_database_schema = cdmDatabaseSchema,
-                                                   exposures_of_interest = unique(exposureOutcomePairs$exposureId),
-                                                   outcomes_of_interest = unique(exposureOutcomePairs$outcomeId),
-                                                   exposure_database_schema = exposureDatabaseSchema,
-                                                   exposure_table = exposureTable,
-                                                   exposure_start_date = exposureStartDate,
-                                                   exposure_end_date = exposureEndDate,
-                                                   exposure_concept_id = exposureConceptId,
-                                                   exposure_person_id = exposurePersonId,
-                                                   outcome_database_schema = outcomeDatabaseSchema,
-                                                   outcome_table = outcomeTable,
-                                                   outcome_start_date = outcomeStartDate,
-                                                   outcome_end_date = outcomeEndDate,
-                                                   outcome_concept_id = outcomeConceptId,
-                                                   outcome_person_id = outcomePersonId)
-  
-  writeLines("Computing minimumum detectable relative risks. This could take a while")
+    packageName = "MethodEvaluation",
+    dbms = connectionDetails$dbms,
+    tempEmulationSchema = tempEmulationSchema,
+    cdm_database_schema = cdmDatabaseSchema,
+    exposures_of_interest = unique(exposureOutcomePairs$exposureId),
+    outcomes_of_interest = unique(exposureOutcomePairs$outcomeId),
+    exposure_database_schema = exposureDatabaseSchema,
+    exposure_table = exposureTable,
+    exposure_start_date = exposureStartDate,
+    exposure_end_date = exposureEndDate,
+    exposure_concept_id = exposureConceptId,
+    exposure_person_id = exposurePersonId,
+    outcome_database_schema = outcomeDatabaseSchema,
+    outcome_table = outcomeTable,
+    outcome_start_date = outcomeStartDate,
+    outcome_end_date = outcomeEndDate,
+    outcome_concept_id = outcomeConceptId,
+    outcome_person_id = outcomePersonId
+  )
+
+  message("Computing minimumum detectable relative risks. This could take a while")
   DatabaseConnector::executeSql(conn, renderedSql)
-  
+
   sql <- "SELECT * FROM #mdrr"
   sql <- SqlRender::translate(sql,
-                              targetDialect = connectionDetails$dbms,
-                              tempEmulationSchema = tempEmulationSchema)
+    targetDialect = connectionDetails$dbms,
+    tempEmulationSchema = tempEmulationSchema
+  )
   mdrr <- DatabaseConnector::querySql(conn, sql, snakeCaseToCamelCase = TRUE)
-  
+
   renderedSql <- SqlRender::loadRenderTranslateSql("MDRR_Drop_temp_tables.sql",
-                                                   packageName = "MethodEvaluation",
-                                                   dbms = connectionDetails$dbms,
-                                                   tempEmulationSchema = tempEmulationSchema)
+    packageName = "MethodEvaluation",
+    dbms = connectionDetails$dbms,
+    tempEmulationSchema = tempEmulationSchema
+  )
   DatabaseConnector::executeSql(conn, renderedSql, progressBar = FALSE, reportOverallTime = FALSE)
-  
-  mdrr <- data.frame(exposureId = mdrr$drugConceptId,
-                     outcomeId = mdrr$conditionConceptId,
-                     exposurePersonCount = mdrr$drugPersonCount,
-                     outcomePersonCount = mdrr$conditionPersonCount,
-                     personCount = mdrr$personCount,
-                     expectedCount = mdrr$expectedCount,
-                     mdrr = mdrr$mdrr)
+
+  mdrr <- data.frame(
+    exposureId = mdrr$drugConceptId,
+    outcomeId = mdrr$conditionConceptId,
+    exposurePersonCount = mdrr$drugPersonCount,
+    outcomePersonCount = mdrr$conditionPersonCount,
+    personCount = mdrr$personCount,
+    expectedCount = mdrr$expectedCount,
+    mdrr = mdrr$mdrr
+  )
   mdrr <- merge(exposureOutcomePairs, mdrr)
   return(mdrr)
 }
