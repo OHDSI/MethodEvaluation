@@ -6,9 +6,9 @@
 \usage{
 computeMdrr(
   connectionDetails,
-  cdmDatabaseSchema,
   oracleTempSchema = NULL,
   tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
+  cdmDatabaseSchema,
   exposureOutcomePairs,
   exposureDatabaseSchema = cdmDatabaseSchema,
   exposureTable = "drug_era",
@@ -22,13 +22,13 @@ computeMdrr(
 function \code{createConnectionDetails} in the
 \code{DatabaseConnector} package.}
 
-\item{cdmDatabaseSchema}{Name of database schema that contains OMOP CDM and vocabulary.}
-
 \item{oracleTempSchema}{DEPRECATED: use `tempEmulationSchema` instead.}
 
 \item{tempEmulationSchema}{Some database platforms like Oracle and Impala do not truly support temp tables. To
 emulate temp tables, provide a schema with write privileges where temp tables
 can be created.}
+
+\item{cdmDatabaseSchema}{Name of database schema that contains OMOP CDM and vocabulary.}
 
 \item{exposureOutcomePairs}{A data frame with at least two columns:
 \itemize{

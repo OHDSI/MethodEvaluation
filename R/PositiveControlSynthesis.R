@@ -194,16 +194,38 @@ synthesizePositiveControls <- function(connectionDetails,
     warning("The 'oracleTempSchema' argument is deprecated. Use 'tempEmulationSchema' instead.")
     tempEmulationSchema <- oracleTempSchema
   }
-  if (min(effectSizes) < 1) {
-    stop("Effect sizes smaller than 1 are currently not supported")
-  }
-  if (modelType != "poisson" && modelType != "survival") {
-    stop(paste0(
-      "Unknown modelType '",
-      modelType,
-      "', please select either 'poisson' or 'survival'"
-    ))
-  }
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertClass(connectionDetails, "ConnectionDetails", add = errorMessages)
+  checkmate::assertCharacter(cdmDatabaseSchema, len = 1, add = errorMessages)
+  checkmate::assertCharacter(tempEmulationSchema, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::assertCharacter(exposureDatabaseSchema, len = 1, add = errorMessages)
+  checkmate::assertCharacter(exposureTable, len = 1, add = errorMessages)
+  checkmate::assertCharacter(outcomeDatabaseSchema, len = 1, add = errorMessages)
+  checkmate::assertCharacter(outcomeTable, len = 1, add = errorMessages)
+  checkmate::assertLogical(createOutputTable, len = 1, add = errorMessages)
+  checkmate::assertDataFrame(exposureOutcomePairs, add = errorMessages)
+  checkmate::assertNames(colnames(exposureOutcomePairs), must.include = c("exposureId", "outcomeId"), add = errorMessages)
+  checkmate::assertChoice(modelType, c("poisson", "survival"), add = errorMessages)
+  checkmate::assertInt(minOutcomeCountForModel, lower = 0, add = errorMessages)
+  checkmate::assertInt(minOutcomeCountForInjection, lower = 0, add = errorMessages)
+  checkmate::assertInt(minModelCount, lower = 0, add = errorMessages)
+  checkmate::assertList(covariateSettings, add = errorMessages)
+  checkmate::assertClass(prior, "cyclopsPrior", add = errorMessages)
+  checkmate::assertClass(control, "cyclopsControl", add = errorMessages)
+  checkmate::assertLogical(firstExposureOnly, len = 1, add = errorMessages)
+  checkmate::assertInt(washoutPeriod, lower = 0, add = errorMessages)
+  checkmate::assertInt(riskWindowStart, add = errorMessages)
+  checkmate::assertInt(riskWindowEnd, add = errorMessages)
+  checkmate::assertLogical(removePeopleWithPriorOutcomes, len = 1, add = errorMessages)
+  checkmate::assertInt(maxSubjectsForModel, lower = 0, add = errorMessages)
+  checkmate::assertNumeric(effectSizes, lower = 1, min.len = 1, add = errorMessages)
+  checkmate::assertNumeric(precision, lower = 0, len = 1, add = errorMessages)
+  checkmate::assertInt(outputIdOffset, lower = 0, add = errorMessages)
+  checkmate::assertCharacter(workFolder, len = 1, add = errorMessages)
+  checkmate::assertCharacter(cdmVersion, len = 1, add = errorMessages)
+  checkmate::assertInt(modelThreads, lower = 1, add = errorMessages)
+  checkmate::assertInt(generationThreads, lower = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
   if (!firstExposureOnly && addIntentToTreat) {
     stop("Cannot have addIntentToTreat = TRUE and firstExposureOnly = FALSE at the same time")
   }

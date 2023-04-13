@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">MethodEvaluation</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.2.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.3.0</span>
       </span>
     </div>
 
@@ -26,7 +26,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -66,48 +66,47 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">injectSignals</span><span class="op">(</span>
-  <span class="va">connectionDetails</span>,
-  <span class="va">cdmDatabaseSchema</span>,
-  oracleTempSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,
-  exposureDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,
-  exposureTable <span class="op">=</span> <span class="st">"drug_era"</span>,
-  outcomeDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,
-  outcomeTable <span class="op">=</span> <span class="st">"cohort"</span>,
-  outputDatabaseSchema <span class="op">=</span> <span class="va">outcomeDatabaseSchema</span>,
-  outputTable <span class="op">=</span> <span class="va">outcomeTable</span>,
-  createOutputTable <span class="op">=</span> <span class="cn">FALSE</span>,
-  <span class="va">exposureOutcomePairs</span>,
-  modelType <span class="op">=</span> <span class="st">"poisson"</span>,
-  minOutcomeCountForModel <span class="op">=</span> <span class="fl">100</span>,
-  minOutcomeCountForInjection <span class="op">=</span> <span class="fl">25</span>,
- 
-    covariateSettings <span class="op">=</span> <span class="fu">FeatureExtraction</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/FeatureExtraction/man/createCovariateSettings.html" class="external-link">createCovariateSettings</a></span><span class="op">(</span>useDemographicsAgeGroup
-    <span class="op">=</span> <span class="cn">TRUE</span>, useDemographicsGender <span class="op">=</span> <span class="cn">TRUE</span>, useDemographicsIndexYear <span class="op">=</span> <span class="cn">TRUE</span>,
-    useDemographicsIndexMonth <span class="op">=</span> <span class="cn">TRUE</span>, useConditionGroupEraLongTerm <span class="op">=</span> <span class="cn">TRUE</span>,
-    useDrugGroupEraLongTerm <span class="op">=</span> <span class="cn">TRUE</span>, useProcedureOccurrenceLongTerm <span class="op">=</span> <span class="cn">TRUE</span>,
-    useMeasurementLongTerm <span class="op">=</span> <span class="cn">TRUE</span>, useObservationLongTerm <span class="op">=</span> <span class="cn">TRUE</span>, useCharlsonIndex <span class="op">=</span>
-    <span class="cn">TRUE</span>, useDcsi <span class="op">=</span> <span class="cn">TRUE</span>, useChads2Vasc <span class="op">=</span> <span class="cn">TRUE</span>, longTermStartDays <span class="op">=</span> <span class="fl">365</span>, endDays <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,
-  prior <span class="op">=</span> <span class="fu">Cyclops</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/Cyclops/man/createPrior.html" class="external-link">createPrior</a></span><span class="op">(</span><span class="st">"laplace"</span>, exclude <span class="op">=</span> <span class="fl">0</span>, useCrossValidation <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,
-  control <span class="op">=</span> <span class="fu">Cyclops</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/Cyclops/man/createControl.html" class="external-link">createControl</a></span><span class="op">(</span>cvType <span class="op">=</span> <span class="st">"auto"</span>, startingVariance <span class="op">=</span> <span class="fl">0.1</span>, noiseLevel
-    <span class="op">=</span> <span class="st">"quiet"</span>, threads <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>,
-  firstExposureOnly <span class="op">=</span> <span class="cn">FALSE</span>,
-  washoutPeriod <span class="op">=</span> <span class="fl">183</span>,
-  riskWindowStart <span class="op">=</span> <span class="fl">0</span>,
-  riskWindowEnd <span class="op">=</span> <span class="fl">0</span>,
-  addExposureDaysToEnd <span class="op">=</span> <span class="cn">TRUE</span>,
-  addIntentToTreat <span class="op">=</span> <span class="cn">FALSE</span>,
-  firstOutcomeOnly <span class="op">=</span> <span class="cn">FALSE</span>,
-  removePeopleWithPriorOutcomes <span class="op">=</span> <span class="cn">FALSE</span>,
-  maxSubjectsForModel <span class="op">=</span> <span class="fl">1e+05</span>,
-  effectSizes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1.25</span>, <span class="fl">1.5</span>, <span class="fl">2</span>, <span class="fl">4</span><span class="op">)</span>,
-  precision <span class="op">=</span> <span class="fl">0.01</span>,
-  outputIdOffset <span class="op">=</span> <span class="fl">1000</span>,
-  workFolder <span class="op">=</span> <span class="st">"./SignalInjectionTemp"</span>,
-  cdmVersion <span class="op">=</span> <span class="st">"5"</span>,
-  modelThreads <span class="op">=</span> <span class="fl">1</span>,
-  generationThreads <span class="op">=</span> <span class="fl">1</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">injectSignals</span><span class="op">(</span></span>
+<span>  <span class="va">connectionDetails</span>,</span>
+<span>  <span class="va">cdmDatabaseSchema</span>,</span>
+<span>  oracleTempSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
+<span>  exposureDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
+<span>  exposureTable <span class="op">=</span> <span class="st">"drug_era"</span>,</span>
+<span>  outcomeDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
+<span>  outcomeTable <span class="op">=</span> <span class="st">"cohort"</span>,</span>
+<span>  outputDatabaseSchema <span class="op">=</span> <span class="va">outcomeDatabaseSchema</span>,</span>
+<span>  outputTable <span class="op">=</span> <span class="va">outcomeTable</span>,</span>
+<span>  createOutputTable <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  <span class="va">exposureOutcomePairs</span>,</span>
+<span>  modelType <span class="op">=</span> <span class="st">"poisson"</span>,</span>
+<span>  minOutcomeCountForModel <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>  minOutcomeCountForInjection <span class="op">=</span> <span class="fl">25</span>,</span>
+<span>  covariateSettings <span class="op">=</span> <span class="fu">FeatureExtraction</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/FeatureExtraction/man/createCovariateSettings.html" class="external-link">createCovariateSettings</a></span><span class="op">(</span>useDemographicsAgeGroup</span>
+<span>    <span class="op">=</span> <span class="cn">TRUE</span>, useDemographicsGender <span class="op">=</span> <span class="cn">TRUE</span>, useDemographicsIndexYear <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    useDemographicsIndexMonth <span class="op">=</span> <span class="cn">TRUE</span>, useConditionGroupEraLongTerm <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    useDrugGroupEraLongTerm <span class="op">=</span> <span class="cn">TRUE</span>, useProcedureOccurrenceLongTerm <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>    useMeasurementLongTerm <span class="op">=</span> <span class="cn">TRUE</span>, useObservationLongTerm <span class="op">=</span> <span class="cn">TRUE</span>, useCharlsonIndex <span class="op">=</span></span>
+<span>    <span class="cn">TRUE</span>, useDcsi <span class="op">=</span> <span class="cn">TRUE</span>, useChads2Vasc <span class="op">=</span> <span class="cn">TRUE</span>, longTermStartDays <span class="op">=</span> <span class="fl">365</span>, endDays <span class="op">=</span> <span class="fl">0</span><span class="op">)</span>,</span>
+<span>  prior <span class="op">=</span> <span class="fu">Cyclops</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/Cyclops/man/createPrior.html" class="external-link">createPrior</a></span><span class="op">(</span><span class="st">"laplace"</span>, exclude <span class="op">=</span> <span class="fl">0</span>, useCrossValidation <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>  control <span class="op">=</span> <span class="fu">Cyclops</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/Cyclops/man/createControl.html" class="external-link">createControl</a></span><span class="op">(</span>cvType <span class="op">=</span> <span class="st">"auto"</span>, startingVariance <span class="op">=</span> <span class="fl">0.1</span>, noiseLevel <span class="op">=</span></span>
+<span>    <span class="st">"quiet"</span>, threads <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>,</span>
+<span>  firstExposureOnly <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  washoutPeriod <span class="op">=</span> <span class="fl">183</span>,</span>
+<span>  riskWindowStart <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  riskWindowEnd <span class="op">=</span> <span class="fl">0</span>,</span>
+<span>  addExposureDaysToEnd <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  addIntentToTreat <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  firstOutcomeOnly <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  removePeopleWithPriorOutcomes <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  maxSubjectsForModel <span class="op">=</span> <span class="fl">1e+05</span>,</span>
+<span>  effectSizes <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1.25</span>, <span class="fl">1.5</span>, <span class="fl">2</span>, <span class="fl">4</span><span class="op">)</span>,</span>
+<span>  precision <span class="op">=</span> <span class="fl">0.01</span>,</span>
+<span>  outputIdOffset <span class="op">=</span> <span class="fl">1000</span>,</span>
+<span>  workFolder <span class="op">=</span> <span class="st">"./SignalInjectionTemp"</span>,</span>
+<span>  cdmVersion <span class="op">=</span> <span class="st">"5"</span>,</span>
+<span>  modelThreads <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  generationThreads <span class="op">=</span> <span class="fl">1</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -116,92 +115,136 @@
 <dd><p>An R object of type <code>ConnectionDetails</code> created using
 the function <code>createConnectionDetails</code> in the
 <code>DatabaseConnector</code> package.</p></dd>
+
+
 <dt>cdmDatabaseSchema</dt>
 <dd><p>Name of database schema that contains OMOP CDM and
 vocabulary.</p></dd>
+
+
 <dt>oracleTempSchema</dt>
 <dd><p>For Oracle only: the name of the database schema where you
 want all temporary tables to be managed. Requires
 create/insert permissions to this database.</p></dd>
+
+
 <dt>exposureDatabaseSchema</dt>
 <dd><p>The name of the database schema that is the location where
 the exposure data used to define the exposure cohorts is
 available.  If exposureTable = DRUG_ERA,
 exposureDatabaseSchema is not used by assumed to be
 cdmSchema.  Requires read permissions to this database.</p></dd>
+
+
 <dt>exposureTable</dt>
 <dd><p>The table name that contains the exposure cohorts.  If
 exposureTable &lt;&gt; DRUG_ERA, then expectation is exposureTable
 has format of COHORT table: cohort_concept_id, SUBJECT_ID,
 COHORT_START_DATE, COHORT_END_DATE.</p></dd>
+
+
 <dt>outcomeDatabaseSchema</dt>
 <dd><p>The name of the database schema that is the location where
 the data used to define the outcome cohorts is available. If
 exposureTable = CONDITION_ERA, exposureDatabaseSchema is not
 used by assumed to be cdmSchema.  Requires read permissions
 to this database.</p></dd>
+
+
 <dt>outcomeTable</dt>
 <dd><p>The table name that contains the outcome cohorts. When the
 table name is not CONDITION_ERA This table is expected to
 have the same format as the COHORT table: SUBJECT_ID,
 COHORT_START_DATE, COHORT_END_DATE, COHORT_CONCEPT_ID (CDM
 v4) or COHORT_DEFINITION_ID (CDM v5 and higher).</p></dd>
+
+
 <dt>outputDatabaseSchema</dt>
 <dd><p>The name of the database schema that is the location of the
 tables containing the new outcomesRequires write permissions
 to this database.</p></dd>
+
+
 <dt>outputTable</dt>
 <dd><p>The name of the table names that will contain the generated
 outcome cohorts.</p></dd>
+
+
 <dt>createOutputTable</dt>
 <dd><p>Should the output table be created prior to inserting the
 outcomes? If TRUE and the tables already exists, it will
 first be deleted. If FALSE, the table is assumed to exist and
 the outcomes will be inserted. Any existing outcomes with the
 same IDs will first be deleted.</p></dd>
+
+
 <dt>exposureOutcomePairs</dt>
 <dd><p>A data frame with at least two columns:</p><ul><li><p>"exposureId" containing the drug_concept_ID or
         cohort_concept_id of the exposure variable</p></li>
 <li><p>"outcomeId" containing the condition_concept_ID or
         cohort_concept_id of the outcome variable</p></li>
 </ul></dd>
+
+
 <dt>modelType</dt>
 <dd><p>Can be either "poisson" or "survival"</p></dd>
+
+
 <dt>minOutcomeCountForModel</dt>
 <dd><p>Minimum number of outcome events required to build a model.</p></dd>
+
+
 <dt>minOutcomeCountForInjection</dt>
 <dd><p>Minimum number of outcome events required to inject a signal.</p></dd>
+
+
 <dt>covariateSettings</dt>
 <dd><p>An object of type <code>covariateSettings</code> as created using
 the <code>createCovariateSettings</code> function in the
 <code>FeatureExtraction</code> package.</p></dd>
+
+
 <dt>prior</dt>
 <dd><p>The prior used to fit the outcome model. See
 <code><a href="https://rdrr.io/pkg/Cyclops/man/createPrior.html" class="external-link">createPrior</a></code> for details.</p></dd>
+
+
 <dt>control</dt>
 <dd><p>The control object used to control the cross-validation used
 to determine the hyperparameters of the prior (if
 applicable). See <code><a href="https://rdrr.io/pkg/Cyclops/man/createControl.html" class="external-link">createControl</a></code> for
 details.</p></dd>
+
+
 <dt>firstExposureOnly</dt>
 <dd><p>Should signals be injected only for the first exposure? (ie.
 assuming an acute effect)</p></dd>
+
+
 <dt>washoutPeriod</dt>
 <dd><p>Number of days at the start of observation for which no
 signals will be injected, but will be used to determine
 whether exposure or outcome is the first one, and for
 extracting covariates to build the outcome model.</p></dd>
+
+
 <dt>riskWindowStart</dt>
 <dd><p>The start of the risk window relative to the start of the
 exposure (in days). When 0, risk is assumed to start on the
 first day of exposure.</p></dd>
+
+
 <dt>riskWindowEnd</dt>
 <dd><p>The end of the risk window relative to the start of the
 exposure. Note that typically the length of exposure is added
 to this number (when the <code>addExposureDaysToEnd</code>
 parameter is set to TRUE).</p></dd>
+
+
 <dt>addExposureDaysToEnd</dt>
 <dd><p>Should length of exposure be added to the risk window?</p></dd>
+
+
 <dt>addIntentToTreat</dt>
 <dd><p>If true, the signal will not only be injected in the primary
 time at risk, but also after the time at risk (up until the
@@ -212,32 +255,53 @@ intent-to-treat analysis variants. However, this will
 preclude the controls to be used in self-controlled designs
 that consider the time after exposure. Requires
 <code>firstExposureOnly = TRUE</code>.</p></dd>
+
+
 <dt>firstOutcomeOnly</dt>
 <dd><p>Should only the first outcome per person be considered when
 modeling the outcome?</p></dd>
+
+
 <dt>removePeopleWithPriorOutcomes</dt>
 <dd><p>Remove people with prior outcomes?</p></dd>
+
+
 <dt>maxSubjectsForModel</dt>
 <dd><p>Maximum number of people used to fit an outcome model.</p></dd>
+
+
 <dt>effectSizes</dt>
 <dd><p>A numeric vector of effect sizes that should be inserted.</p></dd>
+
+
 <dt>precision</dt>
 <dd><p>The allowed ratio between target and injected signal size.</p></dd>
+
+
 <dt>outputIdOffset</dt>
 <dd><p>What should be the first new outcome ID that is to be
 created?</p></dd>
+
+
 <dt>workFolder</dt>
 <dd><p>Path to a folder where intermediate data will be stored.</p></dd>
+
+
 <dt>cdmVersion</dt>
 <dd><p>Define the OMOP CDM version used: currently support "4" and
 "5".</p></dd>
+
+
 <dt>modelThreads</dt>
 <dd><p>Number of parallel threads to use when fitting outcome
 models.</p></dd>
+
+
 <dt>generationThreads</dt>
 <dd><p>Number of parallel threads to use when generating outcomes.</p>
 <p>A data.frame listing all the drug-pairs in combination with requested effect sizes and the real
 inserted effect size (might be different from the requested effect size because of sampling error).</p></dd>
+
 </dl></div>
     <div id="details">
     <h2>Details</h2>
@@ -256,7 +320,7 @@ inserted effect size (might be different from the requested effect size because 
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer></div>

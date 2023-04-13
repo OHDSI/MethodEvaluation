@@ -85,9 +85,9 @@
 #' }
 #' @export
 computeMdrr <- function(connectionDetails,
-                        cdmDatabaseSchema,
                         oracleTempSchema = NULL,
                         tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
+                        cdmDatabaseSchema,
                         exposureOutcomePairs,
                         exposureDatabaseSchema = cdmDatabaseSchema,
                         exposureTable = "drug_era",
@@ -101,12 +101,18 @@ computeMdrr <- function(connectionDetails,
   if (is.null(exposureOutcomePairs$exposureId) && !is.null(exposureOutcomePairs$targetId)) {
     exposureOutcomePairs$exposureId <- exposureOutcomePairs$targetId
   }
-  if (is.null(exposureOutcomePairs$exposureId)) {
-    stop("exposureOutcomePairs is missing exposureId and targetId column")
-  }
-  if (is.null(exposureOutcomePairs$outcomeId)) {
-    stop("exposureOutcomePairs is missing outcomeId column")
-  }
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertClass(connectionDetails, "ConnectionDetails", add = errorMessages)
+  checkmate::assertCharacter(tempEmulationSchema, len = 1, null.ok = TRUE, add = errorMessages)
+  checkmate::assertCharacter(cdmDatabaseSchema, len = 1, add = errorMessages)
+  checkmate::assertDataFrame(exposureOutcomePairs, add = errorMessages)
+  checkmate::assertNames(colnames(exposureOutcomePairs), must.include = c("exposureId", "outcomeId"), add = errorMessages)
+  checkmate::assertCharacter(exposureDatabaseSchema, len = 1, add = errorMessages)
+  checkmate::assertCharacter(exposureTable, len = 1, add = errorMessages)
+  checkmate::assertCharacter(outcomeDatabaseSchema, len = 1, add = errorMessages)
+  checkmate::assertCharacter(outcomeTable, len = 1, add = errorMessages)
+  checkmate::assertCharacter(cdmVersion, len = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
   exposureTable <- tolower(exposureTable)
   outcomeTable <- tolower(outcomeTable)
   if (exposureTable == "drug_era") {

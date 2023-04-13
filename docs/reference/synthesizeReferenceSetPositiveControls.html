@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">MethodEvaluation</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.2.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.3.0</span>
       </span>
     </div>
 
@@ -26,7 +26,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -66,20 +66,20 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">synthesizeReferenceSetPositiveControls</span><span class="op">(</span>
-  <span class="va">connectionDetails</span>,
-  <span class="va">cdmDatabaseSchema</span>,
-  oracleTempSchema <span class="op">=</span> <span class="cn">NULL</span>,
-  tempEmulationSchema <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"sqlRenderTempEmulationSchema"</span><span class="op">)</span>,
-  outcomeDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,
-  outcomeTable <span class="op">=</span> <span class="st">"cohort"</span>,
-  exposureDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,
-  exposureTable <span class="op">=</span> <span class="st">"drug_era"</span>,
-  referenceSet <span class="op">=</span> <span class="st">"ohdsiMethodsBenchmark"</span>,
-  maxCores <span class="op">=</span> <span class="fl">1</span>,
-  <span class="va">workFolder</span>,
-  summaryFileName <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">workFolder</span>, <span class="st">"allControls.csv"</span><span class="op">)</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">synthesizeReferenceSetPositiveControls</span><span class="op">(</span></span>
+<span>  <span class="va">connectionDetails</span>,</span>
+<span>  oracleTempSchema <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  tempEmulationSchema <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"sqlRenderTempEmulationSchema"</span><span class="op">)</span>,</span>
+<span>  <span class="va">cdmDatabaseSchema</span>,</span>
+<span>  exposureDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
+<span>  exposureTable <span class="op">=</span> <span class="st">"drug_era"</span>,</span>
+<span>  outcomeDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
+<span>  outcomeTable <span class="op">=</span> <span class="st">"cohort"</span>,</span>
+<span>  referenceSet <span class="op">=</span> <span class="st">"ohdsiMethodsBenchmark"</span>,</span>
+<span>  maxCores <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  <span class="va">workFolder</span>,</span>
+<span>  summaryFileName <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">workFolder</span>, <span class="st">"allControls.csv"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
@@ -88,46 +88,69 @@
 <dd><p>An R object of type <code>ConnectionDetails</code> created using the
 function <code>createConnectionDetails</code> in the
 <code>DatabaseConnector</code> package.</p></dd>
-<dt>cdmDatabaseSchema</dt>
-<dd><p>A database schema containing health care data in the OMOP Commond
-Data Model. Note that for SQL Server, botth the database and schema
-should be specified, e.g. 'cdm_schema.dbo'</p></dd>
+
+
 <dt>oracleTempSchema</dt>
 <dd><p>DEPRECATED: use `tempEmulationSchema` instead.</p></dd>
+
+
 <dt>tempEmulationSchema</dt>
 <dd><p>Some database platforms like Oracle and Impala do not truly support temp tables. To
 emulate temp tables, provide a schema with write privileges where temp tables
 can be created.</p></dd>
-<dt>outcomeDatabaseSchema</dt>
-<dd><p>The database schema where the target outcome table is located. Note
-that for SQL Server, both the database and schema should be
-specified, e.g. 'cdm_schema.dbo'</p></dd>
-<dt>outcomeTable</dt>
-<dd><p>The name of the table where the outcomes will be stored.</p></dd>
+
+
+<dt>cdmDatabaseSchema</dt>
+<dd><p>A database schema containing health care data in the OMOP Commond
+Data Model. Note that for SQL Server, botth the database and schema
+should be specified, e.g. 'cdm_schema.dbo'</p></dd>
+
+
 <dt>exposureDatabaseSchema</dt>
 <dd><p>The name of the database schema that is the location where the
 exposure data used to define the exposure cohorts is available.  If
 exposureTable = DRUG_ERA, exposureDatabaseSchema is not used and
 assumed to be cdmDatabaseSchema.  Requires read permissions to this
 database.</p></dd>
+
+
 <dt>exposureTable</dt>
 <dd><p>The tablename that contains the exposure cohorts.  If exposureTable
 &lt;&gt; DRUG_ERA, then expectation is exposureTable has format of COHORT
 table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
 COHORT_END_DATE.</p></dd>
+
+
+<dt>outcomeDatabaseSchema</dt>
+<dd><p>The database schema where the target outcome table is located. Note
+that for SQL Server, both the database and schema should be
+specified, e.g. 'cdm_schema.dbo'</p></dd>
+
+
+<dt>outcomeTable</dt>
+<dd><p>The name of the table where the outcomes will be stored.</p></dd>
+
+
 <dt>referenceSet</dt>
 <dd><p>The name of the reference set for which positive controls need to be
 synthesized. Currently supported are "ohdsiMethodsBenchmark" and "ohdsiDevelopment".</p></dd>
+
+
 <dt>maxCores</dt>
 <dd><p>How many parallel cores should be used? If more cores are made
 available this can speed up the analyses.</p></dd>
+
+
 <dt>workFolder</dt>
 <dd><p>Name of local folder to place intermediary results; make sure to use
 forward slashes (/). Do not use a folder on a network drive since
 this greatly impacts performance.</p></dd>
+
+
 <dt>summaryFileName</dt>
 <dd><p>The name of the CSV file where to store the summary of the final set
 of positive and negative controls.</p></dd>
+
 </dl></div>
     <div id="details">
     <h2>Details</h2>
@@ -153,7 +176,7 @@ used as input for the method under evaluation.</p>
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer></div>

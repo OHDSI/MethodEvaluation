@@ -6,13 +6,13 @@
 \usage{
 synthesizeReferenceSetPositiveControls(
   connectionDetails,
-  cdmDatabaseSchema,
   oracleTempSchema = NULL,
   tempEmulationSchema = getOption("sqlRenderTempEmulationSchema"),
-  outcomeDatabaseSchema = cdmDatabaseSchema,
-  outcomeTable = "cohort",
+  cdmDatabaseSchema,
   exposureDatabaseSchema = cdmDatabaseSchema,
   exposureTable = "drug_era",
+  outcomeDatabaseSchema = cdmDatabaseSchema,
+  outcomeTable = "cohort",
   referenceSet = "ohdsiMethodsBenchmark",
   maxCores = 1,
   workFolder,
@@ -24,21 +24,15 @@ synthesizeReferenceSetPositiveControls(
 function \code{createConnectionDetails} in the
 \code{DatabaseConnector} package.}
 
-\item{cdmDatabaseSchema}{A database schema containing health care data in the OMOP Commond
-Data Model. Note that for SQL Server, botth the database and schema
-should be specified, e.g. 'cdm_schema.dbo'}
-
 \item{oracleTempSchema}{DEPRECATED: use `tempEmulationSchema` instead.}
 
 \item{tempEmulationSchema}{Some database platforms like Oracle and Impala do not truly support temp tables. To
 emulate temp tables, provide a schema with write privileges where temp tables
 can be created.}
 
-\item{outcomeDatabaseSchema}{The database schema where the target outcome table is located. Note
-that for SQL Server, both the database and schema should be
-specified, e.g. 'cdm_schema.dbo'}
-
-\item{outcomeTable}{The name of the table where the outcomes will be stored.}
+\item{cdmDatabaseSchema}{A database schema containing health care data in the OMOP Commond
+Data Model. Note that for SQL Server, botth the database and schema
+should be specified, e.g. 'cdm_schema.dbo'}
 
 \item{exposureDatabaseSchema}{The name of the database schema that is the location where the
 exposure data used to define the exposure cohorts is available.  If
@@ -50,6 +44,12 @@ database.}
 <> DRUG_ERA, then expectation is exposureTable has format of COHORT
 table: COHORT_DEFINITION_ID, SUBJECT_ID, COHORT_START_DATE,
 COHORT_END_DATE.}
+
+\item{outcomeDatabaseSchema}{The database schema where the target outcome table is located. Note
+that for SQL Server, both the database and schema should be
+specified, e.g. 'cdm_schema.dbo'}
+
+\item{outcomeTable}{The name of the table where the outcomes will be stored.}
 
 \item{referenceSet}{The name of the reference set for which positive controls need to be
 synthesized. Currently supported are "ohdsiMethodsBenchmark" and "ohdsiDevelopment".}

@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">MethodEvaluation</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.2.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.3.0</span>
       </span>
     </div>
 
@@ -26,7 +26,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -101,7 +101,7 @@ and is not available in many countries.</p></td>
         </td>
         <td><p>The OHDSI Development Set - Negative Controls
 A set of 76 negative control outcomes, all for the exposures of ACE inhibitors (compared to
-thiazides and thiazide-like diuretics). This set is a much small set than the he OHDSI Method 
+thiazides and thiazide-like diuretics). This set is a much small set than the he OHDSI Method
 Evaluation Benchmark, but follows the same principles. It is intended to be used when developing
 methods, leaving the Methods Benchark untouched until a final evaluation of the method, thus preventing
 'training' on the evaluation set. The negative controls are borrowed from the LEGEND Hypertension study.
@@ -130,6 +130,10 @@ These negative controls can form the basis to generate positive controls using t
 the outcome ( positive controls) and 234 drug-outcome pairs where we believe the drug does not
 cause the outcome (negative controls). The controls involve 4 health outcomes of interest: acute
 liver injury, acute kidney injury, acute myocardial infarction, and GI bleeding.</p></td>
+      </tr><tr><td>
+          <p><code><a href="packageCustomBenchmarkResults.html">packageCustomBenchmarkResults()</a></code> </p>
+        </td>
+        <td><p>Package results of a method on the OHDSI Methods Benchmark</p></td>
       </tr><tr><td>
           <p><code><a href="packageOhdsiBenchmarkResults.html">packageOhdsiBenchmarkResults()</a></code> </p>
         </td>
@@ -167,7 +171,7 @@ liver injury, acute kidney injury, acute myocardial infarction, and GI bleeding.
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer></div>

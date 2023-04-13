@@ -5,7 +5,7 @@
 \alias{ohdsiDevelopmentNegativeControls}
 \title{The OHDSI Development Set - Negative Controls
 A set of 76 negative control outcomes, all for the exposures of ACE inhibitors (compared to
-thiazides and thiazide-like diuretics). This set is a much small set than the he OHDSI Method 
+thiazides and thiazide-like diuretics). This set is a much small set than the he OHDSI Method
 Evaluation Benchmark, but follows the same principles. It is intended to be used when developing
 methods, leaving the Methods Benchark untouched until a final evaluation of the method, thus preventing
 'training' on the evaluation set. The negative controls are borrowed from the LEGEND Hypertension study.
@@ -29,7 +29,7 @@ data(ohdsiDevelopmentNegativeControls)
 \description{
 The OHDSI Development Set - Negative Controls
 A set of 76 negative control outcomes, all for the exposures of ACE inhibitors (compared to
-thiazides and thiazide-like diuretics). This set is a much small set than the he OHDSI Method 
+thiazides and thiazide-like diuretics). This set is a much small set than the he OHDSI Method
 Evaluation Benchmark, but follows the same principles. It is intended to be used when developing
 methods, leaving the Methods Benchark untouched until a final evaluation of the method, thus preventing
 'training' on the evaluation set. The negative controls are borrowed from the LEGEND Hypertension study.

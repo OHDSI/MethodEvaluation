@@ -44,7 +44,15 @@
 computeMetrics <- function(logRr, seLogRr = NULL, ci95Lb = NULL, ci95Ub = NULL, p = NULL, trueLogRr) {
   # data <- EmpiricalCalibration::simulateControls(n = 50 * 3, mean = 0.25, sd = 0.25, trueLogRr =
   # log(c(1, 2, 4))); logRr <- data$logRr; seLogRr <- data$seLogRr; trueLogRr <- data$trueLogRr
-  
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertNumeric(logRr, min.len = 1, add = errorMessages)
+  checkmate::assertNumeric(seLogRr, len = length(logRr), null.ok = TRUE, add = errorMessages)
+  checkmate::assertNumeric(ci95Lb, len = length(logRr), null.ok = TRUE, add = errorMessages)
+  checkmate::assertNumeric(ci95Ub, len = length(logRr), null.ok = TRUE, add = errorMessages)
+  checkmate::assertNumeric(p, len = length(logRr), null.ok = TRUE, add = errorMessages)
+  checkmate::assertNumeric(trueLogRr, len = length(logRr), add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   if (is.null(seLogRr) && is.null(ci95Lb)) {
     stop("Must specify either standard error or confidence interval")
   }
@@ -70,14 +78,14 @@ computeMetrics <- function(logRr, seLogRr = NULL, ci95Lb = NULL, ci95Ub = NULL, 
   } else {
     data$p <- p
   }
-  
+
   idx <- is.na(data$logRr) | is.infinite(data$logRr) | is.na(data$seLogRr) | is.infinite(data$seLogRr)
   data$logRr[idx] <- 0
   data$seLogRr[idx] <- 999
   data$ci95Lb[idx] <- 0
   data$ci95Ub[idx] <- 999
   data$p[idx] <- 1
-  
+
   nonEstimable <- round(mean(data$seLogRr >= 99), 2)
   roc <- pROC::roc(data$trueLogRr > 0, data$logRr, algorithm = 3)
   auc <- round(pROC::auc(roc), 2)
@@ -198,19 +206,19 @@ packageOhdsiBenchmarkResults <- function(estimates,
   checkmate::assertCharacter(databaseName, len = 1, add = errorMessages)
   checkmate::assertCharacter(exportFolder, len = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
-  
+
   if (!file.exists(exportFolder)) {
     dir.create(exportFolder, recursive = TRUE)
   }
-  
+
   # Create full grid of controls (including those that did not make it in the database:
   if (referenceSet == "ohdsiMethodsBenchmark") {
     ohdsiNegativeControls <- readRDS(system.file("ohdsiNegativeControls.rds",
-                                                 package = "MethodEvaluation"
+      package = "MethodEvaluation"
     ))
   } else {
     ohdsiNegativeControls <- readRDS(system.file("ohdsiDevelopmentNegativeControls.rds",
-                                                 package = "MethodEvaluation"
+      package = "MethodEvaluation"
     ))
   }
   ohdsiNegativeControls$oldOutcomeId <- ohdsiNegativeControls$outcomeId
@@ -238,7 +246,7 @@ packageOhdsiBenchmarkResults <- function(estimates,
     fullGrid$targetEffectSize[idx]
   )
   allControls <- merge(controlSummary, fullGrid, all.y = TRUE)
-  
+
   .packageBenchmarkResults(
     allControls = allControls,
     analysisRef = analysisRef,
@@ -274,7 +282,7 @@ packageOhdsiBenchmarkResults <- function(estimates,
       by = join_by("analysisId")
     ) %>%
     mutate(database = databaseName)
-  
+
   # Perform empirical calibration:
   # subset = subsets[[2]]
   calibrate <- function(subset) {
@@ -304,7 +312,7 @@ packageOhdsiBenchmarkResults <- function(estimates,
           model = model
         )
         null <- EmpiricalCalibration::fitNull(logRr = subsetMinusOne$logRr[subsetMinusOne$targetEffectSize ==
-                                                                             1], seLogRr = subsetMinusOne$seLogRr[subsetMinusOne$targetEffectSize == 1])
+          1], seLogRr = subsetMinusOne$seLogRr[subsetMinusOne$targetEffectSize == 1])
         caliP <- EmpiricalCalibration::calibrateP(
           null = null,
           logRr = one$logRr,
@@ -433,7 +441,7 @@ packageCustomBenchmarkResults <- function(estimates,
   checkmate::assertCharacter(databaseName, len = 1, add = errorMessages)
   checkmate::assertCharacter(exportFolder, len = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
-  
+
   trueEffecSizes <- c(1, unique(synthesisSummary$targetEffectSize))
   negativeControls <- negativeControls %>%
     mutate(stratum = if_else(.data$type == "Outcome control", .data$targetId, .data$outcomeId)) %>%
@@ -489,6 +497,15 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder,
                                          trueEffectSize = "Overall",
                                          calibrated = FALSE,
                                          comparative = FALSE) {
+  errorMessages <- checkmate::makeAssertCollection()
+  checkmate::assertCharacter(exportFolder, len = 1, add = errorMessages)
+  checkmate::assertNumeric(mdrr, len = 1, add = errorMessages)
+  checkmate::assertCharacter(stratum, len = 1, add = errorMessages)
+  checkmate::assertAtomic(trueEffectSize, len = 1, add = errorMessages)
+  checkmate::assertLogical(calibrated, len = 1, add = errorMessages)
+  checkmate::assertLogical(comparative, len = 1, add = errorMessages)
+  checkmate::reportAssertions(collection = errorMessages)
+
   # Load and prepare estimates of all methods
   files <- list.files(exportFolder, "estimates.*csv", full.names = TRUE)
   estimates <- lapply(files, read.csv)
@@ -510,12 +527,12 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder,
   estimates$calCi95Lb[idx] <- 0
   estimates$calCi95Ub[idx] <- 999
   estimates$calP[is.na(estimates$calP)] <- 1
-  
+
   # Load and prepare analysis refs
   files <- list.files(exportFolder, "analysisRef.*csv", full.names = TRUE)
   analysisRef <- lapply(files, read.csv)
   analysisRef <- do.call("rbind", analysisRef)
-  
+
   # Apply selection criteria
   subset <- estimates
   if (mdrr != "All") {
@@ -534,7 +551,7 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder,
     subset$ci95Ub <- subset$calCi95Ub
     subset$p <- subset$calP
   }
-  
+
   # Compute metrics
   combis <- unique(subset[, c("database", "method", "analysisId")])
   if (trueEffectSize == "Overall") {
@@ -566,7 +583,7 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder,
     # trueRr <- input$trueRr
     computeMetrics <- function(i) {
       forEval <- subset[subset$method == combis$method[i] & subset$analysisId == combis$analysisId[i] &
-                          subset$targetEffectSize == trueEffectSize, ]
+        subset$targetEffectSize == trueEffectSize, ]
       mse <- round(mean((forEval$logRr - log(forEval$trueEffectSize))^2), 2)
       coverage <- round(
         mean(forEval$ci95Lb < forEval$trueEffectSize & forEval$ci95Ub > forEval$trueEffectSize),
@@ -580,7 +597,7 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder,
         nonEstimable <- round(mean(forEval$seLogRr == 999), 2)
       } else {
         negAndPos <- subset[subset$method == combis$method[i] & subset$analysisId == combis$analysisId[i] &
-                              (subset$targetEffectSize == trueEffectSize | subset$targetEffectSize == 1), ]
+          (subset$targetEffectSize == trueEffectSize | subset$targetEffectSize == 1), ]
         roc <- pROC::roc(negAndPos$targetEffectSize > 1, negAndPos$logRr, algorithm = 3)
         auc <- round(pROC::auc(roc), 2)
         type1 <- NA

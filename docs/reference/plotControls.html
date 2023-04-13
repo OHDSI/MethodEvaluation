@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">MethodEvaluation</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.2.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.3.0</span>
       </span>
     </div>
 
@@ -26,7 +26,7 @@
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -66,47 +66,64 @@
     </div>
 
     <div id="ref-usage">
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="fu">plotControls</span><span class="op">(</span>
-  <span class="va">logRr</span>,
-  seLogRr <span class="op">=</span> <span class="cn">NULL</span>,
-  ci95Lb <span class="op">=</span> <span class="cn">NULL</span>,
-  ci95Ub <span class="op">=</span> <span class="cn">NULL</span>,
-  <span class="va">trueLogRr</span>,
-  estimateType <span class="op">=</span> <span class="st">"relative risk"</span>,
-  fileName <span class="op">=</span> <span class="cn">NULL</span>,
-  <span class="va">title</span>
-<span class="op">)</span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">plotControls</span><span class="op">(</span></span>
+<span>  <span class="va">logRr</span>,</span>
+<span>  seLogRr <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  ci95Lb <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  ci95Ub <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  <span class="va">trueLogRr</span>,</span>
+<span>  estimateType <span class="op">=</span> <span class="st">"relative risk"</span>,</span>
+<span>  fileName <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  title <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div id="arguments">
     <h2>Arguments</h2>
     <dl><dt>logRr</dt>
 <dd><p>A numeric vector of effect estimates on the log scale.</p></dd>
+
+
 <dt>seLogRr</dt>
 <dd><p>The standard error of the log of the effect estimates. Hint: often the standard
 error = (log(&lt;lower bound 95 percent confidence interval&gt;) - log(&lt;effect
-estimate&gt;))/qnorm(0.025). If not provided the standard error will be inferred from 
+estimate&gt;))/qnorm(0.025). If not provided the standard error will be inferred from
 the 95 percent confidence interval.</p></dd>
+
+
 <dt>ci95Lb</dt>
-<dd><p>The lower bound of the 95 percent confidence interval. IF not provided it will be 
+<dd><p>The lower bound of the 95 percent confidence interval. IF not provided it will be
 inferred from the standard error.</p></dd>
+
+
 <dt>ci95Ub</dt>
-<dd><p>The upper bound of the 95 percent confidence interval. IF not provided it will be 
+<dd><p>The upper bound of the 95 percent confidence interval. IF not provided it will be
 inferred from the standard error.</p></dd>
+
+
 <dt>trueLogRr</dt>
 <dd><p>A vector of the true effect sizes</p></dd>
+
+
 <dt>estimateType</dt>
 <dd><p>A character string to denote the effect size estimate type. Used for the x-axis
 and the true effect size labels.</p></dd>
+
+
 <dt>fileName</dt>
 <dd><p>Name of the file where the plot should be saved, for example 'plot.png'. See the
 function <code>ggsave</code> in the ggplot2 package for supported file formats.</p></dd>
+
+
 <dt>title</dt>
 <dd><p>An optional title to display above the plot.</p></dd>
+
 </dl></div>
     <div id="value">
     <h2>Value</h2>
-    <p>A Ggplot object. Use the <code>ggsave</code> function to save to file.</p>
+    
+
+<p>A Ggplot object. Use the <code>ggsave</code> function to save to file.</p>
     </div>
 
   </div>
@@ -121,7 +138,7 @@ function <code>ggsave</code> in the ggplot2 package for supported file formats.<
 </div>
 
 <div class="pkgdown">
-  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.2.</p>
+  <p></p><p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.7.</p>
 </div>
 
       </footer></div>
