@@ -97,3 +97,13 @@ OhdsiRTools::insertCohortDefinitionInPackage(1775839,
 OhdsiRTools::insertCohortDefinitionInPackage(1775840,
                                              "thiazides_diuretics",
                                              baseUrl = keyring::key_get("ohdsiBaseUrl"))
+
+# Regenerate SQL for cohort definitions ----------------------------------------
+# Old Circe SQL is outdated? Doesn't run on DataBricks
+
+cohorts <- list.files("inst/cohorts")
+for (cohort in cohorts) {
+  json <- readLines(file.path("inst/cohorts", cohort))
+  sql <- CirceR::buildCohortQuery(json, options = CirceR::createGenerateOptions(generateStats = FALSE))
+  SqlRender::writeSql(sql, file.path("inst/sql/sql_server", gsub(".json", ".sql", cohort)))  
+}

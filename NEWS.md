@@ -1,3 +1,11 @@
+MethodEvaluation 2.3.1
+======================
+
+Changes:
+
+1. Updating Circe-generated SQL (to avoid errors on DataBricks).
+
+
 MethodEvaluation 2.3.0
 ======================
 
