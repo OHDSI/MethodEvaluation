@@ -600,7 +600,7 @@ synthesizeReferenceSetPositiveControls <- function(connectionDetails,
       minOutcomeCountForInjection = 25,
       workFolder = injectionFolder,
       modelThreads = max(1, round(maxCores / 8)),
-      generationThreads = min(6, maxCores),
+      generationThreads = min(3, maxCores),
       covariateSettings = covariateSettings
     )
     saveRDS(result, injectionSummaryFile)

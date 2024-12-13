@@ -509,7 +509,7 @@ synthesizePositiveControls <- function(connectionDetails,
       ParallelLogger::logInfo("Extracting covariates for fitting outcome model(s)")
       covariateData <- FeatureExtraction::getDbCovariateData(
         connection = conn,
-        oracleTempSchema = tempEmulationSchema,
+        tempEmulationSchema = tempEmulationSchema,
         cdmDatabaseSchema = cdmDatabaseSchema,
         cohortTable = "#sampled_person",
         cohortTableIsTemp = TRUE,
@@ -635,7 +635,7 @@ synthesizePositiveControls <- function(connectionDetails,
         DatabaseConnector::executeSql(conn, sql, progressBar = FALSE, reportOverallTime = FALSE)
         covariateData <- FeatureExtraction::getDbCovariateData(
           connection = conn,
-          oracleTempSchema = tempEmulationSchema,
+          tempEmulationSchema = tempEmulationSchema,
           cdmDatabaseSchema = cdmDatabaseSchema,
           cohortTable = "#selected_person",
           cohortTableIsTemp = TRUE,
