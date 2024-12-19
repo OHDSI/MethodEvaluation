@@ -167,7 +167,6 @@ plotCoverageInjectedSignals <- function(logRr, seLogRr, trueLogRr, region = 0.95
   
   vizD$label <- paste(round(100 * vizD$fraction), "%", sep = "")
   vizD$group <- factor(vizD$group, levels = c("Below CI", "Within CI", "Above CI"))
-  theme <- ggplot2::element_text(colour = "#000000", size = 10)
   plot <- with(vizD, {
     ggplot2::ggplot(vizD, ggplot2::aes(x = as.factor(trueRr), y = fraction)) +
       ggplot2::geom_bar(ggplot2::aes(fill = group), stat = "identity", position = "stack", alpha = 0.8) +
@@ -181,7 +180,7 @@ plotCoverageInjectedSignals <- function(logRr, seLogRr, trueLogRr, region = 0.95
         panel.grid.major = ggplot2::element_blank(),
         axis.ticks = ggplot2::element_blank(),
         axis.text.y = ggplot2::element_blank(),
-        axis.text.x = theme,
+        axis.text.x = ggplot2::element_text(colour = "#000000", size = 10),
         legend.key = ggplot2::element_blank(),
         legend.position = "right"
       )

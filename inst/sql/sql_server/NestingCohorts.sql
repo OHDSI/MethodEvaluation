@@ -17,24 +17,35 @@ limitations under the License.
 ************************************************************************/
 INSERT INTO  @target_database_schema.@target_cohort_table (cohort_definition_id, subject_id, cohort_start_date, cohort_end_date)
 SELECT ancestor_concept_id AS cohort_definition_id,
-	condition_occurrence.person_id AS subject_id,
-	MIN(condition_start_date) AS cohort_start_date,
-	MIN(condition_start_date) AS cohort_end_date
+  	condition_occurrence.person_id AS subject_id,
+  	MIN(condition_start_date) AS cohort_start_date,
+  	observation_period_end_date AS cohort_end_date
 FROM @cdm_database_schema.condition_occurrence
 INNER JOIN @cdm_database_schema.concept_ancestor
 	ON condition_concept_id = descendant_concept_id
+INNER JOIN @cdm_database_schema.observation_period
+  ON condition_occurrence.person_id = observation_period.person_id
+    AND condition_start_date >= observation_period_start_date
+    AND condition_start_date <= observation_period_end_date
 WHERE ancestor_concept_id IN (@nesting_ids)
 GROUP BY ancestor_concept_id,
-	person_id;
+	condition_occurrence.person_id,
+	observation_period_end_date;
+
 	
 INSERT INTO  @target_database_schema.@target_cohort_table (cohort_definition_id, subject_id, cohort_start_date, cohort_end_date)
 SELECT ancestor_concept_id AS cohort_definition_id,
 	procedure_occurrence.person_id AS subject_id,
 	MIN(procedure_date) AS cohort_start_date,
-	MIN(procedure_date) AS cohort_end_date
+  observation_period_end_date AS cohort_end_date
 FROM @cdm_database_schema.procedure_occurrence
 INNER JOIN @cdm_database_schema.concept_ancestor
 	ON procedure_concept_id = descendant_concept_id
+INNER JOIN @cdm_database_schema.observation_period
+  ON procedure_occurrence.person_id = observation_period.person_id
+    AND procedure_date >= observation_period_start_date
+    AND procedure_date <= observation_period_end_date
 WHERE ancestor_concept_id IN (@nesting_ids)
 GROUP BY ancestor_concept_id,
-	person_id;	
+	procedure_occurrence.person_id,
+	observation_period_end_date;

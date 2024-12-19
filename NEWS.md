@@ -5,6 +5,12 @@ Changes:
 
 1. Updating Circe-generated SQL (to avoid errors on DataBricks).
 
+2. Refactoring code so connections do not stay open longer than strictly necessary (to avoid timeout errors on DataBricks).
+
+3. Increasing required version of FeatureExtraction to avoid warning about use of deprecated argument `oracleTempSchema`.
+
+4. Fixing nesting cohorts to end at end of observation.
+
 
 MethodEvaluation 2.3.0
 ======================

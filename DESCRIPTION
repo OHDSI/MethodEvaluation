@@ -2,7 +2,7 @@ Package: MethodEvaluation
 Type: Package
 Title: Package for Evaluation of Estimation Methods
 Version: 2.3.1
-Date: 2024-12-11
+Date: 2024-12-16
 Authors@R: c(
   person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre"))
   )

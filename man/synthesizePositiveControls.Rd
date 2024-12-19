@@ -43,7 +43,7 @@ synthesizePositiveControls(
   precision = 0.01,
   outputIdOffset = 1000,
   workFolder = "./SignalInjectionTemp",
-  cdmVersion = "5",
+  cdmVersion = NULL,
   modelThreads = 1,
   generationThreads = 1
 )
@@ -170,8 +170,7 @@ created?}
 
 \item{workFolder}{Path to a folder where intermediate data will be stored.}
 
-\item{cdmVersion}{Define the OMOP CDM version used: currently support "4" and
-"5".}
+\item{cdmVersion}{DEPRECATED. This argument is ignored.}
 
 \item{modelThreads}{Number of parallel threads to use when fitting outcome
 models.}
