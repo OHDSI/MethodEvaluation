@@ -284,10 +284,12 @@ packageOhdsiBenchmarkResults <- function(estimates,
     mutate(database = databaseName)
   
   # Perform empirical calibration:
-  # subset = subsets[[2]]
+  # subset = subsets[[5]]
   calibrate <- function(subset) {
     subset <- subset %>%
-      mutate(leaveOutUnit = .data$oldOutcomeId)
+      mutate(leaveOutUnit = if_else(.data$type == "Exposure control",
+                                    paste(.data$targetId, .data$oldOutcomeId),
+                                    as.character(.data$oldOutcomeId)))
     filterSubset <- subset[!is.na(subset$seLogRr) & !is.infinite(subset$seLogRr), ]
     if (nrow(filterSubset) < 5 || length(unique(filterSubset$targetEffectSize)) < 2) {
       subset$calLogRr <- rep(NA, nrow(subset))
