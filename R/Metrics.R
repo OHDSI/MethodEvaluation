@@ -87,8 +87,13 @@ computeMetrics <- function(logRr, seLogRr = NULL, ci95Lb = NULL, ci95Ub = NULL, 
   data$p[idx] <- 1
   
   nonEstimable <- round(mean(data$seLogRr >= 99), 2)
-  roc <- pROC::roc(data$trueLogRr > 0, data$logRr, algorithm = 3)
-  auc <- round(pROC::auc(roc), 2)
+  positive <- data$trueLogRr > 0
+  if (all(positive) | all(!positive)) {
+    auc <- NA
+  } else {
+    roc <- pROC::roc(positive, data$logRr, algorithm = 3)
+    auc <- round(pROC::auc(roc), 2)
+  }
   mse <- round(mean((data$logRr - data$trueLogRr)^2), 2)
   coverage <- round(
     mean(data$ci95Lb < exp(data$trueLogRr) & data$ci95Ub > exp(data$trueLogRr)),

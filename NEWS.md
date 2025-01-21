@@ -9,13 +9,13 @@ Changes:
 
 3. Increasing required version of FeatureExtraction to avoid warning about use of deprecated argument `oracleTempSchema`.
 
-
 Bugfixes:
 
 1. Fixing nesting cohorts to end at end of observation.
 
 2. Fixing calibration when using exposure controls.
 
+3. Fixing error when computing metrics for negative (or positive) controls only.
 
 MethodEvaluation 2.3.0
 ======================
