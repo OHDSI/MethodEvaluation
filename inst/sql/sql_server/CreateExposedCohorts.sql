@@ -27,6 +27,7 @@ limitations under the License.
 {DEFAULT @risk_window_start = 0}
 {DEFAULT @risk_window_end = 0}
 {DEFAULT @add_exposure_days_to_end = TRUE}
+{DEFAULT @min_days_at_risk = 2}
 
 IF OBJECT_ID('tempdb..#cohort_person', 'U') IS NOT NULL
 	DROP TABLE #cohort_person;
@@ -79,7 +80,7 @@ FROM (
 		AND cohort_start_date <= observation_period_end_date
 ) unfiltered
 WHERE cohort_start_date <= observation_period_end_date
-	AND cohort_start_date <= cohort_end_date
+	AND cohort_end_date >= DATEADD(DAY, @min_days_at_risk - 1, cohort_start_date)
 	AND cohort_start_date >= DATEADD(DAY, @washout_period, observation_period_start_date)
 {@first_exposure_only} ? {
 	AND era_number = 1

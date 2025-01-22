@@ -97,6 +97,11 @@
 #' @param riskWindowEnd                   The end of the risk window (in days) relative to the endAnchor.
 #' @param endAnchor                       The anchor point for the end of the risk window. Can be
 #'                                        "cohort start" or "cohort end".
+#' @param minDaysAtRisk                   The minimum days at risk. Any risk period shorter than this 
+#'                                        will be removed before model fitting and signal injection. 
+#'                                        This is especially helpful when your data contains many 
+#'                                        exposures where start date = end date, and we want to ignore
+#'                                        those.
 #' @param addIntentToTreat                If true, the signal will not only be injected in the primary
 #'                                        time at risk, but also after the time at risk (up until the
 #'                                        obseration period end). In both time periods, the target
@@ -178,6 +183,7 @@ synthesizePositiveControls <- function(connectionDetails,
                                        riskWindowStart = 0,
                                        riskWindowEnd = 0,
                                        endAnchor = "cohort end",
+                                       minDaysAtRisk = 2,
                                        addIntentToTreat = FALSE,
                                        firstOutcomeOnly = FALSE,
                                        removePeopleWithPriorOutcomes = FALSE,
@@ -218,6 +224,7 @@ synthesizePositiveControls <- function(connectionDetails,
   checkmate::assertInt(washoutPeriod, lower = 0, add = errorMessages)
   checkmate::assertInt(riskWindowStart, add = errorMessages)
   checkmate::assertInt(riskWindowEnd, add = errorMessages)
+  checkmate::assertInt(minDaysAtRisk, lower = 1, add = errorMessages)
   checkmate::assertLogical(removePeopleWithPriorOutcomes, len = 1, add = errorMessages)
   checkmate::assertInt(maxSubjectsForModel, lower = 0, add = errorMessages)
   checkmate::assertNumeric(effectSizes, lower = 1, min.len = 1, add = errorMessages)
@@ -258,6 +265,7 @@ synthesizePositiveControls <- function(connectionDetails,
                               riskWindowStart = riskWindowStart,
                               riskWindowEnd = riskWindowEnd,
                               endAnchor = endAnchor,
+                              minDaysAtRisk = minDaysAtRisk,
                               firstOutcomeOnly = firstOutcomeOnly,
                               removePeopleWithPriorOutcomes = removePeopleWithPriorOutcomes,
                               maxSubjectsForModel = maxSubjectsForModel,
@@ -310,6 +318,7 @@ loadDataFitModels <- function(connectionDetails,
                               riskWindowStart,
                               riskWindowEnd,
                               endAnchor,
+                              minDaysAtRisk,
                               firstOutcomeOnly,
                               removePeopleWithPriorOutcomes,
                               maxSubjectsForModel,
@@ -362,6 +371,7 @@ loadDataFitModels <- function(connectionDetails,
                                  riskWindowStart = riskWindowStart,
                                  riskWindowEnd = riskWindowEnd,
                                  endAnchor = endAnchor,
+                                 minDaysAtRisk = minDaysAtRisk,
                                  firstOutcomeOnly = firstOutcomeOnly,
                                  removePeopleWithPriorOutcomes = removePeopleWithPriorOutcomes,
                                  workFolder = workFolder,
@@ -421,6 +431,7 @@ loadDataForSynthesis <- function(connection,
                                  riskWindowStart,
                                  riskWindowEnd,
                                  endAnchor,
+                                 minDaysAtRisk,
                                  firstOutcomeOnly,
                                  removePeopleWithPriorOutcomes,
                                  workFolder,
@@ -445,7 +456,8 @@ loadDataForSynthesis <- function(connection,
                                                    first_exposure_only = firstExposureOnly,
                                                    risk_window_start = riskWindowStart,
                                                    risk_window_end = riskWindowEnd,
-                                                   add_exposure_days_to_end = grepl("end$", endAnchor, ignore.case = TRUE)
+                                                   add_exposure_days_to_end = grepl("end$", endAnchor, ignore.case = TRUE),
+                                                   min_days_at_risk = minDaysAtRisk
   )
   
   DatabaseConnector::executeSql(connection, renderedSql)
