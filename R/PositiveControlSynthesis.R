@@ -1083,95 +1083,10 @@ generateOutcomes <- function(task,
       effectSize <- effectSizes[fxSizeIdx]
       if (effectSize == 1) {
         newOutcomes <- data.frame()
-        injectedRr <- 1
-        injectedRrFirstExposure <- 1
-        injectedRrItt <- 1
+        attr(newOutcomes, "injectedRr") <- 1
+        attr(newOutcomes, "injectedRrFirstExposure") <- 1
+        attr(newOutcomes, "injectedRrItt") <- 1
       } else {
-        # When sampling, the expected RR size is the target RR, but the actual RR could be different due to
-        # random error.  this code is redoing the sampling until actual RR is equal to the target RR.
-        targetCount <- resultSubset$observedOutcomes[1] * (effectSize - 1)
-        time <- exposures$daysAtRisk + 1
-        newOutcomeCounts <- 0
-        if (modelType == "poisson") {
-          # Generate results under Poisson model -------------------------
-          multiplier <- 1
-          ratios <- c()
-          while (round(abs(sum(newOutcomeCounts) - targetCount)) > precision * targetCount) {
-            newOutcomeCounts <- rpois(
-              nrow(exposures),
-              multiplier * exposures$prediction * (effectSize - 1)
-            )
-            newOutcomeCounts[newOutcomeCounts > time] <- time[newOutcomeCounts > time]
-            ratios <- c(ratios, sum(newOutcomeCounts) / targetCount)
-            if (length(ratios) == 100) {
-              multiplier <- multiplier * 1 / mean(ratios)
-              ratios <- c()
-              ParallelLogger::logDebug(paste(
-                "Unable to achieve target RR using model as is. Adding multiplier of",
-                multiplier,
-                "to force target"
-              ))
-            }
-          }
-          idx <- which(newOutcomeCounts != 0)
-          temp <- data.frame(
-            personId = exposures$personId[idx],
-            cohortStartDate = exposures$cohortStartDate[idx],
-            time = exposures$daysAtRisk[idx] + 1,
-            nOutcomes = newOutcomeCounts[idx]
-          )
-          outcomeRows <- sum(temp$nOutcomes)
-          newOutcomes <- data.frame(
-            personId = rep(0, outcomeRows),
-            cohortStartDate = rep(as.Date("1900-01-01"), outcomeRows),
-            timeToEvent = rep(0, outcomeRows)
-          )
-          cursor <- 1
-          for (i in 1:nrow(temp)) {
-            nOutcomes <- temp$nOutcomes[i]
-            if (nOutcomes != 0) {
-              newOutcomes$personId[cursor:(cursor + nOutcomes - 1)] <- temp$personId[i]
-              newOutcomes$cohortStartDate[cursor:(cursor + nOutcomes - 1)] <- temp$cohortStartDate[i]
-              newOutcomes$timeToEvent[cursor:(cursor + nOutcomes - 1)] <- sample.int(
-                size = nOutcomes,
-                temp$time[i]
-              ) - 1
-              cursor <- cursor + nOutcomes
-            }
-          }
-          injectedRr <- 1 + (nrow(newOutcomes) / resultSubset$observedOutcomes[1])
-          
-          # Count outcomes during first episodes:
-          newOutcomeCountsFirstExposure <- sum(newOutcomeCounts[exposures$eraNumber == 1])
-          injectedRrFirstExposure <- 1 +
-            (newOutcomeCountsFirstExposure / resultSubset$observedOutcomesFirstExposure[1])
-        } else {
-          # Survival model Generate outcomes under survival model --------------------------------------
-          result <- injectSurvival(exposures, effectSize, precision, addIntentToTreat)
-          injectedRr <- result$injectedRr
-          injectedRrFirstExposure <- result$injectedRrFirstExposure
-          injectedRrItt <- result$injectedRrItt
-          newOutcomes <- result$newOutcomes
-        }
-      }
-      ParallelLogger::logInfo(paste(
-        "Target RR =",
-        effectSize,
-        ", injected RR =",
-        injectedRr,
-        ", injected RR during first exposure only =",
-        injectedRrFirstExposure,
-        ", injected RR during ITT window =",
-        injectedRrItt
-      ))
-      
-      newOutcomeId <- resultSubset$newOutcomeId[resultSubset$targetEffectSize == effectSize]
-      # Write new outcomes to file for later insertion into DB:
-      if (nrow(newOutcomes) != 0) {
-        newOutcomes$cohortStartDate <- newOutcomes$cohortStartDate + newOutcomes$timeToEvent
-        newOutcomes$timeToEvent <- NULL
-        newOutcomes$cohortDefinitionId <- newOutcomeId
-        names(newOutcomes)[names(newOutcomes) == "personId"] <- "subjectId"
         outcomesToInjectFile <- file.path(workFolder, paste0(
           "newOutcomes_e",
           task$exposureId,
@@ -1181,13 +1096,106 @@ generateOutcomes <- function(task,
           effectSize,
           ".rds"
         ))
-        saveRDS(newOutcomes, outcomesToInjectFile)
-        resultSubset$outcomesToInjectFile[resultSubset$targetEffectSize == effectSize] <- outcomesToInjectFile
+        if (file.exists(outcomesToInjectFile)) {
+          newOutcomes <- readRDS(outcomesToInjectFile)
+        } else {
+          
+          # When sampling, the expected RR size is the target RR, but the actual RR could be different due to
+          # random error.  this code is redoing the sampling until actual RR is equal to the target RR.
+          targetCount <- resultSubset$observedOutcomes[1] * (effectSize - 1)
+          time <- exposures$daysAtRisk + 1
+          newOutcomeCounts <- 0
+          if (modelType == "poisson") {
+            # Generate results under Poisson model -------------------------
+            multiplier <- 1
+            ratios <- c()
+            while (round(abs(sum(newOutcomeCounts) - targetCount)) > precision * targetCount) {
+              newOutcomeCounts <- rpois(
+                nrow(exposures),
+                multiplier * exposures$prediction * (effectSize - 1)
+              )
+              newOutcomeCounts[newOutcomeCounts > time] <- time[newOutcomeCounts > time]
+              ratios <- c(ratios, sum(newOutcomeCounts) / targetCount)
+              if (length(ratios) == 100) {
+                multiplier <- multiplier * 1 / mean(ratios)
+                ratios <- c()
+                ParallelLogger::logDebug(paste(
+                  "Unable to achieve target RR using model as is. Adding multiplier of",
+                  multiplier,
+                  "to force target"
+                ))
+              }
+            }
+            idx <- which(newOutcomeCounts != 0)
+            temp <- data.frame(
+              personId = exposures$personId[idx],
+              cohortStartDate = exposures$cohortStartDate[idx],
+              time = exposures$daysAtRisk[idx] + 1,
+              nOutcomes = newOutcomeCounts[idx]
+            )
+            outcomeRows <- sum(temp$nOutcomes)
+            newOutcomes <- data.frame(
+              personId = rep(0, outcomeRows),
+              cohortStartDate = rep(as.Date("1900-01-01"), outcomeRows),
+              timeToEvent = rep(0, outcomeRows)
+            )
+            cursor <- 1
+            for (i in 1:nrow(temp)) {
+              nOutcomes <- temp$nOutcomes[i]
+              if (nOutcomes != 0) {
+                newOutcomes$personId[cursor:(cursor + nOutcomes - 1)] <- temp$personId[i]
+                newOutcomes$cohortStartDate[cursor:(cursor + nOutcomes - 1)] <- temp$cohortStartDate[i]
+                newOutcomes$timeToEvent[cursor:(cursor + nOutcomes - 1)] <- sample.int(
+                  size = nOutcomes,
+                  temp$time[i]
+                ) - 1
+                cursor <- cursor + nOutcomes
+              }
+            }
+            injectedRr <- 1 + (nrow(newOutcomes) / resultSubset$observedOutcomes[1])
+            
+            # Count outcomes during first episodes:
+            newOutcomeCountsFirstExposure <- sum(newOutcomeCounts[exposures$eraNumber == 1])
+            injectedRrFirstExposure <- 1 +
+              (newOutcomeCountsFirstExposure / resultSubset$observedOutcomesFirstExposure[1])
+          } else {
+            # Survival model Generate outcomes under survival model --------------------------------------
+            result <- injectSurvival(exposures, effectSize, precision, addIntentToTreat)
+            injectedRr <- result$injectedRr
+            injectedRrFirstExposure <- result$injectedRrFirstExposure
+            injectedRrItt <- result$injectedRrItt
+            newOutcomes <- result$newOutcomes
+          }
+        }
+        ParallelLogger::logInfo(paste(
+          "Target RR =",
+          effectSize,
+          ", injected RR =",
+          injectedRr,
+          ", injected RR during first exposure only =",
+          injectedRrFirstExposure,
+          ", injected RR during ITT window =",
+          injectedRrItt
+        ))
+        
+        newOutcomeId <- resultSubset$newOutcomeId[resultSubset$targetEffectSize == effectSize]
+        # Write new outcomes to file for later insertion into DB:
+        if (nrow(newOutcomes) != 0) {
+          newOutcomes$cohortStartDate <- newOutcomes$cohortStartDate + newOutcomes$timeToEvent
+          newOutcomes$timeToEvent <- NULL
+          newOutcomes$cohortDefinitionId <- newOutcomeId
+          names(newOutcomes)[names(newOutcomes) == "personId"] <- "subjectId"
+          attr(newOutcomes, "injectedRr") <- injectedRr
+          attr(newOutcomes, "injectedRrFirstExposure") <- injectedRrFirstExposure
+          attr(newOutcomes, "injectedRrItt") <- injectedRrItt
+          saveRDS(newOutcomes, outcomesToInjectFile)
+          resultSubset$outcomesToInjectFile[resultSubset$targetEffectSize == effectSize] <- outcomesToInjectFile
+        }
       }
       idx <- resultSubset$targetEffectSize == effectSize
-      resultSubset$trueEffectSize[idx] <- injectedRr
-      resultSubset$trueEffectSizeFirstExposure[idx] <- injectedRrFirstExposure
-      resultSubset$trueEffectSizeItt[idx] <- injectedRrItt
+      resultSubset$trueEffectSize[idx] <- attr(newOutcomes, "injectedRr")
+      resultSubset$trueEffectSizeFirstExposure[idx] <- attr(newOutcomes, "injectedRrFirstExposure")
+      resultSubset$trueEffectSizeItt[idx] <- attr(newOutcomes, "injectedRrItt")
       resultSubset$injectedOutcomes[idx] <- nrow(newOutcomes)
     }
     return(resultSubset)
