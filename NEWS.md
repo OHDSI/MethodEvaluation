@@ -1,4 +1,4 @@
-MethodEvaluation 2.3.1
+MethodEvaluation 2.4.0
 ======================
 
 Changes:
@@ -9,6 +9,9 @@ Changes:
 
 3. Increasing required version of FeatureExtraction to avoid warning about use of deprecated argument `oracleTempSchema`.
 
+4. Added `riskWindowStart` argument to `synthesizeReferenceSetPositiveControls()` for rare occasions when we want to have a specific time-at-risk.
+
+
 Bugfixes:
 
 1. Fixing nesting cohorts to end at end of observation.
@@ -16,6 +19,11 @@ Bugfixes:
 2. Fixing calibration when using exposure controls.
 
 3. Fixing error when computing metrics for negative (or positive) controls only.
+
+4. Using character instead of numeric to store person IDs in R to avoid loss of precision when inserting generated outcomes.
+
+5. Always casting dates to dates before operations to avoid hidden casts to date time.
+
 
 MethodEvaluation 2.3.0
 ======================

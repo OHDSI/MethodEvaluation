@@ -283,7 +283,8 @@ synthesizePositiveControls <- function(connectionDetails,
                                 precision = precision,
                                 addIntentToTreat = addIntentToTreat,
                                 result = result)
-  
+  summaryFile <- file.path(workFolder, "summary.rds")
+  saveRDS(result, summaryFile)
   if (is.null(getOption("skipPositiveControlUpload")) || !getOption("skipPositiveControlUpload")) {
     insertOutcomes(connectionDetails = connectionDetails,
                    cdmDatabaseSchema = cdmDatabaseSchema,
@@ -295,7 +296,6 @@ synthesizePositiveControls <- function(connectionDetails,
                    createOutputTable = createOutputTable,
                    result = result) 
   }
-  
   return(result)
 }
 
@@ -326,9 +326,6 @@ loadDataFitModels <- function(connectionDetails,
                               outputIdOffset,
                               workFolder,
                               modelThreads){
-  # Note: this is a big function, but the code shares several temp tables so
-  # need connection to stay alive.
-  
   # Find all exposures for each outcome, then identify unique groups of exposures
   group <- function(outcomeId) {
     exposureIds <- exposureOutcomePairs$exposureId[exposureOutcomePairs$outcomeId == outcomeId]
@@ -411,9 +408,6 @@ loadDataFitModels <- function(connectionDetails,
   sql <- "TRUNCATE TABLE #cohort_person; DROP TABLE #cohort_person;"
   sql <- SqlRender::translate(sql, targetDialect = DatabaseConnector::dbms(connection), tempEmulationSchema = tempEmulationSchema)
   DatabaseConnector::executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
-  
-  summaryFile <- file.path(workFolder, "summary.rds")
-  saveRDS(result, summaryFile)
   return(result)
 }
 
@@ -1046,12 +1040,14 @@ generateOutcomes <- function(task,
     task$outcomeId
   )
   set.seed(1)
-  resultSubset <- result[result$exposureId == task$exposureId & result$outcomeId == task$outcomeId, ]
+  resultSubset <- result |>
+    filter(.data$exposureId == task$exposureId, .data$outcomeId == task$outcomeId)
   if (file.exists(file.path(task$modelFolder, "Error.txt"))) {
     return(resultSubset)
   } else {
     exposures <- readRDS(exposuresFile)
-    exposures <- exposures[exposures$exposureId == task$exposureId, ]
+    exposures <- exposures |>
+      filter(.data$exposureId == task$exposureId)
     predictionFile <- file.path(task$modelFolder, paste0("prediction_e", task$exposureId, ".rds"))
     if (file.exists(predictionFile)) {
       prediction <- readRDS(predictionFile)
@@ -1068,17 +1064,24 @@ generateOutcomes <- function(task,
       saveRDS(prediction, predictionFile)
     }
     outcomes <- readRDS(outcomesFile)
-    outcomes <- outcomes[outcomes$outcomeId == task$outcomeId, ]
+    outcomes <- outcomes |>
+      filter(.data$outcomeId == task$outcomeId)
     if (removePeopleWithPriorOutcomes) {
       priorOutcomes <- readRDS(priorOutcomesFile)
-      removeRowIds <- priorOutcomes$rowId[priorOutcomes$outcomeId == task$outcomeId]
-      exposures <- exposures[!(exposures$rowId %in% removeRowIds), ]
-      outcomes <- outcomes[!(outcomes$rowId %in% removeRowIds), ]
+      removeRowIds <- priorOutcomes |>
+        filter(.data$outcomeId == task$outcomeId)
+      exposures <- exposures |>
+        filter(!.data$rowId %in% removeRowIds)
+      outcomes <- outcomes |>
+        filter(!.data$rowId %in% removeRowIds)
     }
-    exposures <- merge(exposures, prediction)
-    exposures <- merge(exposures, outcomes, all.x = TRUE)
-    exposures$y[is.na(exposures$y)] <- 0
-    exposures$yItt[is.na(exposures$yItt)] <- 0
+    exposures <- exposures |>
+      inner_join(prediction, by = join_by("rowId"))
+    exposures <- exposures |>
+      left_join(outcomes, by = join_by("rowId"))
+    exposures <- exposures |>
+      mutate(y = if_else(is.na(.data$y), 0, .data$y),
+             yItt = if_else(is.na(.data$yItt), 0, .data$yItt))
     for (fxSizeIdx in 1:length(effectSizes)) {
       effectSize <- effectSizes[fxSizeIdx]
       if (effectSize == 1) {
@@ -1086,6 +1089,7 @@ generateOutcomes <- function(task,
         attr(newOutcomes, "injectedRr") <- 1
         attr(newOutcomes, "injectedRrFirstExposure") <- 1
         attr(newOutcomes, "injectedRrItt") <- 1
+        outcomesToInjectFile <- ""
       } else {
         outcomesToInjectFile <- file.path(workFolder, paste0(
           "newOutcomes_e",
@@ -1099,100 +1103,33 @@ generateOutcomes <- function(task,
         if (file.exists(outcomesToInjectFile)) {
           newOutcomes <- readRDS(outcomesToInjectFile)
         } else {
-          
-          # When sampling, the expected RR size is the target RR, but the actual RR could be different due to
-          # random error.  this code is redoing the sampling until actual RR is equal to the target RR.
-          targetCount <- resultSubset$observedOutcomes[1] * (effectSize - 1)
-          time <- exposures$daysAtRisk + 1
-          newOutcomeCounts <- 0
           if (modelType == "poisson") {
-            # Generate results under Poisson model -------------------------
-            multiplier <- 1
-            ratios <- c()
-            while (round(abs(sum(newOutcomeCounts) - targetCount)) > precision * targetCount) {
-              newOutcomeCounts <- rpois(
-                nrow(exposures),
-                multiplier * exposures$prediction * (effectSize - 1)
-              )
-              newOutcomeCounts[newOutcomeCounts > time] <- time[newOutcomeCounts > time]
-              ratios <- c(ratios, sum(newOutcomeCounts) / targetCount)
-              if (length(ratios) == 100) {
-                multiplier <- multiplier * 1 / mean(ratios)
-                ratios <- c()
-                ParallelLogger::logDebug(paste(
-                  "Unable to achieve target RR using model as is. Adding multiplier of",
-                  multiplier,
-                  "to force target"
-                ))
-              }
-            }
-            idx <- which(newOutcomeCounts != 0)
-            temp <- data.frame(
-              personId = exposures$personId[idx],
-              cohortStartDate = exposures$cohortStartDate[idx],
-              time = exposures$daysAtRisk[idx] + 1,
-              nOutcomes = newOutcomeCounts[idx]
-            )
-            outcomeRows <- sum(temp$nOutcomes)
-            newOutcomes <- data.frame(
-              personId = rep(0, outcomeRows),
-              cohortStartDate = rep(as.Date("1900-01-01"), outcomeRows),
-              timeToEvent = rep(0, outcomeRows)
-            )
-            cursor <- 1
-            for (i in 1:nrow(temp)) {
-              nOutcomes <- temp$nOutcomes[i]
-              if (nOutcomes != 0) {
-                newOutcomes$personId[cursor:(cursor + nOutcomes - 1)] <- temp$personId[i]
-                newOutcomes$cohortStartDate[cursor:(cursor + nOutcomes - 1)] <- temp$cohortStartDate[i]
-                newOutcomes$timeToEvent[cursor:(cursor + nOutcomes - 1)] <- sample.int(
-                  size = nOutcomes,
-                  temp$time[i]
-                ) - 1
-                cursor <- cursor + nOutcomes
-              }
-            }
-            injectedRr <- 1 + (nrow(newOutcomes) / resultSubset$observedOutcomes[1])
-            
-            # Count outcomes during first episodes:
-            newOutcomeCountsFirstExposure <- sum(newOutcomeCounts[exposures$eraNumber == 1])
-            injectedRrFirstExposure <- 1 +
-              (newOutcomeCountsFirstExposure / resultSubset$observedOutcomesFirstExposure[1])
+            newOutcomes <- injectPoisson(exposures, effectSize, precision)
           } else {
-            # Survival model Generate outcomes under survival model --------------------------------------
-            result <- injectSurvival(exposures, effectSize, precision, addIntentToTreat)
-            injectedRr <- result$injectedRr
-            injectedRrFirstExposure <- result$injectedRrFirstExposure
-            injectedRrItt <- result$injectedRrItt
-            newOutcomes <- result$newOutcomes
+            newOutcomes <- injectSurvival(exposures, effectSize, precision, addIntentToTreat)
+          }
+          newOutcomeId <- resultSubset$newOutcomeId[resultSubset$targetEffectSize == effectSize]
+          if (nrow(newOutcomes) != 0) {
+            newOutcomes$cohortStartDate <- as.Date(newOutcomes$cohortStartDate) + newOutcomes$timeToEvent
+            newOutcomes$timeToEvent <- NULL
+            newOutcomes$cohortDefinitionId <- newOutcomeId
+            names(newOutcomes)[names(newOutcomes) == "personId"] <- "subjectId"
+            saveRDS(newOutcomes, outcomesToInjectFile)
           }
         }
         ParallelLogger::logInfo(paste(
           "Target RR =",
           effectSize,
           ", injected RR =",
-          injectedRr,
+          attr(newOutcomes, "injectedRr"),
           ", injected RR during first exposure only =",
-          injectedRrFirstExposure,
+          attr(newOutcomes, "injectedRrFirstExposure") ,
           ", injected RR during ITT window =",
-          injectedRrItt
+          attr(newOutcomes, "injectedRrItt") 
         ))
-        
-        newOutcomeId <- resultSubset$newOutcomeId[resultSubset$targetEffectSize == effectSize]
-        # Write new outcomes to file for later insertion into DB:
-        if (nrow(newOutcomes) != 0) {
-          newOutcomes$cohortStartDate <- newOutcomes$cohortStartDate + newOutcomes$timeToEvent
-          newOutcomes$timeToEvent <- NULL
-          newOutcomes$cohortDefinitionId <- newOutcomeId
-          names(newOutcomes)[names(newOutcomes) == "personId"] <- "subjectId"
-          attr(newOutcomes, "injectedRr") <- injectedRr
-          attr(newOutcomes, "injectedRrFirstExposure") <- injectedRrFirstExposure
-          attr(newOutcomes, "injectedRrItt") <- injectedRrItt
-          saveRDS(newOutcomes, outcomesToInjectFile)
-          resultSubset$outcomesToInjectFile[resultSubset$targetEffectSize == effectSize] <- outcomesToInjectFile
-        }
       }
       idx <- resultSubset$targetEffectSize == effectSize
+      resultSubset$outcomesToInjectFile[idx] <- outcomesToInjectFile
       resultSubset$trueEffectSize[idx] <- attr(newOutcomes, "injectedRr")
       resultSubset$trueEffectSizeFirstExposure[idx] <- attr(newOutcomes, "injectedRrFirstExposure")
       resultSubset$trueEffectSizeItt[idx] <- attr(newOutcomes, "injectedRrItt")
@@ -1202,86 +1139,67 @@ generateOutcomes <- function(task,
   }
 }
 
-insertOutcomes <- function(connectionDetails,
-                           cdmDatabaseSchema,
-                           outputDatabaseSchema,
-                           outputTable,
-                           outcomeDatabaseSchema,
-                           outcomeTable,
-                           tempEmulationSchema,
-                           createOutputTable,
-                           result) {
-  connection <- DatabaseConnector::connect(connectionDetails)
-  on.exit(DatabaseConnector::disconnect(connection))
-  
-  # Insert outcomes into database ------------------------------------------------
-  ParallelLogger::logInfo("Inserting additional outcomes into database")
-  fileNames <- result$outcomesToInjectFile[result$outcomesToInjectFile != ""]
-  outcomesToInject <- lapply(fileNames, readRDS)
-  outcomesToInject <- do.call("rbind", outcomesToInject)
-  colnames(outcomesToInject) <- SqlRender::camelCaseToSnakeCase(colnames(outcomesToInject))
-  if (Sys.getenv("USE_MPP_BULK_LOAD") == "TRUE" ||
-      Sys.getenv("DATABASE_CONNECTOR_BULK_UPLOAD") == "TRUE") {
-    tableName <- paste0(
-      outputDatabaseSchema,
-      ".temp_outcomes_",
-      paste(sample(letters, 5), collapse = "")
+injectPoisson <- function(exposures, effectSize, precision, addIntentToTreat) {
+  targetCount <- resultSubset$observedOutcomes[1] * (effectSize - 1)
+  time <- exposures$daysAtRisk + 1
+  newOutcomeCounts <- 0
+  multiplier <- 1
+  ratios <- c()
+  while (round(abs(sum(newOutcomeCounts) - targetCount)) > precision * targetCount) {
+    newOutcomeCounts <- rpois(
+      nrow(exposures),
+      multiplier * exposures$prediction * (effectSize - 1)
     )
-    tempTable <- FALSE
-  } else {
-    tableName <- "#temp_outcomes"
-    tempTable <- TRUE
+    newOutcomeCounts[newOutcomeCounts > time] <- time[newOutcomeCounts > time]
+    ratios <- c(ratios, sum(newOutcomeCounts) / targetCount)
+    if (length(ratios) == 100) {
+      multiplier <- multiplier * 1 / mean(ratios)
+      ratios <- c()
+      ParallelLogger::logDebug(paste(
+        "Unable to achieve target RR using model as is. Adding multiplier of",
+        multiplier,
+        "to force target"
+      ))
+    }
   }
-  
-  DatabaseConnector::insertTable(
-    connection = connection,
-    tableName = tableName,
-    data = outcomesToInject,
-    dropTableIfExists = TRUE,
-    createTable = TRUE,
-    tempTable = tempTable,
-    tempEmulationSchema = tempEmulationSchema,
-    progressBar = TRUE
+  idx <- which(newOutcomeCounts != 0)
+  temp <- data.frame(
+    personId = exposures$personId[idx],
+    cohortStartDate = exposures$cohortStartDate[idx],
+    time = exposures$daysAtRisk[idx] + 1,
+    nOutcomes = newOutcomeCounts[idx]
   )
-  
-  toCopy <- result[result$modelFolder != "", c("outcomeId", "newOutcomeId")]
-  colnames(toCopy) <- SqlRender::camelCaseToSnakeCase(colnames(toCopy))
-  DatabaseConnector::insertTable(
-    connection = connection,
-    tableName = "#to_copy",
-    data = toCopy,
-    dropTableIfExists = TRUE,
-    createTable = TRUE,
-    tempTable = TRUE,
-    tempEmulationSchema = tempEmulationSchema
+  outcomeRows <- sum(temp$nOutcomes)
+  newOutcomes <- data.frame(
+    personId = rep("", outcomeRows),
+    cohortStartDate = rep(as.Date("1900-01-01"), outcomeRows),
+    timeToEvent = rep(0, outcomeRows)
   )
+  cursor <- 1
+  for (i in 1:nrow(temp)) {
+    nOutcomes <- temp$nOutcomes[i]
+    if (nOutcomes != 0) {
+      newOutcomes$personId[cursor:(cursor + nOutcomes - 1)] <- temp$personId[i]
+      newOutcomes$cohortStartDate[cursor:(cursor + nOutcomes - 1)] <- temp$cohortStartDate[i]
+      newOutcomes$timeToEvent[cursor:(cursor + nOutcomes - 1)] <- sample.int(
+        size = nOutcomes,
+        temp$time[i]
+      ) - 1
+      cursor <- cursor + nOutcomes
+    }
+  }
+  injectedRr <- 1 + (nrow(newOutcomes) / resultSubset$observedOutcomes[1])
   
-  ParallelLogger::logInfo("Copying negative control outcomes into database")
-  copySql <- SqlRender::loadRenderTranslateSql("CopyOutcomes.sql",
-                                               packageName = "MethodEvaluation",
-                                               dbms = DatabaseConnector::dbms(connection),
-                                               cdm_database_schema = cdmDatabaseSchema,
-                                               tempEmulationSchema = tempEmulationSchema,
-                                               outcome_database_schema = outcomeDatabaseSchema,
-                                               outcome_table = outcomeTable,
-                                               output_database_schema = outputDatabaseSchema,
-                                               output_table = outputTable,
-                                               create_output_table = createOutputTable,
-                                               temp_outcomes_table = tableName
-  )
+  # Count outcomes during first episodes:
+  newOutcomeCountsFirstExposure <- sum(newOutcomeCounts[exposures$eraNumber == 1])
+  injectedRrFirstExposure <- 1 +
+    (newOutcomeCountsFirstExposure / resultSubset$observedOutcomesFirstExposure[1])
   
-  DatabaseConnector::executeSql(connection, copySql)
-  
-  sql <- "TRUNCATE TABLE #to_copy; DROP TABLE #to_copy;"
-  sql <- SqlRender::translate(sql, targetDialect = DatabaseConnector::dbms(connection), tempEmulationSchema = tempEmulationSchema)
-  DatabaseConnector::executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
-  
-  sql <- "TRUNCATE TABLE @temp_outcomes_table; DROP TABLE @temp_outcomes_table;"
-  sql <- SqlRender::render(sql, temp_outcomes_table = tableName)
-  sql <- SqlRender::translate(sql, targetDialect = DatabaseConnector::dbms(connection), tempEmulationSchema = tempEmulationSchema)
-  DatabaseConnector::executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
+  attr(newOutcomes, "injectedRr") <- injectedRr
+  attr(newOutcomes, "injectedRrFirstExposure") <- injectedRrFirstExposure
+  attr(newOutcomes, "injectedRrItt") <- NA
+  return(newOutcomes)
 }
-
 
 injectSurvival <- function(exposures, effectSize, precision, addIntentToTreat) {
   hasOutcome <- exposures$y != 0
@@ -1394,12 +1312,91 @@ injectSurvival <- function(exposures, effectSize, precision, addIntentToTreat) {
   } else {
     injectedRrItt <- NA
   }
-  return(list(
-    injectedRr = injectedRr,
-    injectedRrFirstExposure = injectedRrFirstExposure,
-    injectedRrItt = injectedRrItt,
-    newOutcomes = newOutcomes
-  ))
+  attr(newOutcomes, "injectedRr") <- injectedRr
+  attr(newOutcomes, "injectedRrFirstExposure") <- injectedRrFirstExposure
+  attr(newOutcomes, "injectedRrItt") <- injectedRrItt
+  return(newOutcomes)
+}
+
+
+insertOutcomes <- function(connectionDetails,
+                           cdmDatabaseSchema,
+                           outputDatabaseSchema,
+                           outputTable,
+                           outcomeDatabaseSchema,
+                           outcomeTable,
+                           tempEmulationSchema,
+                           createOutputTable,
+                           result) {
+  connection <- DatabaseConnector::connect(connectionDetails)
+  on.exit(DatabaseConnector::disconnect(connection))
+  
+  # Insert outcomes into database ------------------------------------------------
+  ParallelLogger::logInfo("Inserting additional outcomes into database")
+  fileNames <- result$outcomesToInjectFile[result$outcomesToInjectFile != ""]
+  outcomesToInject <- lapply(fileNames, readRDS)
+  outcomesToInject <- bind_rows(outcomesToInject)
+  if (Sys.getenv("USE_MPP_BULK_LOAD") == "TRUE" ||
+      Sys.getenv("DATABASE_CONNECTOR_BULK_UPLOAD") == "TRUE") {
+    tableName <- paste0(
+      outputDatabaseSchema,
+      ".temp_outcomes_",
+      paste(sample(letters, 5), collapse = "")
+    )
+    tempTable <- FALSE
+  } else {
+    tableName <- "#temp_outcomes"
+    tempTable <- TRUE
+  }
+  outcomesToInject$subjectId <- bit64::as.integer64(outcomesToInject$subjectId)
+  DatabaseConnector::insertTable(
+    connection = connection,
+    tableName = tableName,
+    data = outcomesToInject,
+    dropTableIfExists = TRUE,
+    createTable = TRUE,
+    tempTable = tempTable,
+    tempEmulationSchema = tempEmulationSchema,
+    progressBar = TRUE,
+    camelCaseToSnakeCase = TRUE
+  )
+  
+  toCopy <- result[result$modelFolder != "", c("outcomeId", "newOutcomeId")]
+  DatabaseConnector::insertTable(
+    connection = connection,
+    tableName = "#to_copy",
+    data = toCopy,
+    dropTableIfExists = TRUE,
+    createTable = TRUE,
+    tempTable = TRUE,
+    tempEmulationSchema = tempEmulationSchema,
+    camelCaseToSnakeCase = TRUE
+  )
+  
+  ParallelLogger::logInfo("Copying negative control outcomes into database")
+  copySql <- SqlRender::loadRenderTranslateSql("CopyOutcomes.sql",
+                                               packageName = "MethodEvaluation",
+                                               dbms = DatabaseConnector::dbms(connection),
+                                               cdm_database_schema = cdmDatabaseSchema,
+                                               tempEmulationSchema = tempEmulationSchema,
+                                               outcome_database_schema = outcomeDatabaseSchema,
+                                               outcome_table = outcomeTable,
+                                               output_database_schema = outputDatabaseSchema,
+                                               output_table = outputTable,
+                                               create_output_table = createOutputTable,
+                                               temp_outcomes_table = tableName
+  )
+  
+  DatabaseConnector::executeSql(connection, copySql)
+  
+  sql <- "TRUNCATE TABLE #to_copy; DROP TABLE #to_copy;"
+  sql <- SqlRender::translate(sql, targetDialect = DatabaseConnector::dbms(connection), tempEmulationSchema = tempEmulationSchema)
+  DatabaseConnector::executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
+  
+  sql <- "TRUNCATE TABLE @temp_outcomes_table; DROP TABLE @temp_outcomes_table;"
+  sql <- SqlRender::render(sql, temp_outcomes_table = tableName)
+  sql <- SqlRender::translate(sql, targetDialect = DatabaseConnector::dbms(connection), tempEmulationSchema = tempEmulationSchema)
+  DatabaseConnector::executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
 }
 
 .predict <- function(betas, exposures, covariates, modelType) {

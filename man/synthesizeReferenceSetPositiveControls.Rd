@@ -16,6 +16,7 @@ synthesizeReferenceSetPositiveControls(
   referenceSet = "ohdsiMethodsBenchmark",
   maxCores = 1,
   workFolder,
+  riskWindowStart = 0,
   summaryFileName = file.path(workFolder, "allControls.csv")
 )
 }
@@ -60,6 +61,9 @@ available this can speed up the analyses.}
 \item{workFolder}{Name of local folder to place intermediary results; make sure to use
 forward slashes (/). Do not use a folder on a network drive since
 this greatly impacts performance.}
+
+\item{riskWindowStart}{The start day of the risk window releative to the exposure start. Should be
+kept at 0 for maximum comparability.}
 
 \item{summaryFileName}{The name of the CSV file where to store the summary of the final set
 of positive and negative controls.}

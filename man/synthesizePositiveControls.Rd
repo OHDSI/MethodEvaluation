@@ -35,6 +35,7 @@ synthesizePositiveControls(
   riskWindowStart = 0,
   riskWindowEnd = 0,
   endAnchor = "cohort end",
+  minDaysAtRisk = 2,
   addIntentToTreat = FALSE,
   firstOutcomeOnly = FALSE,
   removePeopleWithPriorOutcomes = FALSE,
@@ -143,6 +144,12 @@ first day of exposure.}
 
 \item{endAnchor}{The anchor point for the end of the risk window. Can be
 "cohort start" or "cohort end".}
+
+\item{minDaysAtRisk}{The minimum days at risk. Any risk period shorter than this 
+will be removed before model fitting and signal injection. 
+This is especially helpful when your data contains many 
+exposures where start date = end date, and we want to ignore
+those.}
 
 \item{addIntentToTreat}{If true, the signal will not only be injected in the primary
 time at risk, but also after the time at risk (up until the

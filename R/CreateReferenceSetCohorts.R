@@ -489,6 +489,8 @@ countDrugEras <- function(connection, cdmDatabaseSchema, cohortIds) {
 #' @param workFolder               Name of local folder to place intermediary results; make sure to use
 #'                                 forward slashes (/). Do not use a folder on a network drive since
 #'                                 this greatly impacts performance.
+#' @param riskWindowStart          The start day of the risk window releative to the exposure start. Should be
+#'                                 kept at 0 for maximum comparability.
 #' @param summaryFileName          The name of the CSV file where to store the summary of the final set
 #'                                 of positive and negative controls.
 #'
@@ -504,6 +506,7 @@ synthesizeReferenceSetPositiveControls <- function(connectionDetails,
                                                    referenceSet = "ohdsiMethodsBenchmark",
                                                    maxCores = 1,
                                                    workFolder,
+                                                   riskWindowStart = 0,
                                                    summaryFileName = file.path(workFolder, "allControls.csv")) {
   if (!is.null(oracleTempSchema) && oracleTempSchema != "") {
     warning("The 'oracleTempSchema' argument is deprecated. Use 'tempEmulationSchema' instead.")
@@ -520,6 +523,7 @@ synthesizeReferenceSetPositiveControls <- function(connectionDetails,
   checkmate::assertChoice(referenceSet, c("ohdsiMethodsBenchmark", "ohdsiDevelopment"), add = errorMessages)
   checkmate::assertInt(maxCores, lower = 1, add = errorMessages)
   checkmate::assertCharacter(workFolder, len = 1, add = errorMessages)
+  checkmate::assertIntegerish(riskWindowStart, add = errorMessages)
   checkmate::assertCharacter(summaryFileName, len = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
   injectionFolder <- file.path(workFolder, "SignalInjection")
@@ -588,10 +592,10 @@ synthesizeReferenceSetPositiveControls <- function(connectionDetails,
       removePeopleWithPriorOutcomes = TRUE,
       modelType = "survival",
       washoutPeriod = 365,
-      riskWindowStart = 0,
+      riskWindowStart = riskWindowStart,
       riskWindowEnd = 0,
       endAnchor = "cohort end",
-      minDaysAtRisk = 2,
+      minDaysAtRisk = 1,
       effectSizes = c(1.5, 2, 4),
       precision = 0.01,
       prior = prior,

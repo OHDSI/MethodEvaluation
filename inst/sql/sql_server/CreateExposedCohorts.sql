@@ -34,7 +34,7 @@ IF OBJECT_ID('tempdb..#cohort_person', 'U') IS NOT NULL
 
 --HINT DISTRIBUTE_ON_KEY(subject_id)
 SELECT ROW_NUMBER() OVER (ORDER BY cohort_definition_id, subject_id, cohort_start_date) AS row_id,
-    cohort_definition_id,
+  cohort_definition_id,
 	subject_id,
 	cohort_start_date,
 	cohort_end_date,
