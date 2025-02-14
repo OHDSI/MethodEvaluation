@@ -98,7 +98,7 @@ Note that for Microsoft SQL Server, database schemas need to specify both the da
 
 ## Creating all necessary cohorts
 
-In order to run our population-level effect estimation method, we will need to identify the exposures and outcomes of interest. To identify exposures we will simlpy use the predefined exposure eras in the `drug_era` table in the CDM. However, for the outcomes custom cohorts need to be generated. In addition, some methods such as the nested case-control design require nesting cohorts to be defined. The negative control outcome and nesting cohorts can be generated using the following command:
+In order to run our population-level effect estimation method, we will need to identify the exposures and outcomes of interest. To identify exposures we will simply use the predefined exposure eras in the `drug_era` table in the CDM. However, for the outcomes custom cohorts need to be generated. In addition, some methods such as the nested case-control design require nesting cohorts to be defined. The negative control outcome and nesting cohorts can be generated using the following command:
 
 ```{r tidy=FALSE,eval=FALSE}
 createReferenceSetCohorts(

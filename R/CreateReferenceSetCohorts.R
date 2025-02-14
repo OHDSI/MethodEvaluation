@@ -89,15 +89,15 @@ createReferenceSetCohorts <- function(connectionDetails,
   checkmate::assertChoice(referenceSet, c("omopReferenceSet", "euadrReferenceSet", "ohdsiMethodsBenchmark", "ohdsiDevelopment"), add = errorMessages)
   checkmate::assertCharacter(workFolder, len = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
-
+  
   if (referenceSet == "omopReferenceSet") {
     ParallelLogger::logInfo("Generating HOIs for the OMOP reference set")
     renderedSql <- SqlRender::loadRenderTranslateSql("CreateOmopHois.sql",
-      packageName = "MethodEvaluation",
-      dbms = connectionDetails$dbms,
-      cdm_database_schema = cdmDatabaseSchema,
-      outcome_database_schema = outcomeDatabaseSchema,
-      outcome_table = outcomeTable
+                                                     packageName = "MethodEvaluation",
+                                                     dbms = connectionDetails$dbms,
+                                                     cdm_database_schema = cdmDatabaseSchema,
+                                                     outcome_database_schema = outcomeDatabaseSchema,
+                                                     outcome_table = outcomeTable
     )
     conn <- DatabaseConnector::connect(connectionDetails)
     DatabaseConnector::executeSql(conn, renderedSql)
@@ -154,12 +154,12 @@ createOhdsiDevelopmentNegativeControlCohorts <- function(connectionDetails,
     dir.create(workFolder, recursive = TRUE)
   }
   ohdsiDevelopmentNegativeControls <- readRDS(system.file("ohdsiDevelopmentNegativeControls.rds",
-    package = "MethodEvaluation"
+                                                          package = "MethodEvaluation"
   ))
-
+  
   connection <- DatabaseConnector::connect(connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
-
+  
   sql <- SqlRender::loadRenderTranslateSql(
     sqlFilename = "CreateCohortTable.sql",
     packageName = "MethodEvaluation",
@@ -169,7 +169,7 @@ createOhdsiDevelopmentNegativeControlCohorts <- function(connectionDetails,
     cohort_table = outcomeTable
   )
   DatabaseConnector::executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
-
+  
   if (outcomeDatabaseSchema != nestingDatabaseSchema | outcomeTable != nestingTable) {
     sql <- SqlRender::loadRenderTranslateSql(
       sqlFilename = "CreateCohortTable.sql",
@@ -215,30 +215,30 @@ createOhdsiDevelopmentNegativeControlCohorts <- function(connectionDetails,
   outcomeCohorts <- ohdsiDevelopmentNegativeControls %>%
     distinct(cohortId = .data$outcomeId, cohortName = .data$outcomeName)
   sql <- SqlRender::loadRenderTranslateSql("NegativeControls.sql",
-    "MethodEvaluation",
-    dbms = connectionDetails$dbms,
-    tempEmulationSchema = tempEmulationSchema,
-    cdm_database_schema = cdmDatabaseSchema,
-    target_database_schema = outcomeDatabaseSchema,
-    target_cohort_table = outcomeTable,
-    outcome_ids = outcomeCohorts$cohortId
+                                           "MethodEvaluation",
+                                           dbms = connectionDetails$dbms,
+                                           tempEmulationSchema = tempEmulationSchema,
+                                           cdm_database_schema = cdmDatabaseSchema,
+                                           target_database_schema = outcomeDatabaseSchema,
+                                           target_cohort_table = outcomeTable,
+                                           outcome_ids = outcomeCohorts$cohortId
   )
   DatabaseConnector::executeSql(connection, sql)
-
+  
   ParallelLogger::logInfo("Creating nesting cohorts")
   nestingCohorts <- ohdsiDevelopmentNegativeControls %>%
     distinct(cohortId = .data$nestingId, cohortName = .data$nestingName)
   sql <- SqlRender::loadRenderTranslateSql("NestingCohorts.sql",
-    "MethodEvaluation",
-    dbms = connectionDetails$dbms,
-    tempEmulationSchema = tempEmulationSchema,
-    cdm_database_schema = cdmDatabaseSchema,
-    target_database_schema = nestingDatabaseSchema,
-    target_cohort_table = nestingTable,
-    nesting_ids = nestingCohorts$cohortId
+                                           "MethodEvaluation",
+                                           dbms = connectionDetails$dbms,
+                                           tempEmulationSchema = tempEmulationSchema,
+                                           cdm_database_schema = cdmDatabaseSchema,
+                                           target_database_schema = nestingDatabaseSchema,
+                                           target_cohort_table = nestingTable,
+                                           nesting_ids = nestingCohorts$cohortId
   )
   DatabaseConnector::executeSql(connection, sql)
-
+  
   ParallelLogger::logInfo("Counting cohorts")
   exposureCohortCounts <- countCohorts(
     connection = connection,
@@ -288,12 +288,12 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
                                               tempEmulationSchema,
                                               workFolder) {
   ohdsiNegativeControls <- readRDS(system.file("ohdsiNegativeControls.rds",
-    package = "MethodEvaluation"
+                                               package = "MethodEvaluation"
   ))
-
+  
   connection <- DatabaseConnector::connect(connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
-
+  
   sql <- SqlRender::loadRenderTranslateSql(
     sqlFilename = "CreateCohortTable.sql",
     packageName = "MethodEvaluation",
@@ -303,7 +303,7 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
     cohort_table = outcomeTable
   )
   DatabaseConnector::executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
-
+  
   sql <- SqlRender::loadRenderTranslateSql(
     sqlFilename = "CreateCohortTable.sql",
     packageName = "MethodEvaluation",
@@ -313,7 +313,7 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
     cohort_table = nestingTable
   )
   DatabaseConnector::executeSql(connection, sql, progressBar = FALSE, reportOverallTime = FALSE)
-
+  
   complexOutcomeCohorts <- data.frame(
     sqlName = c("acute_pancreatitis", "gi_bleed", "stroke", "ibd"),
     cohortId = c(1, 2, 3, 4)
@@ -339,32 +339,32 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
     distinct(cohortId = .data$outcomeId) %>%
     pull()
   sql <- SqlRender::loadRenderTranslateSql("NegativeControls.sql",
-    "MethodEvaluation",
-    dbms = connectionDetails$dbms,
-    tempEmulationSchema = tempEmulationSchema,
-    cdm_database_schema = cdmDatabaseSchema,
-    target_database_schema = outcomeDatabaseSchema,
-    target_cohort_table = outcomeTable,
-    outcome_ids = otherOutcomeCohortIds
+                                           "MethodEvaluation",
+                                           dbms = connectionDetails$dbms,
+                                           tempEmulationSchema = tempEmulationSchema,
+                                           cdm_database_schema = cdmDatabaseSchema,
+                                           target_database_schema = outcomeDatabaseSchema,
+                                           target_cohort_table = outcomeTable,
+                                           outcome_ids = otherOutcomeCohortIds
   )
   DatabaseConnector::executeSql(connection, sql)
   outcomeCohorts <- ohdsiNegativeControls %>%
     distinct(cohortId = .data$outcomeId, cohortName = .data$outcomeName)
-
+  
   ParallelLogger::logInfo("Creating nesting cohorts")
   nestingCohorts <- ohdsiNegativeControls %>%
     distinct(cohortId = .data$nestingId, cohortName = .data$nestingName)
   sql <- SqlRender::loadRenderTranslateSql("NestingCohorts.sql",
-    "MethodEvaluation",
-    dbms = connectionDetails$dbms,
-    tempEmulationSchema = tempEmulationSchema,
-    cdm_database_schema = cdmDatabaseSchema,
-    target_database_schema = nestingDatabaseSchema,
-    target_cohort_table = nestingTable,
-    nesting_ids = nestingCohorts$cohortId
+                                           "MethodEvaluation",
+                                           dbms = connectionDetails$dbms,
+                                           tempEmulationSchema = tempEmulationSchema,
+                                           cdm_database_schema = cdmDatabaseSchema,
+                                           target_database_schema = nestingDatabaseSchema,
+                                           target_cohort_table = nestingTable,
+                                           nesting_ids = nestingCohorts$cohortId
   )
   DatabaseConnector::executeSql(connection, sql)
-
+  
   exposureCohorts <- bind_rows(
     ohdsiNegativeControls %>%
       distinct(cohortId = .data$targetId, cohortName = .data$targetName),
@@ -372,7 +372,7 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
       distinct(cohortId = .data$comparatorId, cohortName = .data$comparatorName)
   ) %>%
     distinct()
-
+  
   ParallelLogger::logInfo("Counting cohorts")
   exposureCohortCounts <- countDrugEras(
     connection = connection,
@@ -489,7 +489,7 @@ countDrugEras <- function(connection, cdmDatabaseSchema, cohortIds) {
 #' @param workFolder               Name of local folder to place intermediary results; make sure to use
 #'                                 forward slashes (/). Do not use a folder on a network drive since
 #'                                 this greatly impacts performance.
-#' @param riskWindowStart          The start day of the risk window releative to the exposure start. Should be
+#' @param riskWindowStart          The start day of the risk window relative to the exposure start. Should be
 #'                                 kept at 0 for maximum comparability.
 #' @param summaryFileName          The name of the CSV file where to store the summary of the final set
 #'                                 of positive and negative controls.
@@ -530,15 +530,15 @@ synthesizeReferenceSetPositiveControls <- function(connectionDetails,
   if (!file.exists(injectionFolder)) {
     dir.create(injectionFolder)
   }
-
+  
   injectionSummaryFile <- file.path(workFolder, "injectionSummary.rds")
   if (referenceSet == "ohdsiMethodsBenchmark") {
     negativeControls <- readRDS(system.file("ohdsiNegativeControls.rds",
-      package = "MethodEvaluation"
+                                            package = "MethodEvaluation"
     ))
   } else {
     negativeControls <- readRDS(system.file("ohdsiDevelopmentNegativeControls.rds",
-      package = "MethodEvaluation"
+                                            package = "MethodEvaluation"
     ))
   }
   if (!file.exists(injectionSummaryFile)) {
@@ -547,9 +547,9 @@ synthesizeReferenceSetPositiveControls <- function(connectionDetails,
       outcomeId = negativeControls$outcomeId
     )
     exposureOutcomePairs <- unique(exposureOutcomePairs)
-
+    
     prior <- Cyclops::createPrior("laplace", exclude = 0, useCrossValidation = TRUE)
-
+    
     control <- Cyclops::createControl(
       cvType = "auto",
       startingVariance = 0.01,
@@ -557,7 +557,7 @@ synthesizeReferenceSetPositiveControls <- function(connectionDetails,
       cvRepetitions = 1,
       threads = min(c(10, maxCores))
     )
-
+    
     covariateSettings <- FeatureExtraction::createCovariateSettings(
       useDemographicsAgeGroup = TRUE,
       useDemographicsGender = TRUE,
@@ -574,39 +574,39 @@ synthesizeReferenceSetPositiveControls <- function(connectionDetails,
       longTermStartDays = 365,
       endDays = 0
     )
-
+    
     result <- synthesizePositiveControls(connectionDetails,
-      cdmDatabaseSchema = cdmDatabaseSchema,
-      tempEmulationSchema = tempEmulationSchema,
-      exposureDatabaseSchema = exposureDatabaseSchema,
-      exposureTable = exposureTable,
-      outcomeDatabaseSchema = outcomeDatabaseSchema,
-      outcomeTable = outcomeTable,
-      outputDatabaseSchema = outcomeDatabaseSchema,
-      outputTable = outcomeTable,
-      createOutputTable = FALSE,
-      outputIdOffset = 10000,
-      exposureOutcomePairs = exposureOutcomePairs,
-      firstExposureOnly = FALSE,
-      firstOutcomeOnly = TRUE,
-      removePeopleWithPriorOutcomes = TRUE,
-      modelType = "survival",
-      washoutPeriod = 365,
-      riskWindowStart = riskWindowStart,
-      riskWindowEnd = 0,
-      endAnchor = "cohort end",
-      minDaysAtRisk = 1,
-      effectSizes = c(1.5, 2, 4),
-      precision = 0.01,
-      prior = prior,
-      control = control,
-      maxSubjectsForModel = 250000,
-      minOutcomeCountForModel = 100,
-      minOutcomeCountForInjection = 25,
-      workFolder = injectionFolder,
-      modelThreads = max(1, round(maxCores / 8)),
-      generationThreads = min(3, maxCores),
-      covariateSettings = covariateSettings
+                                         cdmDatabaseSchema = cdmDatabaseSchema,
+                                         tempEmulationSchema = tempEmulationSchema,
+                                         exposureDatabaseSchema = exposureDatabaseSchema,
+                                         exposureTable = exposureTable,
+                                         outcomeDatabaseSchema = outcomeDatabaseSchema,
+                                         outcomeTable = outcomeTable,
+                                         outputDatabaseSchema = outcomeDatabaseSchema,
+                                         outputTable = outcomeTable,
+                                         createOutputTable = FALSE,
+                                         outputIdOffset = 10000,
+                                         exposureOutcomePairs = exposureOutcomePairs,
+                                         firstExposureOnly = FALSE,
+                                         firstOutcomeOnly = TRUE,
+                                         removePeopleWithPriorOutcomes = TRUE,
+                                         modelType = "survival",
+                                         washoutPeriod = 365,
+                                         riskWindowStart = riskWindowStart,
+                                         riskWindowEnd = 0,
+                                         endAnchor = "cohort end",
+                                         minDaysAtRisk = 1,
+                                         effectSizes = c(1.5, 2, 4),
+                                         precision = 0.01,
+                                         prior = prior,
+                                         control = control,
+                                         maxSubjectsForModel = 250000,
+                                         minOutcomeCountForModel = 100,
+                                         minOutcomeCountForInjection = 25,
+                                         workFolder = injectionFolder,
+                                         modelThreads = max(1, round(maxCores / 8)),
+                                         generationThreads = min(3, maxCores),
+                                         covariateSettings = covariateSettings
     )
     saveRDS(result, injectionSummaryFile)
   }

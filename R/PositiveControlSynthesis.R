@@ -97,14 +97,14 @@
 #' @param riskWindowEnd                   The end of the risk window (in days) relative to the endAnchor.
 #' @param endAnchor                       The anchor point for the end of the risk window. Can be
 #'                                        "cohort start" or "cohort end".
-#' @param minDaysAtRisk                   The minimum days at risk. Any risk period shorter than this 
-#'                                        will be removed before model fitting and signal injection. 
-#'                                        This is especially helpful when your data contains many 
+#' @param minDaysAtRisk                   The minimum days at risk. Any risk period shorter than this
+#'                                        will be removed before model fitting and signal injection.
+#'                                        This is especially helpful when your data contains many
 #'                                        exposures where start date = end date, and we want to ignore
 #'                                        those.
 #' @param addIntentToTreat                If true, the signal will not only be injected in the primary
 #'                                        time at risk, but also after the time at risk (up until the
-#'                                        obseration period end). In both time periods, the target
+#'                                        observation period end). In both time periods, the target
 #'                                        effect size will be enforced. This allows the same positive
 #'                                        control synthesis to be used in both on treatment and
 #'                                        intent-to-treat analysis variants. However, this will
@@ -117,7 +117,7 @@
 #' @param maxSubjectsForModel             Maximum number of people used to fit an outcome model.
 #' @param effectSizes                     A numeric vector of effect sizes that should be inserted.
 #' @param outputDatabaseSchema            The name of the database schema that is the location of the
-#'                                        tables containing the new outcomesRequires write permissions
+#'                                        tables containing the new outcomes. Requires write permissions
 #'                                        to this database.
 #' @param outputTable                     The name of the table names that will contain the generated
 #'                                        outcome cohorts.
@@ -246,55 +246,61 @@ synthesizePositiveControls <- function(connectionDetails,
   if (!file.exists(workFolder)) {
     dir.create(workFolder)
   }
-  result <- loadDataFitModels(connectionDetails = connectionDetails,
-                              cdmDatabaseSchema = cdmDatabaseSchema,
-                              tempEmulationSchema = tempEmulationSchema,
-                              exposureDatabaseSchema = exposureDatabaseSchema,
-                              exposureTable = exposureTable,
-                              outcomeDatabaseSchema = outcomeDatabaseSchema,
-                              outcomeTable = outcomeTable,
-                              exposureOutcomePairs = exposureOutcomePairs,
-                              modelType = modelType,
-                              minOutcomeCountForModel = minOutcomeCountForModel,
-                              minModelCount = minModelCount,
-                              covariateSettings = covariateSettings,
-                              prior = prior,
-                              control = control,
-                              firstExposureOnly = firstExposureOnly,
-                              washoutPeriod = washoutPeriod,
-                              riskWindowStart = riskWindowStart,
-                              riskWindowEnd = riskWindowEnd,
-                              endAnchor = endAnchor,
-                              minDaysAtRisk = minDaysAtRisk,
-                              firstOutcomeOnly = firstOutcomeOnly,
-                              removePeopleWithPriorOutcomes = removePeopleWithPriorOutcomes,
-                              maxSubjectsForModel = maxSubjectsForModel,
-                              effectSizes = effectSizes,
-                              outputIdOffset = outputIdOffset,
-                              workFolder = workFolder,
-                              modelThreads = modelThreads)
+  result <- loadDataFitModels(
+    connectionDetails = connectionDetails,
+    cdmDatabaseSchema = cdmDatabaseSchema,
+    tempEmulationSchema = tempEmulationSchema,
+    exposureDatabaseSchema = exposureDatabaseSchema,
+    exposureTable = exposureTable,
+    outcomeDatabaseSchema = outcomeDatabaseSchema,
+    outcomeTable = outcomeTable,
+    exposureOutcomePairs = exposureOutcomePairs,
+    modelType = modelType,
+    minOutcomeCountForModel = minOutcomeCountForModel,
+    minModelCount = minModelCount,
+    covariateSettings = covariateSettings,
+    prior = prior,
+    control = control,
+    firstExposureOnly = firstExposureOnly,
+    washoutPeriod = washoutPeriod,
+    riskWindowStart = riskWindowStart,
+    riskWindowEnd = riskWindowEnd,
+    endAnchor = endAnchor,
+    minDaysAtRisk = minDaysAtRisk,
+    firstOutcomeOnly = firstOutcomeOnly,
+    removePeopleWithPriorOutcomes = removePeopleWithPriorOutcomes,
+    maxSubjectsForModel = maxSubjectsForModel,
+    effectSizes = effectSizes,
+    outputIdOffset = outputIdOffset,
+    workFolder = workFolder,
+    modelThreads = modelThreads
+  )
   
-  result <- generateAllOutcomes(workFolder = workFolder,
-                                generationThreads = generationThreads,
-                                minOutcomeCountForInjection = minOutcomeCountForInjection,
-                                removePeopleWithPriorOutcomes = removePeopleWithPriorOutcomes,
-                                modelType = modelType,
-                                effectSizes = effectSizes,
-                                precision = precision,
-                                addIntentToTreat = addIntentToTreat,
-                                result = result)
+  result <- generateAllOutcomes(
+    workFolder = workFolder,
+    generationThreads = generationThreads,
+    minOutcomeCountForInjection = minOutcomeCountForInjection,
+    removePeopleWithPriorOutcomes = removePeopleWithPriorOutcomes,
+    modelType = modelType,
+    effectSizes = effectSizes,
+    precision = precision,
+    addIntentToTreat = addIntentToTreat,
+    result = result
+  )
   summaryFile <- file.path(workFolder, "summary.rds")
   saveRDS(result, summaryFile)
   if (is.null(getOption("skipPositiveControlUpload")) || !getOption("skipPositiveControlUpload")) {
-    insertOutcomes(connectionDetails = connectionDetails,
-                   cdmDatabaseSchema = cdmDatabaseSchema,
-                   outputDatabaseSchema = outputDatabaseSchema,
-                   outputTable = outputTable,
-                   outcomeDatabaseSchema = outcomeDatabaseSchema,
-                   outcomeTable = outcomeTable,
-                   tempEmulationSchema = tempEmulationSchema,
-                   createOutputTable = createOutputTable,
-                   result = result) 
+    insertOutcomes(
+      connectionDetails = connectionDetails,
+      cdmDatabaseSchema = cdmDatabaseSchema,
+      outputDatabaseSchema = outputDatabaseSchema,
+      outputTable = outputTable,
+      outcomeDatabaseSchema = outcomeDatabaseSchema,
+      outcomeTable = outcomeTable,
+      tempEmulationSchema = tempEmulationSchema,
+      createOutputTable = createOutputTable,
+      result = result
+    )
   }
   return(result)
 }
@@ -325,7 +331,7 @@ loadDataFitModels <- function(connectionDetails,
                               effectSizes,
                               outputIdOffset,
                               workFolder,
-                              modelThreads){
+                              modelThreads) {
   # Find all exposures for each outcome, then identify unique groups of exposures
   group <- function(outcomeId) {
     exposureIds <- exposureOutcomePairs$exposureId[exposureOutcomePairs$outcomeId == outcomeId]
@@ -354,56 +360,64 @@ loadDataFitModels <- function(connectionDetails,
   connection <- DatabaseConnector::connect(connectionDetails)
   on.exit(DatabaseConnector::disconnect(connection))
   
-  result <- loadDataForSynthesis(connection = connection,
-                                 cdmDatabaseSchema = cdmDatabaseSchema,
-                                 tempEmulationSchema = tempEmulationSchema,
-                                 exposureDatabaseSchema = exposureDatabaseSchema,
-                                 exposureTable = exposureTable,
-                                 outcomeDatabaseSchema = outcomeDatabaseSchema,
-                                 outcomeTable = outcomeTable,
-                                 exposureOutcomePairs = exposureOutcomePairs,
-                                 modelType = modelType,
-                                 firstExposureOnly = firstExposureOnly,
-                                 washoutPeriod = washoutPeriod,
-                                 riskWindowStart = riskWindowStart,
-                                 riskWindowEnd = riskWindowEnd,
-                                 endAnchor = endAnchor,
-                                 minDaysAtRisk = minDaysAtRisk,
-                                 firstOutcomeOnly = firstOutcomeOnly,
-                                 removePeopleWithPriorOutcomes = removePeopleWithPriorOutcomes,
-                                 workFolder = workFolder,
-                                 result = result) 
+  result <- loadDataForSynthesis(
+    connection = connection,
+    cdmDatabaseSchema = cdmDatabaseSchema,
+    tempEmulationSchema = tempEmulationSchema,
+    exposureDatabaseSchema = exposureDatabaseSchema,
+    exposureTable = exposureTable,
+    outcomeDatabaseSchema = outcomeDatabaseSchema,
+    outcomeTable = outcomeTable,
+    exposureOutcomePairs = exposureOutcomePairs,
+    modelType = modelType,
+    firstExposureOnly = firstExposureOnly,
+    washoutPeriod = washoutPeriod,
+    riskWindowStart = riskWindowStart,
+    riskWindowEnd = riskWindowEnd,
+    endAnchor = endAnchor,
+    minDaysAtRisk = minDaysAtRisk,
+    firstOutcomeOnly = firstOutcomeOnly,
+    removePeopleWithPriorOutcomes = removePeopleWithPriorOutcomes,
+    workFolder = workFolder,
+    result = result
+  )
   
-  getCovariatesForModels(connection = connection,
-                         cdmDatabaseSchema = cdmDatabaseSchema,
-                         tempEmulationSchema = tempEmulationSchema,
-                         covariateSettings = covariateSettings,
-                         maxSubjectsForModel = maxSubjectsForModel,
-                         workFolder = workFolder,
-                         uniqueGroups = uniqueGroups)
+  getCovariatesForModels(
+    connection = connection,
+    cdmDatabaseSchema = cdmDatabaseSchema,
+    tempEmulationSchema = tempEmulationSchema,
+    covariateSettings = covariateSettings,
+    maxSubjectsForModel = maxSubjectsForModel,
+    workFolder = workFolder,
+    uniqueGroups = uniqueGroups
+  )
   
-  result <- buildModels(outcomeIdToGroupId = outcomeIdToGroupId,
-                        uniqueGroups = uniqueGroups,
-                        exposureOutcomePairs = exposureOutcomePairs,
-                        effectSizes = effectSizes,
-                        minModelCount = minModelCount,
-                        minOutcomeCountForModel = minOutcomeCountForModel,
-                        workFolder = workFolder,
-                        modelThreads = modelThreads,
-                        removePeopleWithPriorOutcomes = removePeopleWithPriorOutcomes,
-                        modelType = modelType,
-                        prior = prior,
-                        control = control,
-                        result = result) 
+  result <- buildModels(
+    outcomeIdToGroupId = outcomeIdToGroupId,
+    uniqueGroups = uniqueGroups,
+    exposureOutcomePairs = exposureOutcomePairs,
+    effectSizes = effectSizes,
+    minModelCount = minModelCount,
+    minOutcomeCountForModel = minOutcomeCountForModel,
+    workFolder = workFolder,
+    modelThreads = modelThreads,
+    removePeopleWithPriorOutcomes = removePeopleWithPriorOutcomes,
+    modelType = modelType,
+    prior = prior,
+    control = control,
+    result = result
+  )
   
-  getCovariatesOutsideSample(uniqueGroups = uniqueGroups,
-                             outcomeIdToGroupId = outcomeIdToGroupId,
-                             connection = connection,
-                             cdmDatabaseSchema = cdmDatabaseSchema,
-                             tempEmulationSchema = tempEmulationSchema,
-                             covariateSettings = covariateSettings,
-                             workFolder = workFolder,
-                             result = result)
+  getCovariatesOutsideSample(
+    uniqueGroups = uniqueGroups,
+    outcomeIdToGroupId = outcomeIdToGroupId,
+    connection = connection,
+    cdmDatabaseSchema = cdmDatabaseSchema,
+    tempEmulationSchema = tempEmulationSchema,
+    covariateSettings = covariateSettings,
+    workFolder = workFolder,
+    result = result
+  )
   
   sql <- "TRUNCATE TABLE #cohort_person; DROP TABLE #cohort_person;"
   sql <- SqlRender::translate(sql, targetDialect = DatabaseConnector::dbms(connection), tempEmulationSchema = tempEmulationSchema)
@@ -628,7 +642,6 @@ getCovariatesForModels <- function(connection,
                                    maxSubjectsForModel,
                                    workFolder,
                                    uniqueGroups) {
-  
   # Fetch covariates for each group of exposures
   for (i in 1:length(uniqueGroups)) {
     covarFileName <- file.path(workFolder, sprintf("covarsForModel_g%s.zip", i))
@@ -892,7 +905,7 @@ getCovariatesOutsideSample <- function(uniqueGroups,
                                        covariateSettings,
                                        workFolder,
                                        result) {
-  # Fetch covariates for all rows if covars for model were based on a sample 
+  # Fetch covariates for all rows if covars for model were based on a sample
   for (i in 1:length(uniqueGroups)) {
     sampledExposuresFile <- file.path(workFolder, sprintf("sampledRowIds_g%s.rds", i))
     covarFileName <- file.path(workFolder, sprintf("covarsForPrediction_g%s.zip", i))
@@ -1080,8 +1093,10 @@ generateOutcomes <- function(task,
     exposures <- exposures |>
       left_join(outcomes, by = join_by("rowId"))
     exposures <- exposures |>
-      mutate(y = if_else(is.na(.data$y), 0, .data$y),
-             yItt = if_else(is.na(.data$yItt), 0, .data$yItt))
+      mutate(
+        y = if_else(is.na(.data$y), 0, .data$y),
+        yItt = if_else(is.na(.data$yItt), 0, .data$yItt)
+      )
     for (fxSizeIdx in 1:length(effectSizes)) {
       effectSize <- effectSizes[fxSizeIdx]
       if (effectSize == 1) {
@@ -1104,7 +1119,7 @@ generateOutcomes <- function(task,
           newOutcomes <- readRDS(outcomesToInjectFile)
         } else {
           if (modelType == "poisson") {
-            newOutcomes <- injectPoisson(exposures, effectSize, precision)
+            newOutcomes <- injectPoisson(exposures, effectSize, precision, resultSubset)
           } else {
             newOutcomes <- injectSurvival(exposures, effectSize, precision, addIntentToTreat)
           }
@@ -1123,9 +1138,9 @@ generateOutcomes <- function(task,
           ", injected RR =",
           attr(newOutcomes, "injectedRr"),
           ", injected RR during first exposure only =",
-          attr(newOutcomes, "injectedRrFirstExposure") ,
+          attr(newOutcomes, "injectedRrFirstExposure"),
           ", injected RR during ITT window =",
-          attr(newOutcomes, "injectedRrItt") 
+          attr(newOutcomes, "injectedRrItt")
         ))
       }
       idx <- resultSubset$targetEffectSize == effectSize
@@ -1139,7 +1154,7 @@ generateOutcomes <- function(task,
   }
 }
 
-injectPoisson <- function(exposures, effectSize, precision, addIntentToTreat) {
+injectPoisson <- function(exposures, effectSize, precision, resultSubset) {
   targetCount <- resultSubset$observedOutcomes[1] * (effectSize - 1)
   time <- exposures$daysAtRisk + 1
   newOutcomeCounts <- 0

@@ -47,8 +47,8 @@ stratification.
 \code{logRr}, \code{seLogRr}, \code{ci95Lb}, and \code{ci95Ub} correspond to the log of the effect
 estimate (e.g. the hazard ratio), the standard error, and the upper and lower bound of the effect
 size estimate, as produced by the method.
-\code{method} is a character string identifyign the method (e.g. "CohortMethod").
-\code{comparative} is a boolean indicating whether the analysis can also be considerd to perform
+\code{method} is a character string identifying the method (e.g. "CohortMethod").
+\code{comparative} is a boolean indicating whether the analysis can also be considered to perform
 comparative effect estimation (comparing the target to the comparator).
 \code{nesting} is a boolean indicating whether the analysis is nested in the nesting cohorts
 identified in the gold standard.

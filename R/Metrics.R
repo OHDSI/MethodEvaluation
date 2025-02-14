@@ -52,7 +52,7 @@ computeMetrics <- function(logRr, seLogRr = NULL, ci95Lb = NULL, ci95Ub = NULL, 
   checkmate::assertNumeric(p, len = length(logRr), null.ok = TRUE, add = errorMessages)
   checkmate::assertNumeric(trueLogRr, len = length(logRr), add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
-  
+
   if (is.null(seLogRr) && is.null(ci95Lb)) {
     stop("Must specify either standard error or confidence interval")
   }
@@ -78,14 +78,14 @@ computeMetrics <- function(logRr, seLogRr = NULL, ci95Lb = NULL, ci95Ub = NULL, 
   } else {
     data$p <- p
   }
-  
+
   idx <- is.na(data$logRr) | is.infinite(data$logRr) | is.na(data$seLogRr) | is.infinite(data$seLogRr)
   data$logRr[idx] <- 0
   data$seLogRr[idx] <- 999
   data$ci95Lb[idx] <- 0
   data$ci95Ub[idx] <- 999
   data$p[idx] <- 1
-  
+
   nonEstimable <- round(mean(data$seLogRr >= 99), 2)
   positive <- data$trueLogRr > 0
   if (all(positive) | all(!positive)) {
@@ -143,8 +143,8 @@ computeMetrics <- function(logRr, seLogRr = NULL, ci95Lb = NULL, ci95Ub = NULL, 
 #' \code{logRr}, \code{seLogRr}, \code{ci95Lb}, and \code{ci95Ub} correspond to the log of the effect
 #' estimate (e.g. the hazard ratio), the standard error, and the upper and lower bound of the effect
 #' size estimate, as produced by the method.
-#' \code{method} is a character string identifyign the method (e.g. "CohortMethod").
-#' \code{comparative} is a boolean indicating whether the analysis can also be considerd to perform
+#' \code{method} is a character string identifying the method (e.g. "CohortMethod").
+#' \code{comparative} is a boolean indicating whether the analysis can also be considered to perform
 #' comparative effect estimation (comparing the target to the comparator).
 #' \code{nesting} is a boolean indicating whether the analysis is nested in the nesting cohorts
 #' identified in the gold standard.
@@ -211,19 +211,19 @@ packageOhdsiBenchmarkResults <- function(estimates,
   checkmate::assertCharacter(databaseName, len = 1, add = errorMessages)
   checkmate::assertCharacter(exportFolder, len = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
-  
+
   if (!file.exists(exportFolder)) {
     dir.create(exportFolder, recursive = TRUE)
   }
-  
+
   # Create full grid of controls (including those that did not make it in the database:
   if (referenceSet == "ohdsiMethodsBenchmark") {
     ohdsiNegativeControls <- readRDS(system.file("ohdsiNegativeControls.rds",
-                                                 package = "MethodEvaluation"
+      package = "MethodEvaluation"
     ))
   } else {
     ohdsiNegativeControls <- readRDS(system.file("ohdsiDevelopmentNegativeControls.rds",
-                                                 package = "MethodEvaluation"
+      package = "MethodEvaluation"
     ))
   }
   ohdsiNegativeControls$oldOutcomeId <- ohdsiNegativeControls$outcomeId
@@ -251,7 +251,7 @@ packageOhdsiBenchmarkResults <- function(estimates,
     fullGrid$targetEffectSize[idx]
   )
   allControls <- merge(controlSummary, fullGrid, all.y = TRUE)
-  
+
   .packageBenchmarkResults(
     allControls = allControls,
     analysisRef = analysisRef,
@@ -287,14 +287,15 @@ packageOhdsiBenchmarkResults <- function(estimates,
       by = join_by("analysisId")
     ) %>%
     mutate(database = databaseName)
-  
+
   # Perform empirical calibration:
   # subset = subsets[[5]]
   calibrate <- function(subset) {
     subset <- subset %>%
       mutate(leaveOutUnit = if_else(.data$type == "Exposure control",
-                                    paste(.data$targetId, .data$oldOutcomeId),
-                                    as.character(.data$oldOutcomeId)))
+        paste(.data$targetId, .data$oldOutcomeId),
+        as.character(.data$oldOutcomeId)
+      ))
     filterSubset <- subset[!is.na(subset$seLogRr) & !is.infinite(subset$seLogRr), ]
     if (nrow(filterSubset) < 5 || length(unique(filterSubset$targetEffectSize)) < 2) {
       subset$calLogRr <- rep(NA, nrow(subset))
@@ -319,7 +320,7 @@ packageOhdsiBenchmarkResults <- function(estimates,
           model = model
         )
         null <- EmpiricalCalibration::fitNull(logRr = subsetMinusOne$logRr[subsetMinusOne$targetEffectSize ==
-                                                                             1], seLogRr = subsetMinusOne$seLogRr[subsetMinusOne$targetEffectSize == 1])
+          1], seLogRr = subsetMinusOne$seLogRr[subsetMinusOne$targetEffectSize == 1])
         caliP <- EmpiricalCalibration::calibrateP(
           null = null,
           logRr = one$logRr,
@@ -396,7 +397,7 @@ packageOhdsiBenchmarkResults <- function(estimates,
 #' \code{logRr}, \code{seLogRr}, \code{ci95Lb}, and \code{ci95Ub} correspond to the log of the effect
 #' estimate (e.g. the hazard ratio), the standard error, and the upper and lower bound of the effect
 #' size estimate, as produced by the method.
-#' \code{method} is a character string identifyign the method (e.g. "CohortMethod").
+#' \code{method} is a character string identifying the method (e.g. "CohortMethod").
 #' \code{comparative} is a boolean indicating whether the analysis can also be considerd to perform
 #' comparative effect estimation (comparing the target to the comparator).
 #' \code{nesting} is a boolean indicating whether the analysis is nested in the nesting cohorts
@@ -441,12 +442,12 @@ packageCustomBenchmarkResults <- function(estimates,
   checkmate::assertNames(
     colnames(synthesisSummary),
     must.include = c(
-      "exposureId", 
-      "outcomeId", 
-      "targetEffectSize", 
-      "newOutcomeId", 
-      "trueEffectSize", 
-      "trueEffectSizeFirstExposure", 
+      "exposureId",
+      "outcomeId",
+      "targetEffectSize",
+      "newOutcomeId",
+      "trueEffectSize",
+      "trueEffectSizeFirstExposure",
       "trueEffectSizeItt"
     ),
     add = errorMessages
@@ -456,7 +457,7 @@ packageCustomBenchmarkResults <- function(estimates,
     checkmate::assertNames(
       colnames(mdrr),
       must.include = c(
-        "exposureId", 
+        "exposureId",
         "outcomeId"
       ),
       add = errorMessages
@@ -477,7 +478,7 @@ packageCustomBenchmarkResults <- function(estimates,
   checkmate::assertCharacter(databaseName, len = 1, add = errorMessages)
   checkmate::assertCharacter(exportFolder, len = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
-  
+
   trueEffecSizes <- c(1, unique(synthesisSummary$targetEffectSize))
   negativeControls <- negativeControls %>%
     mutate(stratum = if_else(.data$type == "Outcome control", .data$targetId, .data$outcomeId)) %>%
@@ -505,8 +506,8 @@ packageCustomBenchmarkResults <- function(estimates,
     }
     allControls <- allControls %>%
       left_join(
-        mdrr %>% 
-          rename(targetId = "exposureId"), 
+        mdrr %>%
+          rename(targetId = "exposureId"),
         by = c("targetId", "outcomeId")
       )
   }
@@ -521,7 +522,7 @@ packageCustomBenchmarkResults <- function(estimates,
 
 # exportFolder <- 'r:/MethodsLibraryPleEvaluation_ccae/export'
 
-#' Generate perfomance metrics for the OHDSI Methods Benchmark
+#' Generate performance metrics for the OHDSI Methods Benchmark
 #'
 #' @param exportFolder     The folder containing the CSV files created using the
 #'                         \code{\link{packageOhdsiBenchmarkResults}} function. This folder can contain
@@ -556,7 +557,7 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder,
   checkmate::assertLogical(calibrated, len = 1, add = errorMessages)
   checkmate::assertLogical(comparative, len = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
-  
+
   # Load and prepare estimates of all methods
   files <- list.files(exportFolder, "estimates.*csv", full.names = TRUE)
   estimates <- lapply(files, read.csv)
@@ -578,12 +579,12 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder,
   estimates$calCi95Lb[idx] <- 0
   estimates$calCi95Ub[idx] <- 999
   estimates$calP[is.na(estimates$calP)] <- 1
-  
+
   # Load and prepare analysis refs
   files <- list.files(exportFolder, "analysisRef.*csv", full.names = TRUE)
   analysisRef <- lapply(files, read.csv)
   analysisRef <- do.call("rbind", analysisRef)
-  
+
   # Apply selection criteria
   subset <- estimates
   if (mdrr != "All") {
@@ -602,7 +603,7 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder,
     subset$ci95Ub <- subset$calCi95Ub
     subset$p <- subset$calP
   }
-  
+
   # Compute metrics
   combis <- unique(subset[, c("database", "method", "analysisId")])
   if (trueEffectSize == "Overall") {
@@ -634,7 +635,7 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder,
     # trueRr <- input$trueRr
     computeMetrics <- function(i) {
       forEval <- subset[subset$method == combis$method[i] & subset$analysisId == combis$analysisId[i] &
-                          subset$targetEffectSize == trueEffectSize, ]
+        subset$targetEffectSize == trueEffectSize, ]
       mse <- round(mean((forEval$logRr - log(forEval$trueEffectSize))^2), 2)
       coverage <- round(
         mean(forEval$ci95Lb < forEval$trueEffectSize & forEval$ci95Ub > forEval$trueEffectSize),
@@ -648,7 +649,7 @@ computeOhdsiBenchmarkMetrics <- function(exportFolder,
         nonEstimable <- round(mean(forEval$seLogRr == 999), 2)
       } else {
         negAndPos <- subset[subset$method == combis$method[i] & subset$analysisId == combis$analysisId[i] &
-                              (subset$targetEffectSize == trueEffectSize | subset$targetEffectSize == 1), ]
+          (subset$targetEffectSize == trueEffectSize | subset$targetEffectSize == 1), ]
         roc <- pROC::roc(negAndPos$targetEffectSize > 1, negAndPos$logRr, algorithm = 3)
         auc <- round(pROC::auc(roc), 2)
         type1 <- NA

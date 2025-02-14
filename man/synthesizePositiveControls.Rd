@@ -87,7 +87,7 @@ COHORT_START_DATE, COHORT_END_DATE, COHORT_CONCEPT_ID (CDM
 v4) or COHORT_DEFINITION_ID (CDM v5 and higher).}
 
 \item{outputDatabaseSchema}{The name of the database schema that is the location of the
-tables containing the new outcomesRequires write permissions
+tables containing the new outcomes. Requires write permissions
 to this database.}
 
 \item{outputTable}{The name of the table names that will contain the generated
@@ -145,15 +145,15 @@ first day of exposure.}
 \item{endAnchor}{The anchor point for the end of the risk window. Can be
 "cohort start" or "cohort end".}
 
-\item{minDaysAtRisk}{The minimum days at risk. Any risk period shorter than this 
-will be removed before model fitting and signal injection. 
-This is especially helpful when your data contains many 
+\item{minDaysAtRisk}{The minimum days at risk. Any risk period shorter than this
+will be removed before model fitting and signal injection.
+This is especially helpful when your data contains many
 exposures where start date = end date, and we want to ignore
 those.}
 
 \item{addIntentToTreat}{If true, the signal will not only be injected in the primary
 time at risk, but also after the time at risk (up until the
-obseration period end). In both time periods, the target
+observation period end). In both time periods, the target
 effect size will be enforced. This allows the same positive
 control synthesis to be used in both on treatment and
 intent-to-treat analysis variants. However, this will

@@ -31,7 +31,7 @@ launchMethodEvaluationApp <- function(exportFolder, launch.browser = TRUE) {
   checkmate::assertCharacter(exportFolder, len = 1, add = errorMessages)
   checkmate::assertLogical(launch.browser, len = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
-
+  
   ensure_installed("DT")
   appDir <- system.file("shinyApps", "MethodEvalViewer", package = "MethodEvaluation")
   shinySettings <- list(exportFolder = exportFolder)

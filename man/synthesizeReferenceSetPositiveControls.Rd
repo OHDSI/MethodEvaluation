@@ -62,7 +62,7 @@ available this can speed up the analyses.}
 forward slashes (/). Do not use a folder on a network drive since
 this greatly impacts performance.}
 
-\item{riskWindowStart}{The start day of the risk window releative to the exposure start. Should be
+\item{riskWindowStart}{The start day of the risk window relative to the exposure start. Should be
 kept at 0 for maximum comparability.}
 
 \item{summaryFileName}{The name of the CSV file where to store the summary of the final set

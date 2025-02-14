@@ -2,7 +2,7 @@
 % Please edit documentation in R/Metrics.R
 \name{computeOhdsiBenchmarkMetrics}
 \alias{computeOhdsiBenchmarkMetrics}
-\title{Generate perfomance metrics for the OHDSI Methods Benchmark}
+\title{Generate performance metrics for the OHDSI Methods Benchmark}
 \usage{
 computeOhdsiBenchmarkMetrics(
   exportFolder,
@@ -38,5 +38,5 @@ If FALSE, they will be evaluated on the task of effect estimation.}
 A data frame with the various metrics per method - analysisId - database combination.
 }
 \description{
-Generate perfomance metrics for the OHDSI Methods Benchmark
+Generate performance metrics for the OHDSI Methods Benchmark
 }

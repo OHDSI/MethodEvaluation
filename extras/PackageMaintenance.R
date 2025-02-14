@@ -22,7 +22,7 @@ devtools::spell_check()
 
 # Create manual and vignettes ----------------------------------------------
 unlink("extras/MethodEvaluation.pdf")
-shell("R CMD Rd2pdf ./ --output=extras/MethodEvaluation.pdf")
+system("R CMD Rd2pdf ./ --output=extras/MethodEvaluation.pdf")
 
 rmarkdown::render("vignettes/OhdsiMethodsBenchmark.Rmd",
                   output_file = "../inst/doc/OhdsiMethodsBenchmark.pdf",

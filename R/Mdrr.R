@@ -130,7 +130,7 @@ computeMdrr <- function(connectionDetails,
     }
     exposurePersonId <- "subject_id"
   }
-
+  
   if (outcomeTable == "condition_era") {
     outcomeStartDate <- "condition_era_start_date"
     outcomeEndDate <- "condition_era_end_date"
@@ -151,48 +151,48 @@ computeMdrr <- function(connectionDetails,
     }
     outcomePersonId <- "subject_id"
   }
-
+  
   conn <- DatabaseConnector::connect(connectionDetails)
   on.exit(DatabaseConnector::disconnect(conn))
-
+  
   renderedSql <- SqlRender::loadRenderTranslateSql("MDRR.sql",
-    packageName = "MethodEvaluation",
-    dbms = connectionDetails$dbms,
-    tempEmulationSchema = tempEmulationSchema,
-    cdm_database_schema = cdmDatabaseSchema,
-    exposures_of_interest = unique(exposureOutcomePairs$exposureId),
-    outcomes_of_interest = unique(exposureOutcomePairs$outcomeId),
-    exposure_database_schema = exposureDatabaseSchema,
-    exposure_table = exposureTable,
-    exposure_start_date = exposureStartDate,
-    exposure_end_date = exposureEndDate,
-    exposure_concept_id = exposureConceptId,
-    exposure_person_id = exposurePersonId,
-    outcome_database_schema = outcomeDatabaseSchema,
-    outcome_table = outcomeTable,
-    outcome_start_date = outcomeStartDate,
-    outcome_end_date = outcomeEndDate,
-    outcome_concept_id = outcomeConceptId,
-    outcome_person_id = outcomePersonId
+                                                   packageName = "MethodEvaluation",
+                                                   dbms = connectionDetails$dbms,
+                                                   tempEmulationSchema = tempEmulationSchema,
+                                                   cdm_database_schema = cdmDatabaseSchema,
+                                                   exposures_of_interest = unique(exposureOutcomePairs$exposureId),
+                                                   outcomes_of_interest = unique(exposureOutcomePairs$outcomeId),
+                                                   exposure_database_schema = exposureDatabaseSchema,
+                                                   exposure_table = exposureTable,
+                                                   exposure_start_date = exposureStartDate,
+                                                   exposure_end_date = exposureEndDate,
+                                                   exposure_concept_id = exposureConceptId,
+                                                   exposure_person_id = exposurePersonId,
+                                                   outcome_database_schema = outcomeDatabaseSchema,
+                                                   outcome_table = outcomeTable,
+                                                   outcome_start_date = outcomeStartDate,
+                                                   outcome_end_date = outcomeEndDate,
+                                                   outcome_concept_id = outcomeConceptId,
+                                                   outcome_person_id = outcomePersonId
   )
-
+  
   message("Computing minimumum detectable relative risks. This could take a while")
   DatabaseConnector::executeSql(conn, renderedSql)
-
+  
   sql <- "SELECT * FROM #mdrr"
   sql <- SqlRender::translate(sql,
-    targetDialect = connectionDetails$dbms,
-    tempEmulationSchema = tempEmulationSchema
+                              targetDialect = connectionDetails$dbms,
+                              tempEmulationSchema = tempEmulationSchema
   )
   mdrr <- DatabaseConnector::querySql(conn, sql, snakeCaseToCamelCase = TRUE)
-
+  
   renderedSql <- SqlRender::loadRenderTranslateSql("MDRR_Drop_temp_tables.sql",
-    packageName = "MethodEvaluation",
-    dbms = connectionDetails$dbms,
-    tempEmulationSchema = tempEmulationSchema
+                                                   packageName = "MethodEvaluation",
+                                                   dbms = connectionDetails$dbms,
+                                                   tempEmulationSchema = tempEmulationSchema
   )
   DatabaseConnector::executeSql(conn, renderedSql, progressBar = FALSE, reportOverallTime = FALSE)
-
+  
   mdrr <- data.frame(
     exposureId = mdrr$drugConceptId,
     outcomeId = mdrr$conditionConceptId,
