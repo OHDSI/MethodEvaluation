@@ -1,4 +1,4 @@
-# Copyright 2025 Observational Health Data Sciences and Informatics
+# Copyright 2026 Observational Health Data Sciences and Informatics
 #
 # This file is part of MethodEvaluation
 #
@@ -556,40 +556,40 @@ loadDataForSynthesis <- function(connection,
     result <- readRDS(countsFile)
   } else {
     ParallelLogger::logInfo("Computing counts per exposure - outcome pair")
-    temp <- select(exposures, .data$rowId, .data$exposureId, .data$eraNumber) %>%
+    temp <- select(exposures, .data$rowId, .data$exposureId, .data$eraNumber) |>
       inner_join(select(outcomeCounts, .data$rowId, .data$outcomeId, .data$y, .data$yItt),
                  by = "rowId"
       )
     if (modelType == "survival") {
-      temp <- temp %>%
+      temp <- temp |>
         mutate(
           y = .data$y != 0,
           yItt = .data$yItt != 0
         )
     }
     generateCounts <- function(outcomeId) {
-      tempOutcomes <- temp %>%
+      tempOutcomes <- temp |>
         filter(.data$outcomeId == !!outcomeId)
       if (removePeopleWithPriorOutcomes) {
-        removeRowIds <- priorOutcomes %>%
-          filter(.data$outcomeId == !!outcomeId) %>%
+        removeRowIds <- priorOutcomes |>
+          filter(.data$outcomeId == !!outcomeId) |>
           pull(.data$rowId)
-        tempOutcomes <- tempOutcomes %>%
+        tempOutcomes <- tempOutcomes |>
           filter(!.data$rowId %in% removeRowIds)
-        tempExposures <- exposures %>%
+        tempExposures <- exposures |>
           filter(!.data$rowId %in% removeRowIds)
       } else {
         tempExposures <- exposures
       }
-      exposureSummary <- tempExposures %>%
-        group_by(.data$exposureId) %>%
+      exposureSummary <- tempExposures |>
+        group_by(.data$exposureId) |>
         summarize(
           exposures = n(),
           firstExposures = sum(.data$eraNumber == 1),
           .groups = "drop_last"
         )
-      outcomeSummary <- tempOutcomes %>%
-        group_by(.data$exposureId) %>%
+      outcomeSummary <- tempOutcomes |>
+        group_by(.data$exposureId) |>
         summarize(
           observedOutcomes = sum(.data$y),
           observedOutcomesFirstExposure = sum(.data$y & .data$eraNumber == 1),
@@ -597,13 +597,13 @@ loadDataForSynthesis <- function(connection,
           observedOutcomesFirstExposureItt = sum(.data$yItt & .data$eraNumber == 1),
           .groups = "drop_last"
         )
-      resultRows <- exposureSummary %>%
-        left_join(outcomeSummary, by = "exposureId") %>%
+      resultRows <- exposureSummary |>
+        left_join(outcomeSummary, by = "exposureId") |>
         mutate(outcomeId = !!outcomeId)
       return(resultRows)
     }
     resultRows <- purrr::map_dfr(unique(result$outcomeId), generateCounts)
-    result <- left_join(result, resultRows, by = c("exposureId", "outcomeId")) %>%
+    result <- left_join(result, resultRows, by = c("exposureId", "outcomeId")) |>
       mutate(
         exposures = case_when(
           is.na(exposures) ~ as.integer(0),
@@ -818,7 +818,7 @@ fitModel <- function(task,
   exposures <- exposures[!duplicated(exposures[, c("personId", "cohortStartDate")]), ]
   
   covariateData <- FeatureExtraction::loadCovariateData(task$covarFileName)
-  covariates <- covariateData$covariates %>%
+  covariates <- covariateData$covariates |>
     filter(.data$rowId %in% local(exposures$rowId))
   
   if (removePeopleWithPriorOutcomes) {
@@ -826,7 +826,7 @@ fitModel <- function(task,
     removeRowIds <- priorOutcomes$rowId[priorOutcomes$outcomeId == task$outcomeId]
     outcomes <- outcomes[!(outcomes$rowId %in% removeRowIds), ]
     exposures <- exposures[!(exposures$rowId %in% removeRowIds), ]
-    covariates <- covariates %>%
+    covariates <- covariates |>
       filter(!.data$rowId %in% removeRowIds)
   }
   outcomes <- merge(exposures, outcomes[, c(
@@ -879,14 +879,14 @@ fitModel <- function(task,
     if (length(betas) > 1) {
       betas <- betas[2:length(betas)]
       betas <- tibble(beta = betas, covariateId = bit64::as.integer64(attr(betas, "names")))
-      betas <- betas %>%
+      betas <- betas |>
         inner_join(
-          covariateData$covariateRef %>%
-            collect() %>%
+          covariateData$covariateRef |>
+            collect() |>
             mutate(covariateId = bit64::as.integer64(.data$covariateId)),
           by = "covariateId"
-        ) %>%
-        select(.data$beta, id = .data$covariateId, .data$covariateName) %>%
+        ) |>
+        select(.data$beta, id = .data$covariateId, .data$covariateName) |>
         arrange(desc(abs(.data$beta)))
       betas <- bind_rows(intercept, betas)
     } else {
@@ -1070,7 +1070,7 @@ generateOutcomes <- function(task,
         covariates <- NULL
       } else {
         covariateData <- FeatureExtraction::loadCovariateData(task$covarFileName)
-        covariates <- covariateData$covariates %>%
+        covariates <- covariateData$covariates |>
           filter(.data$rowId %in% local(exposures$rowId))
       }
       prediction <- .predict(betas, exposures, covariates, modelType)
@@ -1429,26 +1429,26 @@ insertOutcomes <- function(connectionDetails,
       value = exp(intercept)
     )
   } else {
-    covariateIdIsInteger64 <- covariates %>%
-      head(10000) %>%
-      pull(.data$covariateId) %>%
+    covariateIdIsInteger64 <- covariates |>
+      head(10000) |>
+      pull(.data$covariateId) |>
       is("integer64")
     
     if (!covariateIdIsInteger64) {
       betas$covariateId <- as.numeric(betas$covariateId)
     }
-    prediction <- covariates %>%
-      inner_join(select(betas, .data$beta, .data$covariateId), by = "covariateId", copy = TRUE) %>%
-      mutate(value = .data$beta * .data$covariateValue) %>%
-      group_by(.data$rowId) %>%
-      summarise(value = sum(.data$value, na.rm = TRUE)) %>%
-      select(.data$rowId, .data$value) %>%
-      ungroup() %>%
+    prediction <- covariates |>
+      inner_join(select(betas, .data$beta, .data$covariateId), by = "covariateId", copy = TRUE) |>
+      mutate(value = .data$beta * .data$covariateValue) |>
+      group_by(.data$rowId) |>
+      summarise(value = sum(.data$value, na.rm = TRUE)) |>
+      select(.data$rowId, .data$value) |>
+      ungroup() |>
       collect()
     
-    prediction <- prediction %>%
-      right_join(select(exposures, .data$rowId, .data$daysAtRisk), by = "rowId") %>%
-      mutate(value = coalesce(.data$value, 0) + intercept) %>%
+    prediction <- prediction |>
+      right_join(select(exposures, .data$rowId, .data$daysAtRisk), by = "rowId") |>
+      mutate(value = coalesce(.data$value, 0) + intercept) |>
       mutate(value = exp(.data$value))
   }
   if (modelType == "poisson") {

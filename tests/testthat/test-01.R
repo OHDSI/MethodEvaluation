@@ -73,11 +73,11 @@ test_that("Create reference set cohort", {
   cohortCounts <- read.csv(file.path(tempFolder, "cohortCounts.csv"))
   controls <- readRDS(system.file("ohdsiNegativeControls.rds",
     package = "MethodEvaluation"
-  )) %>%
-    filter(.data$outcomeId > 4) %>%
+  )) |>
+    filter(.data$outcomeId > 4) |>
     distinct(cohortId = .data$outcomeId)
   expect_equal(
-    nrow(cohortCounts %>% filter(type == "Outcome")),
+    nrow(cohortCounts |> filter(type == "Outcome")),
     nrow(controls) + 4
   ) # adding c("acute_pancreatitis", "gi_bleed", "stroke", "ibd")
 
@@ -92,7 +92,7 @@ test_that("Create reference set cohort", {
     package = "MethodEvaluation"
   ))
   expect_equal(
-    nrow(cohortCounts %>% filter(type == "Outcome")),
+    nrow(cohortCounts |> filter(type == "Outcome")),
     nrow(controls)
   )
   unlink(tempFolder, recursive = TRUE)

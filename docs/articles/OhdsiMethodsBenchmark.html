@@ -32,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">MethodEvaluation</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.4.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.4.1</span>
       </span>
     </div>
 
@@ -84,7 +84,7 @@
                         <h4 data-toc-skip class="author">Martijn J.
 Schuemie</h4>
             
-            <h4 data-toc-skip class="date">2025-02-14</h4>
+            <h4 data-toc-skip class="date">2026-05-22</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/OHDSI/MethodEvaluation/blob/HEAD/vignettes/OhdsiMethodsBenchmark.Rmd" class="external-link"><code>vignettes/OhdsiMethodsBenchmark.Rmd</code></a></small>
       <div class="hidden name"><code>OhdsiMethodsBenchmark.Rmd</code></div>
@@ -240,10 +240,10 @@ schema.</li>
 cohorts</strong> can be instantiated. Write access is required to this
 schema.</li>
 <li>
-<em>On Oracle only</em>: a schema where <strong>temporary
-tables</strong> can be created. Write access is required to this schema.
-This is required since Oracle doesn’t fully support temp tables like
-other database platforms.</li>
+<em>For select platforms only</em>: for platforms that do not
+natively support <strong>temporary tables</strong> such as Oracle and
+DataBricks, a schema where tables can be created. Write access is
+required to this schema.</li>
 </ul>
 <p>We also need to specify on the local file system:</p>
 <ul>
@@ -268,11 +268,11 @@ settings required for the various database management systems
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">cdmDatabaseSchema</span> <span class="op">&lt;-</span> <span class="st">"my_cdm_data"</span></span>
-<span><span class="va">oracleTempSchema</span> <span class="op">&lt;-</span> <span class="cn">NULL</span></span>
 <span><span class="va">outcomeDatabaseSchema</span> <span class="op">&lt;-</span> <span class="st">"scratch"</span></span>
 <span><span class="va">outcomeTable</span> <span class="op">&lt;-</span> <span class="st">"ohdsi_outcomes"</span></span>
 <span><span class="va">nestingCohortDatabaseSchema</span> <span class="op">&lt;-</span> <span class="st">"scratch"</span></span>
 <span><span class="va">nestingCohortTable</span> <span class="op">&lt;-</span> <span class="st">"ohdsi_nesting_cohorts"</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">options</a></span><span class="op">(</span>sqlRenderTempEmulationSchema <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span><span class="va">outputFolder</span> <span class="op">&lt;-</span> <span class="st">"/home/benchmarkOutput"</span></span>
 <span><span class="va">cdmVersion</span> <span class="op">&lt;-</span> <span class="st">"5"</span></span></code></pre></div>
 <p>Note that for Microsoft SQL Server, database schemas need to specify
@@ -293,12 +293,12 @@ the following command:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/createReferenceSetCohorts.html">createReferenceSetCohorts</a></span><span class="op">(</span></span>
 <span>  connectionDetails <span class="op">=</span> <span class="va">connectionDetails</span>,</span>
-<span>  oracleTempSchema <span class="op">=</span> <span class="va">oracleTempSchema</span>,</span>
 <span>  cdmDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
 <span>  outcomeDatabaseSchema <span class="op">=</span> <span class="va">outcomeDatabaseSchema</span>,</span>
 <span>  outcomeTable <span class="op">=</span> <span class="va">outcomeTable</span>,</span>
 <span>  nestingDatabaseSchema <span class="op">=</span> <span class="va">nestingCohortDatabaseSchema</span>,</span>
 <span>  nestingTable <span class="op">=</span> <span class="va">nestingCohortTable</span>,</span>
+<span>  workFolder <span class="op">=</span> <span class="va">outputFolder</span>,</span>
 <span>  referenceSet <span class="op">=</span> <span class="st">"ohdsiMethodsBenchmark"</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 <p>This will automatically create the outcome and nesting cohort tables,
@@ -312,7 +312,6 @@ These positive control outcomes are added to the outcome table.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/synthesizeReferenceSetPositiveControls.html">synthesizeReferenceSetPositiveControls</a></span><span class="op">(</span></span>
 <span>  connectionDetails <span class="op">=</span> <span class="va">connectionDetails</span>,</span>
-<span>  oracleTempSchema <span class="op">=</span> <span class="va">oracleTempSchema</span>,</span>
 <span>  cdmDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
 <span>  outcomeDatabaseSchema <span class="op">=</span> <span class="va">outcomeDatabaseSchema</span>,</span>
 <span>  outcomeTable <span class="op">=</span> <span class="va">outcomeTable</span>,</span>
@@ -412,7 +411,6 @@ pairs:</p>
 <code class="sourceCode R"><span><span class="va">sccResult</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SelfControlledCohort/man/runSccAnalyses.html" class="external-link">runSccAnalyses</a></span><span class="op">(</span></span>
 <span>  connectionDetails <span class="op">=</span> <span class="va">connectionDetails</span>,</span>
 <span>  cdmDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
-<span>  oracleTempSchema <span class="op">=</span> <span class="va">oracleTempSchema</span>,</span>
 <span>  exposureTable <span class="op">=</span> <span class="st">"drug_era"</span>,</span>
 <span>  outcomeDatabaseSchema <span class="op">=</span> <span class="va">outcomeDatabaseSchema</span>,</span>
 <span>  outcomeTable <span class="op">=</span> <span class="va">outcomeTable</span>,</span>
@@ -550,7 +548,7 @@ various arguments.</p>
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
       </footer>

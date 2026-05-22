@@ -1,12 +1,11 @@
 <urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
 <url><loc>/404.html</loc></url>
-<url><loc>/articles/OhdsiMethodsBenchmark.html</loc></url>
 <url><loc>/articles/index.html</loc></url>
+<url><loc>/articles/OhdsiMethodsBenchmark.html</loc></url>
 <url><loc>/authors.html</loc></url>
 <url><loc>/index.html</loc></url>
 <url><loc>/news/index.html</loc></url>
 <url><loc>/pull_request_template.html</loc></url>
-<url><loc>/reference/MethodEvaluation-package.html</loc></url>
 <url><loc>/reference/checkCohortSourceCodes.html</loc></url>
 <url><loc>/reference/computeAucs.html</loc></url>
 <url><loc>/reference/computeCoverage.html</loc></url>
@@ -21,6 +20,7 @@
 <url><loc>/reference/index.html</loc></url>
 <url><loc>/reference/injectSignals.html</loc></url>
 <url><loc>/reference/launchMethodEvaluationApp.html</loc></url>
+<url><loc>/reference/MethodEvaluation-package.html</loc></url>
 <url><loc>/reference/ohdsiDevelopmentNegativeControls.html</loc></url>
 <url><loc>/reference/ohdsiNegativeControls.html</loc></url>
 <url><loc>/reference/omopReferenceSet.html</loc></url>

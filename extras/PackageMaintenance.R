@@ -1,4 +1,4 @@
-# Copyright 2025 Observational Health Data Sciences and Informatics
+# Copyright 2026 Observational Health Data Sciences and Informatics
 #
 # This file is part of MethodEvaluation
 # 
@@ -29,7 +29,6 @@ rmarkdown::render("vignettes/OhdsiMethodsBenchmark.Rmd",
                   rmarkdown::pdf_document(latex_engine = "pdflatex",
                                           toc = TRUE,
                                           number_sections = TRUE))
-unlink("inst/doc/OhdsiMethodsBenchmark.tex")
 
 pkgdown::build_site()
 OhdsiRTools::fixHadesLogo()

@@ -1,6 +1,6 @@
 # @file Metrics.R
 #
-# Copyright 2025 Observational Health Data Sciences and Informatics
+# Copyright 2026 Observational Health Data Sciences and Informatics
 #
 # This file is part of MethodEvaluation
 #
@@ -268,9 +268,9 @@ packageOhdsiBenchmarkResults <- function(estimates,
                                      databaseName) {
   # Merge estimates into full grid:
   analysisIds <- unique(analysisRef$analysisId)
-  fullGrid <- lapply(analysisIds, function(x) mutate(allControls, analysisId = x)) %>%
+  fullGrid <- lapply(analysisIds, function(x) mutate(allControls, analysisId = x)) |>
     bind_rows()
-  estimates <- estimates %>%
+  estimates <- estimates |>
     select(
       "targetId",
       "outcomeId",
@@ -279,19 +279,19 @@ packageOhdsiBenchmarkResults <- function(estimates,
       "seLogRr",
       "ci95Lb",
       "ci95Ub"
-    ) %>%
-    right_join(fullGrid, by = join_by("targetId", "outcomeId", "analysisId")) %>%
+    ) |>
+    right_join(fullGrid, by = join_by("targetId", "outcomeId", "analysisId")) |>
     inner_join(
-      analysisRef %>%
+      analysisRef |>
         select("analysisId", "method", "comparative", "nesting", "firstExposureOnly"),
       by = join_by("analysisId")
-    ) %>%
+    ) |>
     mutate(database = databaseName)
 
   # Perform empirical calibration:
   # subset = subsets[[5]]
   calibrate <- function(subset) {
-    subset <- subset %>%
+    subset <- subset |>
       mutate(leaveOutUnit = if_else(.data$type == "Exposure control",
         paste(.data$targetId, .data$oldOutcomeId),
         as.character(.data$oldOutcomeId)
@@ -480,33 +480,33 @@ packageCustomBenchmarkResults <- function(estimates,
   checkmate::reportAssertions(collection = errorMessages)
 
   trueEffecSizes <- c(1, unique(synthesisSummary$targetEffectSize))
-  negativeControls <- negativeControls %>%
-    mutate(stratum = if_else(.data$type == "Outcome control", .data$targetId, .data$outcomeId)) %>%
+  negativeControls <- negativeControls |>
+    mutate(stratum = if_else(.data$type == "Outcome control", .data$targetId, .data$outcomeId)) |>
     rename(oldOutcomeId = "outcomeId")
-  fullGrid <- lapply(trueEffecSizes, function(x) mutate(negativeControls, targetEffectSize = x)) %>%
+  fullGrid <- lapply(trueEffecSizes, function(x) mutate(negativeControls, targetEffectSize = x)) |>
     bind_rows()
-  synthesisSummary <- synthesisSummary %>%
-    rename(targetId = "exposureId") %>%
-    rename(oldOutcomeId = "outcomeId") %>%
-    rename(outcomeId = "newOutcomeId") %>%
+  synthesisSummary <- synthesisSummary |>
+    rename(targetId = "exposureId") |>
+    rename(oldOutcomeId = "outcomeId") |>
+    rename(outcomeId = "newOutcomeId") |>
     select("targetId", "oldOutcomeId", "targetEffectSize", "outcomeId", "trueEffectSize", "trueEffectSizeFirstExposure", "trueEffectSizeItt")
   allControls <- left_join(
     fullGrid,
     synthesisSummary,
     by = join_by("targetId", "oldOutcomeId", "targetEffectSize")
-  ) %>%
+  ) |>
     mutate(outcomeId = if_else(.data$targetEffectSize == 1, .data$oldOutcomeId, .data$outcomeId))
   if (is.null(mdrr)) {
-    allControls <- allControls %>%
+    allControls <- allControls |>
       mutate(mdrrTarget = as.numeric(NA), mdrrComparator = as.numeric(NA))
   } else {
     if (!"mdrrTarget" %in% colnames(mdrr)) {
-      mdrr <- mdrr %>%
+      mdrr <- mdrr |>
         mutate(mdrrTarget = .data$mdrr, mdrrComparator = .data$mdrr)
     }
-    allControls <- allControls %>%
+    allControls <- allControls |>
       left_join(
-        mdrr %>%
+        mdrr |>
           rename(targetId = "exposureId"),
         by = c("targetId", "outcomeId")
       )

@@ -1,4 +1,4 @@
-# Copyright 2025 Observational Health Data Sciences and Informatics
+# Copyright 2026 Observational Health Data Sciences and Informatics
 #
 # This file is part of MethodEvaluation
 #
@@ -216,7 +216,7 @@ createOhdsiDevelopmentNegativeControlCohorts <- function(connectionDetails,
     DatabaseConnector::executeSql(connection, sql)
   }
   ParallelLogger::logInfo("Creating negative control outcomes")
-  outcomeCohorts <- ohdsiDevelopmentNegativeControls %>%
+  outcomeCohorts <- ohdsiDevelopmentNegativeControls |>
     distinct(cohortId = .data$outcomeId, cohortName = .data$outcomeName)
   sql <- SqlRender::loadRenderTranslateSql("NegativeControls.sql",
                                            "MethodEvaluation",
@@ -230,7 +230,7 @@ createOhdsiDevelopmentNegativeControlCohorts <- function(connectionDetails,
   DatabaseConnector::executeSql(connection, sql)
   
   ParallelLogger::logInfo("Creating nesting cohorts")
-  nestingCohorts <- ohdsiDevelopmentNegativeControls %>%
+  nestingCohorts <- ohdsiDevelopmentNegativeControls |>
     distinct(cohortId = .data$nestingId, cohortName = .data$nestingName)
   sql <- SqlRender::loadRenderTranslateSql("NestingCohorts.sql",
                                            "MethodEvaluation",
@@ -249,26 +249,26 @@ createOhdsiDevelopmentNegativeControlCohorts <- function(connectionDetails,
     cohortDatabaseSchema = exposureDatabaseSchema,
     cohortTable = exposureTable,
     cohortIds = exposureCohorts$cohortId
-  ) %>%
-    right_join(exposureCohorts, by = "cohortId") %>%
+  ) |>
+    right_join(exposureCohorts, by = "cohortId") |>
     mutate(type = "Exposure")
   outcomeCohortCounts <- countCohorts(
     connection = connection,
     cohortDatabaseSchema = outcomeDatabaseSchema,
     cohortTable = outcomeTable,
     cohortIds = outcomeCohorts$cohortId
-  ) %>%
-    right_join(outcomeCohorts, by = "cohortId") %>%
+  ) |>
+    right_join(outcomeCohorts, by = "cohortId") |>
     mutate(type = "Outcome")
   nestingCohortCounts <- countCohorts(
     connection = connection,
     cohortDatabaseSchema = nestingDatabaseSchema,
     cohortTable = nestingTable,
     cohortIds = nestingCohorts$cohortId
-  ) %>%
-    right_join(nestingCohorts, by = "cohortId") %>%
+  ) |>
+    right_join(nestingCohorts, by = "cohortId") |>
     mutate(type = "Nesting")
-  cohortCounts <- bind_rows(exposureCohortCounts, outcomeCohortCounts, nestingCohortCounts) %>%
+  cohortCounts <- bind_rows(exposureCohortCounts, outcomeCohortCounts, nestingCohortCounts) |>
     mutate(
       cohortEntries = case_when(
         is.na(.data$cohortEntries) ~ as.integer(0),
@@ -338,9 +338,9 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
     DatabaseConnector::executeSql(connection, sql)
   }
   ParallelLogger::logInfo("Creating other negative control outcomes")
-  otherOutcomeCohortIds <- ohdsiNegativeControls %>%
-    filter(.data$outcomeId > 4) %>%
-    distinct(cohortId = .data$outcomeId) %>%
+  otherOutcomeCohortIds <- ohdsiNegativeControls |>
+    filter(.data$outcomeId > 4) |>
+    distinct(cohortId = .data$outcomeId) |>
     pull()
   sql <- SqlRender::loadRenderTranslateSql("NegativeControls.sql",
                                            "MethodEvaluation",
@@ -352,11 +352,11 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
                                            outcome_ids = otherOutcomeCohortIds
   )
   DatabaseConnector::executeSql(connection, sql)
-  outcomeCohorts <- ohdsiNegativeControls %>%
+  outcomeCohorts <- ohdsiNegativeControls |>
     distinct(cohortId = .data$outcomeId, cohortName = .data$outcomeName)
   
   ParallelLogger::logInfo("Creating nesting cohorts")
-  nestingCohorts <- ohdsiNegativeControls %>%
+  nestingCohorts <- ohdsiNegativeControls |>
     distinct(cohortId = .data$nestingId, cohortName = .data$nestingName)
   sql <- SqlRender::loadRenderTranslateSql("NestingCohorts.sql",
                                            "MethodEvaluation",
@@ -370,11 +370,11 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
   DatabaseConnector::executeSql(connection, sql)
   
   exposureCohorts <- bind_rows(
-    ohdsiNegativeControls %>%
+    ohdsiNegativeControls |>
       distinct(cohortId = .data$targetId, cohortName = .data$targetName),
-    ohdsiNegativeControls %>%
+    ohdsiNegativeControls |>
       distinct(cohortId = .data$comparatorId, cohortName = .data$comparatorName)
-  ) %>%
+  ) |>
     distinct()
   
   ParallelLogger::logInfo("Counting cohorts")
@@ -382,26 +382,26 @@ createOhdsiNegativeControlCohorts <- function(connectionDetails,
     connection = connection,
     cdmDatabaseSchema = cdmDatabaseSchema,
     cohortIds = exposureCohorts$cohortId
-  ) %>%
-    right_join(exposureCohorts, by = "cohortId") %>%
+  ) |>
+    right_join(exposureCohorts, by = "cohortId") |>
     mutate(type = "Exposure")
   outcomeCohortCounts <- countCohorts(
     connection = connection,
     cohortDatabaseSchema = outcomeDatabaseSchema,
     cohortTable = outcomeTable,
     cohortIds = outcomeCohorts$cohortId
-  ) %>%
-    right_join(outcomeCohorts, by = "cohortId") %>%
+  ) |>
+    right_join(outcomeCohorts, by = "cohortId") |>
     mutate(type = "Outcome")
   nestingCohortCounts <- countCohorts(
     connection = connection,
     cohortDatabaseSchema = nestingDatabaseSchema,
     cohortTable = nestingTable,
     cohortIds = nestingCohorts$cohortId
-  ) %>%
-    right_join(nestingCohorts, by = "cohortId") %>%
+  ) |>
+    right_join(nestingCohorts, by = "cohortId") |>
     mutate(type = "Nesting")
-  cohortCounts <- bind_rows(exposureCohortCounts, outcomeCohortCounts, nestingCohortCounts) %>%
+  cohortCounts <- bind_rows(exposureCohortCounts, outcomeCohortCounts, nestingCohortCounts) |>
     mutate(
       cohortEntries = case_when(
         is.na(.data$cohortEntries) ~ as.integer(0),
