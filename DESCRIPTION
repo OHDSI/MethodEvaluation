@@ -20,7 +20,7 @@ VignetteBuilder: knitr
 URL: https://github.com/OHDSI/MethodEvaluation
 BugReports: https://github.com/OHDSI/MethodEvaluation/issues
 Depends:
-  R (>= 3.5.0),
+  R (>= 4.1.0),
   DatabaseConnector (>= 6.0.0),
   FeatureExtraction (>= 3.7.0),
   Cyclops (>= 3.0.0)
