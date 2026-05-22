@@ -1,3 +1,13 @@
+MethodEvaluation 2.4.1
+======================
+
+Bugfixes:
+
+1. Creating `workFolder` in `createReferenceSetCohorts()` if it does not exist.
+
+2. Minor fixes to vignette.
+
+
 MethodEvaluation 2.4.0
 ======================
 

@@ -90,6 +90,10 @@ createReferenceSetCohorts <- function(connectionDetails,
   checkmate::assertCharacter(workFolder, len = 1, add = errorMessages)
   checkmate::reportAssertions(collection = errorMessages)
   
+  if (!dir.exists(workFolder)) {
+    dir.create(workFolder, recursive = TRUE)
+  }
+  
   if (referenceSet == "omopReferenceSet") {
     ParallelLogger::logInfo("Generating HOIs for the OMOP reference set")
     renderedSql <- SqlRender::loadRenderTranslateSql("CreateOmopHois.sql",
