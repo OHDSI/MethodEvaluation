@@ -1,3 +1,11 @@
+MethodEvaluation 2.4.2
+======================
+
+Bugfixes:
+
+1. Optimized data preparation for model fitting, avoiding hangs.
+
+
 MethodEvaluation 2.4.1
 ======================
 

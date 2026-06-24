@@ -804,49 +804,59 @@ fitModel <- function(task,
   exposures <- readRDS(exposuresFile)
   
   outcomes <- readRDS(outcomesFile)
-  outcomes <- outcomes[outcomes$outcomeId == task$outcomeId, ]
+  outcomes <- outcomes |>
+    filter(.data$outcomeId == task$outcomeId)
   if (file.exists(task$sampledExposuresFile)) {
     sampledExposures <- readRDS(task$sampledExposuresFile)
-    outcomes <- outcomes[outcomes$rowId %in% sampledExposures$rowId, ]
-    exposures <- exposures[exposures$rowId %in% sampledExposures$rowId, ]
+    outcomes <- outcomes |>
+      filter(.data$rowId %in% sampledExposures$rowId) 
+    exposures <- exposures |>
+      filter(.data$rowId %in% sampledExposures$rowId)
   } else {
-    exposures <- exposures[exposures$exposureId %in% task$groupExposureIds, ]
-    outcomes <- outcomes[outcomes$rowId %in% exposures$rowId, ]
+    exposures <- exposures |>
+      filter(.data$exposureId %in% task$groupExposureIds)
+    outcomes <- outcomes |>
+      filter(.data$rowId %in% exposures$rowId)
   }
   # Dedupe exposures for model fitting, so we don't overfit:
-  exposures <- exposures[order(exposures$personId, exposures$cohortStartDate), ]
-  exposures <- exposures[!duplicated(exposures[, c("personId", "cohortStartDate")]), ]
-  
-  covariateData <- FeatureExtraction::loadCovariateData(task$covarFileName)
-  covariates <- covariateData$covariates |>
-    filter(.data$rowId %in% local(exposures$rowId))
+  exposures <- exposures |>
+    distinct(.data$personId, .data$cohortStartDate, .keep_all = TRUE)
   
   if (removePeopleWithPriorOutcomes) {
     priorOutcomes <- readRDS(priorOutcomesFile)
-    removeRowIds <- priorOutcomes$rowId[priorOutcomes$outcomeId == task$outcomeId]
-    outcomes <- outcomes[!(outcomes$rowId %in% removeRowIds), ]
-    exposures <- exposures[!(exposures$rowId %in% removeRowIds), ]
-    covariates <- covariates |>
+    removeRowIds <- priorOutcomes |>
+      filter(.data$outcomeId == task$outcomeId) |>
+      pull(rowId)
+    outcomes <- outcomes |>
+      filter(!.data$rowId %in% removeRowIds)
+    exposures <- exposures |>
       filter(!.data$rowId %in% removeRowIds)
   }
-  outcomes <- merge(exposures, outcomes[, c(
-    "rowId",
-    "y",
-    "timeToEvent"
-  )], by = c("rowId"), all.x = TRUE)
-  outcomes <- outcomes[order(outcomes$rowId), ]
-  outcomes$y[is.na(outcomes$y)] <- 0
-  names(outcomes)[names(outcomes) == "daysAtRisk"] <- "time"
+  outcomes <- exposures |>
+    left_join(outcomes |>
+                select("rowId", "y", "timeToEvent"),
+              by = join_by("rowId")) |>
+    mutate(y = if_else(is.na(.data$y), 0, .data$y)) |>
+    rename(time = "daysAtRisk") |>
+    arrange(.data$rowId)
   if (modelType == "survival") {
     # For survival, time is either the time to the end of the risk window, or the event
-    outcomes$y[outcomes$y != 0] <- 1
-    outcomes$time[outcomes$y != 0] <- outcomes$timeToEvent[outcomes$y != 0]
+    outcomes <- outcomes |>
+      mutate(y = if_else(.data$y > 0, 1, 0)) |>
+      mutate(time = if_else(.data$y == 1, .data$timeToEvent, .data$time))
   }
-  outcomes$time <- outcomes$time + 1
-  
+  outcomes <- outcomes |>
+    mutate(time = .data$time + 1)
+
   # Note: for survival, using Poisson regression with 1 outcome and censored time as equivalent of
   # survival regression:
+  covariateData <- FeatureExtraction::loadCovariateData(task$covarFileName)
+  covariateData$exposures <- exposures |>
+    select("rowId")
+  covariates <- covariateData$covariates |>
+    inner_join(covariateData$exposures, by = join_by("rowId"))
   covariateData$outcomes <- outcomes
+  Andromeda::flushAndromeda(covariateData)
   cyclopsData <- Cyclops::convertToCyclopsData(covariateData$outcomes,
                                                covariates,
                                                modelType = "pr",
@@ -1070,8 +1080,10 @@ generateOutcomes <- function(task,
         covariates <- NULL
       } else {
         covariateData <- FeatureExtraction::loadCovariateData(task$covarFileName)
+        covariateData$exposures <- exposures |>
+          select("rowId")
         covariates <- covariateData$covariates |>
-          filter(.data$rowId %in% local(exposures$rowId))
+          inner_join(covariateData$exposures, by = join_by("rowId"))
       }
       prediction <- .predict(betas, exposures, covariates, modelType)
       saveRDS(prediction, predictionFile)
