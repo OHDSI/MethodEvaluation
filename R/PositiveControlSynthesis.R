@@ -826,7 +826,7 @@ fitModel <- function(task,
     priorOutcomes <- readRDS(priorOutcomesFile)
     removeRowIds <- priorOutcomes |>
       filter(.data$outcomeId == task$outcomeId) |>
-      pull(rowId)
+      pull(.data$rowId)
     outcomes <- outcomes |>
       filter(!.data$rowId %in% removeRowIds)
     exposures <- exposures |>

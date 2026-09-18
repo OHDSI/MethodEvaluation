@@ -2,7 +2,7 @@ Package: MethodEvaluation
 Type: Package
 Title: Package for Evaluation of Estimation Methods
 Version: 2.4.2
-Date: 2025-06-15
+Date: 2026-09-18
 Authors@R: c(
   person("Martijn", "Schuemie", , "schuemie@ohdsi.org", role = c("aut", "cre"))
   )
@@ -36,7 +36,8 @@ Imports:
   ParallelLogger (>= 2.0.0),
   methods,
   EmpiricalCalibration,
-  checkmate
+  checkmate,
+  Andromeda
 Suggests:
   Eunomia,
   testthat,
@@ -47,4 +48,4 @@ Suggests:
 Remotes:
   ohdsi/Eunomia
 Encoding: UTF-8
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 8.1.0

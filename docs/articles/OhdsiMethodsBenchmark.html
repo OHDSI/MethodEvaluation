@@ -32,7 +32,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">MethodEvaluation</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.4.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.4.2</span>
       </span>
     </div>
 
@@ -84,7 +84,7 @@
                         <h4 data-toc-skip class="author">Martijn J.
 Schuemie</h4>
             
-            <h4 data-toc-skip class="date">2026-05-22</h4>
+            <h4 data-toc-skip class="date">2026-09-18</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/OHDSI/MethodEvaluation/blob/HEAD/vignettes/OhdsiMethodsBenchmark.Rmd" class="external-link"><code>vignettes/OhdsiMethodsBenchmark.Rmd</code></a></small>
       <div class="hidden name"><code>OhdsiMethodsBenchmark.Rmd</code></div>
@@ -358,7 +358,7 @@ using the length of exposure as the time-at-risk, and one using the
 first 30 days after exposure start as the time-at-risk:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/OHDSI/SelfControlledCohort" class="external-link">SelfControlledCohort</a></span><span class="op">)</span></span>
-<span><span class="va">runSccArgs1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SelfControlledCohort/man/createRunSelfControlledCohortArgs.html" class="external-link">createRunSelfControlledCohortArgs</a></span><span class="op">(</span></span>
+<span><span class="va">runSccArgs1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/SelfControlledCohort/reference/createRunSelfControlledCohortArgs.html" class="external-link">createRunSelfControlledCohortArgs</a></span><span class="op">(</span></span>
 <span>  addLengthOfExposureExposed <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  riskWindowStartExposed <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  riskWindowEndExposed <span class="op">=</span> <span class="fl">0</span>,</span>
@@ -368,13 +368,13 @@ first 30 days after exposure start as the time-at-risk:</p>
 <span>  washoutPeriod <span class="op">=</span> <span class="fl">365</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">sccAnalysis1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SelfControlledCohort/man/createsccAnalysis.html" class="external-link">createSccAnalysis</a></span><span class="op">(</span></span>
+<span><span class="va">sccAnalysis1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/SelfControlledCohort/reference/createSccAnalysis.html" class="external-link">createSccAnalysis</a></span><span class="op">(</span></span>
 <span>  analysisId <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  description <span class="op">=</span> <span class="st">"Length of exposure"</span>,</span>
 <span>  runSelfControlledCohortArgs <span class="op">=</span> <span class="va">runSccArgs1</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">runSccArgs2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SelfControlledCohort/man/createRunSelfControlledCohortArgs.html" class="external-link">createRunSelfControlledCohortArgs</a></span><span class="op">(</span></span>
+<span><span class="va">runSccArgs2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/SelfControlledCohort/reference/createRunSelfControlledCohortArgs.html" class="external-link">createRunSelfControlledCohortArgs</a></span><span class="op">(</span></span>
 <span>  addLengthOfExposureExposed <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  riskWindowStartExposed <span class="op">=</span> <span class="fl">0</span>,</span>
 <span>  riskWindowEndExposed <span class="op">=</span> <span class="fl">30</span>,</span>
@@ -384,7 +384,7 @@ first 30 days after exposure start as the time-at-risk:</p>
 <span>  washoutPeriod <span class="op">=</span> <span class="fl">365</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">sccAnalysis2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SelfControlledCohort/man/createsccAnalysis.html" class="external-link">createSccAnalysis</a></span><span class="op">(</span></span>
+<span><span class="va">sccAnalysis2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/SelfControlledCohort/reference/createSccAnalysis.html" class="external-link">createSccAnalysis</a></span><span class="op">(</span></span>
 <span>  analysisId <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  description <span class="op">=</span> <span class="st">"30 days of each exposure"</span>,</span>
 <span>  runSelfControlledCohortArgs <span class="op">=</span> <span class="va">runSccArgs2</span></span>
@@ -399,7 +399,7 @@ nesting:</p>
 <code class="sourceCode R"><span><span class="va">allControls</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/read.table.html" class="external-link">read.csv</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outputFolder</span>, <span class="st">"allControls.csv"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">eos</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">i</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">allControls</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">eos</span><span class="op">[[</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">eos</span><span class="op">)</span> <span class="op">+</span> <span class="fl">1</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SelfControlledCohort/man/createExposureOutcome.html" class="external-link">createExposureOutcome</a></span><span class="op">(</span></span>
+<span>  <span class="va">eos</span><span class="op">[[</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">eos</span><span class="op">)</span> <span class="op">+</span> <span class="fl">1</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/SelfControlledCohort/reference/createExposureOutcome.html" class="external-link">createExposureOutcome</a></span><span class="op">(</span></span>
 <span>    exposureId <span class="op">=</span> <span class="va">allControls</span><span class="op">$</span><span class="va">targetId</span><span class="op">[</span><span class="va">i</span><span class="op">]</span>,</span>
 <span>    outcomeId <span class="op">=</span> <span class="va">allControls</span><span class="op">$</span><span class="va">outcomeId</span><span class="op">[</span><span class="va">i</span><span class="op">]</span></span>
 <span>  <span class="op">)</span></span>
@@ -408,7 +408,7 @@ nesting:</p>
 SCC with the specified analysis settings against the exposure-outcome
 pairs:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">sccResult</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SelfControlledCohort/man/runSccAnalyses.html" class="external-link">runSccAnalyses</a></span><span class="op">(</span></span>
+<code class="sourceCode R"><span><span class="va">sccResult</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://ohdsi.github.io/SelfControlledCohort/reference/runSccAnalyses.html" class="external-link">runSccAnalyses</a></span><span class="op">(</span></span>
 <span>  connectionDetails <span class="op">=</span> <span class="va">connectionDetails</span>,</span>
 <span>  cdmDatabaseSchema <span class="op">=</span> <span class="va">cdmDatabaseSchema</span>,</span>
 <span>  exposureTable <span class="op">=</span> <span class="st">"drug_era"</span>,</span>
@@ -418,7 +418,7 @@ pairs:</p>
 <span>  exposureOutcomeList <span class="op">=</span> <span class="va">eos</span>,</span>
 <span>  outputFolder <span class="op">=</span> <span class="va">outputFolder</span></span>
 <span><span class="op">)</span></span>
-<span><span class="va">sccSummary</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SelfControlledCohort/man/summarizeAnalyses.html" class="external-link">summarizeAnalyses</a></span><span class="op">(</span><span class="va">sccResult</span>, <span class="va">outputFolder</span><span class="op">)</span></span>
+<span><span class="va">sccSummary</span> <span class="op">&lt;-</span> <span class="fu">summarizeAnalyses</span><span class="op">(</span><span class="va">sccResult</span>, <span class="va">outputFolder</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.csv</a></span><span class="op">(</span><span class="va">sccSummary</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">outputFolder</span>, <span class="st">"sccSummary.csv"</span><span class="op">)</span>, row.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <p>This produces a file called <em>sccSummary.csv</em> which contains
 the effect size estimates for each analysisId-exposureId-outcomeId
@@ -548,7 +548,7 @@ various arguments.</p>
 
 <div class="pkgdown">
   <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
       </footer>
